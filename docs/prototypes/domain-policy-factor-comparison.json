@@ -1,0 +1,4981 @@
+{
+  "conditions": {
+    "seed": "RI-199",
+    "humanSpeed": 1,
+    "boards": {
+      "routine": {
+        "horizon": 6,
+        "use": "routine",
+        "off": "off",
+        "jobs": [
+          {
+            "id": "r1",
+            "kind": "routine",
+            "work": 2,
+            "value": 5
+          },
+          {
+            "id": "r2",
+            "kind": "routine",
+            "work": 2,
+            "value": 5
+          },
+          {
+            "id": "r3",
+            "kind": "routine",
+            "work": 2,
+            "value": 5
+          },
+          {
+            "id": "r4",
+            "kind": "routine",
+            "work": 2,
+            "value": 5
+          },
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 2,
+            "value": 8
+          }
+        ]
+      },
+      "important": {
+        "horizon": 4,
+        "use": "all",
+        "off": "off",
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 4,
+            "value": 20
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 4,
+            "value": 20
+          },
+          {
+            "id": "r1",
+            "kind": "routine",
+            "work": 2,
+            "value": 4
+          }
+        ]
+      }
+    },
+    "decision": {
+      "use": "初回に使わない判断を上回った固定方針。定型中心は定型だけ、重要仕事中心は全許可",
+      "off": "方針off。配布があってもaiAssistedにならない",
+      "score": "netValue"
+    },
+    "baseline": {
+      "fee": 1,
+      "aiSpeed": 2,
+      "incident": 6
+    },
+    "held": {
+      "fee": "利用費だけを動かす。AI速度2、影響6。人の速度1",
+      "aiSpeed": "AI速度だけを動かす。利用費1、影響6。人の速度1",
+      "incident": "複雑作業の影響だけを動かす。利用費1、AI速度2。人の速度1"
+    },
+    "feeDefinition": "AIのtickごとに足す。完了件数には掛けない",
+    "aiSpeedDefinition": "AIのtickが進める進捗。人の速度は1のまま",
+    "incidentDefinition": "複雑な仕事をAIのtickで完了したとき一度だけ引く。定型の完了では出ない",
+    "steps": {
+      "fee": [0, 1, 2, 3, 4, 5],
+      "aiSpeed": [1, 2, 3, 4],
+      "incident": [0, 4, 6, 7, 8, 9, 12]
+    },
+    "omitted": "定型中心の全許可、重要仕事中心の定型だけ、未配布は初回JSONのまま再出力しない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "fee": [
+      {
+        "axis": "fee",
+        "parameter": "0",
+        "rules": {
+          "fee": 0,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 13,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 28,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 8,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 0,
+                "incidents": 12,
+                "netValue": 28,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fee",
+        "parameter": "1",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 4,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 12,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fee",
+        "parameter": "2",
+        "rules": {
+          "fee": 2,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 5,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 8,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "tie",
+            "margin": 0,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 8,
+                "incidents": 12,
+                "netValue": 20,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fee",
+        "parameter": "3",
+        "rules": {
+          "fee": 3,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 1,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 12,
+                "incidents": 0,
+                "netValue": 16,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -4,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 12,
+                "incidents": 12,
+                "netValue": 16,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fee",
+        "parameter": "4",
+        "rules": {
+          "fee": 4,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "off",
+            "margin": -3,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 16,
+                "incidents": 0,
+                "netValue": 12,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -8,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 16,
+                "incidents": 12,
+                "netValue": 12,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fee",
+        "parameter": "5",
+        "rules": {
+          "fee": 5,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "off",
+            "margin": -7,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 20,
+                "incidents": 0,
+                "netValue": 8,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -12,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 20,
+                "incidents": 12,
+                "netValue": 8,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "aiSpeed": [
+      {
+        "axis": "aiSpeed",
+        "parameter": "1",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 1,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "off",
+            "margin": -6,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 15,
+                "fees": 6,
+                "incidents": 0,
+                "netValue": 9,
+                "aiTicks": 6,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -10,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 20,
+                "fees": 4,
+                "incidents": 6,
+                "netValue": 10,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "aiSpeed",
+        "parameter": "2",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 4,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 12,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "aiSpeed",
+        "parameter": "3",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 3,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 4,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 12,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "aiSpeed",
+        "parameter": "4",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 4,
+          "incident": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 44,
+                "fees": 3,
+                "incidents": 12,
+                "netValue": 29,
+                "aiTicks": 3,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "incident": [
+      {
+        "axis": "incident",
+        "parameter": "0",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 0
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 16,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 36,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "4",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 4
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 8,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 8,
+                "netValue": 28,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 4
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 4
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "6",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 6
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 4,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 12,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 6
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 6
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "7",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 7
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "use",
+            "margin": 2,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 14,
+                "netValue": 22,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 7
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 7
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "8",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 8
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "tie",
+            "margin": 0,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 16,
+                "netValue": 20,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 8
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 8
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "9",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 9
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -2,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 18,
+                "netValue": 18,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 9
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 9
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "12",
+        "rules": {
+          "fee": 1,
+          "aiSpeed": 2,
+          "incident": 12
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "routine",
+            "useStrategy": "routine",
+            "preference": "use",
+            "margin": 9,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "routine",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "routine",
+                "memberAi": true,
+                "value": 28,
+                "fees": 4,
+                "incidents": 0,
+                "netValue": 24,
+                "aiTicks": 4,
+                "humanTicks": 2,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 1,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 3,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 15,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 15,
+                "aiTicks": 0,
+                "humanTicks": 6,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 2,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r2",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r3",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": 6,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r4",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "board": "important",
+            "useStrategy": "all",
+            "preference": "off",
+            "margin": -8,
+            "use": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "all",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "all",
+                "memberAi": true,
+                "value": 40,
+                "fees": 4,
+                "incidents": 24,
+                "netValue": 12,
+                "aiTicks": 4,
+                "humanTicks": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 2,
+                    "incident": 12
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": true,
+                    "shipped": 4,
+                    "incident": 12
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            },
+            "off": {
+              "inputs": [
+                {
+                  "type": "configure",
+                  "policy": "off",
+                  "memberAi": true
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "policy": "off",
+                "memberAi": true,
+                "value": 20,
+                "fees": 0,
+                "incidents": 0,
+                "netValue": 20,
+                "aiTicks": 0,
+                "humanTicks": 4,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": 4,
+                    "incident": 0
+                  },
+                  {
+                    "id": "c2",
+                    "kind": "complex",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  },
+                  {
+                    "id": "r1",
+                    "kind": "routine",
+                    "aiAssisted": false,
+                    "shipped": null,
+                    "incident": 0
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "fee",
+      "board": "important",
+      "before": {
+        "parameter": "1",
+        "preference": "use",
+        "use": 24,
+        "off": 20
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie",
+        "use": 20,
+        "off": 20
+      }
+    },
+    {
+      "axis": "fee",
+      "board": "important",
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "use": 20,
+        "off": 20
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "off",
+        "use": 16,
+        "off": 20
+      }
+    },
+    {
+      "axis": "fee",
+      "board": "routine",
+      "before": {
+        "parameter": "3",
+        "preference": "use",
+        "use": 16,
+        "off": 15
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "off",
+        "use": 12,
+        "off": 15
+      }
+    },
+    {
+      "axis": "aiSpeed",
+      "board": "routine",
+      "before": {
+        "parameter": "1",
+        "preference": "off",
+        "use": 9,
+        "off": 15
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "use",
+        "use": 24,
+        "off": 15
+      }
+    },
+    {
+      "axis": "aiSpeed",
+      "board": "important",
+      "before": {
+        "parameter": "1",
+        "preference": "off",
+        "use": 10,
+        "off": 20
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "use",
+        "use": 24,
+        "off": 20
+      }
+    },
+    {
+      "axis": "incident",
+      "board": "important",
+      "before": {
+        "parameter": "7",
+        "preference": "use",
+        "use": 22,
+        "off": 20
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "tie",
+        "use": 20,
+        "off": 20
+      }
+    },
+    {
+      "axis": "incident",
+      "board": "important",
+      "before": {
+        "parameter": "8",
+        "preference": "tie",
+        "use": 20,
+        "off": 20
+      },
+      "after": {
+        "parameter": "9",
+        "preference": "off",
+        "use": 18,
+        "off": 20
+      }
+    }
+  ]
+}

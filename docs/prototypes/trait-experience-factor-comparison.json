@@ -1,0 +1,5218 @@
+{
+  "conditions": {
+    "seed": "RI-203",
+    "personId": "ren",
+    "startingTrait": "megaPrMaker",
+    "megaValue": 6,
+    "megaLoad": 4,
+    "successorLoad": 1,
+    "boards": [
+      {
+        "board": "rush",
+        "horizon": 3,
+        "loadWeight": 1
+      },
+      {
+        "board": "congested",
+        "horizon": 6,
+        "loadWeight": 2
+      }
+    ],
+    "decision": {
+      "train": "必要回数まで分割してから出荷",
+      "ship": "毎tick出荷",
+      "score": "value - load * loadWeight",
+      "preference": "経験側の差引が大きいとき経験、出荷継続が大きいとき出荷、同じとき同点"
+    },
+    "baseline": {
+      "requiredSplits": 2,
+      "successorValue": 4,
+      "loadWeight": null
+    },
+    "held": {
+      "requiredSplits": "必要回数だけを1から7まで動かす。後継の価値は4、後継の負荷は1、巨大PRは価値6・負荷4。負荷の重みは急ぐ盤面1、混雑盤面2。0は経験方針が分割しないので含めない。",
+      "successorValue": "後継の価値だけを-2から8まで動かす。必要回数は2、後継の負荷は1、巨大PRは価値6・負荷4。負荷の重みは盤面のまま。",
+      "loadWeight": "負荷の重みだけを0から4まで、両盤面へ同じ値で置く。期末は急ぐ3、混雑6。必要回数は2、後継の価値は4、後継の負荷は1。"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "requiredSplits": [
+      {
+        "axis": "requiredSplits",
+        "parameter": "1",
+        "rules": {
+          "requiredSplits": 1,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 1,
+                "transitions": 1,
+                "value": 8,
+                "load": 2,
+                "score": 6,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 1,
+                "transitions": 1,
+                "value": 20,
+                "load": 5,
+                "score": 10,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 22
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "2",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 3,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -3
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 8,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 20
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "3",
+        "rules": {
+          "requiredSplits": 3,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 3,
+                "transitions": 1,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 3,
+                "transitions": 1,
+                "value": 12,
+                "load": 3,
+                "score": 6,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 18
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "4",
+        "rules": {
+          "requiredSplits": 4,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 3,
+                "transitions": 0,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 4,
+                "transitions": 1,
+                "value": 8,
+                "load": 2,
+                "score": 4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 16
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "5",
+        "rules": {
+          "requiredSplits": 5,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 3,
+                "transitions": 0,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 5,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 2,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 14
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "6",
+        "rules": {
+          "requiredSplits": 6,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 3,
+                "transitions": 0,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 6,
+                "transitions": 1,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 12
+          }
+        ]
+      },
+      {
+        "axis": "requiredSplits",
+        "parameter": "7",
+        "rules": {
+          "requiredSplits": 7,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 3,
+                "transitions": 0,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 6,
+                "transitions": 0,
+                "value": 0,
+                "load": 0,
+                "score": 0,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 12
+          }
+        ]
+      }
+    ],
+    "successorValue": [
+      {
+        "axis": "successorValue",
+        "parameter": "-2",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": -2,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": -2,
+                "load": 1,
+                "score": -3,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": -2,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -9
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": -8,
+                "load": 4,
+                "score": -16,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": -2,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -4
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "-1",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": -1,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": -1,
+                "load": 1,
+                "score": -2,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": -1,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -8
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": -4,
+                "load": 4,
+                "score": -12,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": -1,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "0",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 0,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 0,
+                "load": 1,
+                "score": -1,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 0,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -7
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 0,
+                "load": 4,
+                "score": -8,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 0,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 4
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "1",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 1,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 1,
+                "load": 1,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 1,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -6
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 4,
+                "score": -4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 1,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 8
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "2",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 2,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 2,
+                "load": 1,
+                "score": 1,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 2,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -5
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 8,
+                "load": 4,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 2,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 12
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "3",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 3,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 3,
+                "load": 1,
+                "score": 2,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 3,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -4
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 12,
+                "load": 4,
+                "score": 4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 3,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 16
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "4",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 3,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -3
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 8,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 20
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "5",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 5,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 5,
+                "load": 1,
+                "score": 4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 5,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -2
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 20,
+                "load": 4,
+                "score": 12,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 5,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 24
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "6",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 6,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 6,
+                "load": 1,
+                "score": 5,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 6,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -1
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 24,
+                "load": 4,
+                "score": 16,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 6,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 28
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "7",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 7,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 7,
+                "load": 1,
+                "score": 6,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 7,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 28,
+                "load": 4,
+                "score": 20,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 7,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 32
+          }
+        ]
+      },
+      {
+        "axis": "successorValue",
+        "parameter": "8",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 8,
+          "loadWeight": null
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 8,
+                "load": 1,
+                "score": 7,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 8,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 1
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 32,
+                "load": 4,
+                "score": 24,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 8,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 36
+          }
+        ]
+      }
+    ],
+    "loadWeight": [
+      {
+        "axis": "loadWeight",
+        "parameter": "0",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": 0
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 0,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 0,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 0,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 18,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -14
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 0,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 0,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 16,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 0,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": 36,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -20
+          }
+        ]
+      },
+      {
+        "axis": "loadWeight",
+        "parameter": "1",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": 1
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 3,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": 6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "ship",
+            "margin": -3
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 1,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 12,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 1,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": 12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      },
+      {
+        "axis": "loadWeight",
+        "parameter": "2",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": 2
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 2,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": -6,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 8
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 2,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 8,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 2,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -12,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 20
+          }
+        ]
+      },
+      {
+        "axis": "loadWeight",
+        "parameter": "3",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": 3
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 3,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 3,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 1,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 3,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": -18,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 19
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 3,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 3,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 4,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 3,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -36,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 40
+          }
+        ]
+      },
+      {
+        "axis": "loadWeight",
+        "parameter": "4",
+        "rules": {
+          "requiredSplits": 2,
+          "successorValue": 4,
+          "loadWeight": 4
+        },
+        "boards": [
+          {
+            "board": "rush",
+            "horizon": 3,
+            "loadWeight": 4,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 4,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 4,
+                "load": 1,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "rush",
+                "tick": 0,
+                "horizon": 3,
+                "loadWeight": 4,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 18,
+                "load": 12,
+                "score": -30,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 30
+          },
+          {
+            "board": "congested",
+            "horizon": 6,
+            "loadWeight": 4,
+            "train": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 4,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "split"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["prSplitter"],
+                "experience": 2,
+                "transitions": 1,
+                "value": 16,
+                "load": 4,
+                "score": 0,
+                "effect": {
+                  "trait": "prSplitter",
+                  "value": 4,
+                  "load": 1
+                }
+              }
+            },
+            "ship": {
+              "initial": {
+                "version": 1,
+                "seed": "RI-203",
+                "board": "congested",
+                "tick": 0,
+                "horizon": 6,
+                "loadWeight": 4,
+                "value": 0,
+                "load": 0,
+                "transitions": 0,
+                "person": {
+                  "id": "ren",
+                  "traits": ["megaPrMaker"],
+                  "experience": 0
+                },
+                "inputs": []
+              },
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "id": "ren",
+                "traits": ["megaPrMaker"],
+                "experience": 0,
+                "transitions": 0,
+                "value": 36,
+                "load": 24,
+                "score": -60,
+                "effect": {
+                  "trait": "megaPrMaker",
+                  "value": 6,
+                  "load": 4
+                }
+              }
+            },
+            "preference": "train",
+            "margin": 60
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "requiredSplits",
+      "board": "rush",
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "train": 6,
+        "ship": 6
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "ship",
+        "train": 3,
+        "ship": 6
+      }
+    },
+    {
+      "axis": "successorValue",
+      "board": "congested",
+      "before": {
+        "parameter": "-2",
+        "preference": "ship",
+        "train": -16,
+        "ship": -12
+      },
+      "after": {
+        "parameter": "-1",
+        "preference": "tie",
+        "train": -12,
+        "ship": -12
+      }
+    },
+    {
+      "axis": "successorValue",
+      "board": "congested",
+      "before": {
+        "parameter": "-1",
+        "preference": "tie",
+        "train": -12,
+        "ship": -12
+      },
+      "after": {
+        "parameter": "0",
+        "preference": "train",
+        "train": -8,
+        "ship": -12
+      }
+    },
+    {
+      "axis": "successorValue",
+      "board": "rush",
+      "before": {
+        "parameter": "6",
+        "preference": "ship",
+        "train": 5,
+        "ship": 6
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "tie",
+        "train": 6,
+        "ship": 6
+      }
+    },
+    {
+      "axis": "successorValue",
+      "board": "rush",
+      "before": {
+        "parameter": "7",
+        "preference": "tie",
+        "train": 6,
+        "ship": 6
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "train",
+        "train": 7,
+        "ship": 6
+      }
+    },
+    {
+      "axis": "loadWeight",
+      "board": "congested",
+      "before": {
+        "parameter": "0",
+        "preference": "ship",
+        "train": 16,
+        "ship": 36
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "tie",
+        "train": 12,
+        "ship": 12
+      }
+    },
+    {
+      "axis": "loadWeight",
+      "board": "rush",
+      "before": {
+        "parameter": "1",
+        "preference": "ship",
+        "train": 3,
+        "ship": 6
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "train",
+        "train": 2,
+        "ship": -6
+      }
+    },
+    {
+      "axis": "loadWeight",
+      "board": "congested",
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "train": 12,
+        "ship": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "train",
+        "train": 8,
+        "ship": -12
+      }
+    }
+  ]
+}

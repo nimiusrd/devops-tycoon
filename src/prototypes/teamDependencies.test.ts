@@ -1,16 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyTeamDependency as apply,
+  baselineDependencyRules,
   chooseDependencyAction,
+  chooseDependencyFactorInput,
   compareTeamDependencies,
+  compareTeamDependencyFactors,
+  createTeamDependencyFactorState,
   createTeamDependencyPrototype as create,
   dependencyEdges,
   jobEligible,
   summarizeTeamDependency,
   supportMany,
   viewTeamDependencies,
+  type DependencyRules,
 } from './teamDependencies';
 import comparison from '../../docs/prototypes/team-dependencies-comparison.json';
+import factors from '../../docs/prototypes/team-dependencies-factor-comparison.json';
 
 describe('RI-216 チーム間の依存', () => {
   it('依存2本の解除条件と、止まっている仕事を事前に示す', () => {
@@ -140,6 +146,168 @@ describe('RI-216 チーム間の依存', () => {
         expect(saved).toEqual(live);
       }
       expect(summarizeTeamDependency(live)).toEqual(row.result);
+    }
+  });
+});
+
+function changedKeys(rules: DependencyRules): (keyof DependencyRules)[] {
+  return (Object.keys(baselineDependencyRules) as (keyof DependencyRules)[]).filter(
+    (key) => rules[key] !== baselineDependencyRules[key],
+  );
+}
+
+describe('RI-216 要因の反転', () => {
+  it('自チーム処理・分割・期末・期限の再計算がJSONと一致する', () => {
+    expect(compareTeamDependencyFactors()).toEqual(factors);
+  });
+
+  it('基準行は初回の上流支援と危機支援に一致し、動かした規則は一つである', () => {
+    const data = compareTeamDependencyFactors();
+    const first = compareTeamDependencies(comparison.seed);
+    expect(data.conditions.fixedStrategies).toBe(true);
+    expect(data.conditions.humanPlaytest).toBe(false);
+    expect(data.conditions.productionAdoption).toBe(false);
+    expect(data.conditions.repeatedFirstComparison).toBe(false);
+    const baselines = [
+      data.sweeps.passive.find((item) => item.parameter === '0'),
+      data.sweeps.split.find((item) => item.parameter === '1'),
+      data.sweeps.deadline.find((item) => item.parameter === '2'),
+      ...data.sweeps.horizon.filter((item) => item.parameter === '3' || item.parameter === '4'),
+    ];
+    for (const point of baselines) {
+      if (!point) throw new Error('baseline');
+      expect(changedKeys(point.rules)).toEqual([]);
+      for (const board of point.boards) {
+        const aware = first.find(
+          (row) =>
+            row.strategy === 'upstream' &&
+            ((board.horizon === 3 && row.board === 'tight') ||
+              (board.horizon === 4 && row.board === 'open')),
+        );
+        const blind = first.find(
+          (row) =>
+            row.strategy === 'crisis' &&
+            ((board.horizon === 3 && row.board === 'tight') ||
+              (board.horizon === 4 && row.board === 'open')),
+        );
+        if (!aware || !blind) throw new Error(String(board.horizon));
+        expect(board.aware.inputs).toEqual(aware.inputs);
+        expect(board.aware.result).toEqual(aware.result);
+        expect(board.blind.inputs).toEqual(blind.inputs);
+        expect(board.blind.result).toEqual(blind.result);
+      }
+    }
+    const only: Record<string, keyof DependencyRules | null> = {
+      passive: 'passive',
+      split: 'split',
+      horizon: null,
+      deadline: 'deadline',
+    };
+    for (const [axis, key] of Object.entries(only)) {
+      for (const item of data.sweeps[axis as keyof typeof data.sweeps]) {
+        const changed = changedKeys(item.rules);
+        expect(changed.every((name) => name === key)).toBe(true);
+        if (key === null) expect(changed).toEqual([]);
+      }
+    }
+  });
+
+  it('優劣が反転する位置は自チーム処理、分割、期末、期限に分かれる', () => {
+    const data = compareTeamDependencyFactors();
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.before.parameter,
+        item.before.horizon,
+        item.before.preference,
+        item.before.aware,
+        item.before.blind,
+        item.after.parameter,
+        item.after.horizon,
+        item.after.preference,
+        item.after.aware,
+        item.after.blind,
+      ]),
+    ).toEqual([
+      ['passive', '0', 3, 'blind', 1, 6, '1', 3, 'aware', 19, 15],
+      ['passive', '0', 4, 'aware', 9, 7, '1', 4, 'tie', 19, 19],
+      ['passive', '1', 3, 'aware', 19, 15, '2', 3, 'tie', 19, 19],
+      ['split', '1', 3, 'blind', 1, 6, '2', 3, 'tie', 0, 0],
+      ['split', '1', 4, 'aware', 9, 7, '2', 4, 'tie', 1, 1],
+      ['horizon', '3', 3, 'blind', 1, 6, '4', 4, 'aware', 9, 7],
+      ['horizon', '5', 5, 'aware', 9, 7, '6', 6, 'blind', 9, 15],
+      ['deadline', '0', 3, 'tie', 1, 1, '1', 3, 'blind', 1, 6],
+    ]);
+    const horizon = (parameter: string) =>
+      data.sweeps.horizon.find((item) => item.parameter === parameter)?.boards[0];
+    expect(horizon('7')?.aware.result.pending).toEqual(['followup']);
+    expect(horizon('7')?.blind.result.pending).toEqual(['followup']);
+    expect(horizon('7')?.preference).toBe('blind');
+    expect(horizon('8')?.aware.result.delivered.map((item) => [item.id, item.value])).toEqual([
+      ['gate', 1],
+      ['feature', 8],
+      ['hot', 0],
+      ['followup', 4],
+    ]);
+    expect(horizon('8')?.blind.result.score).toBe(19);
+    expect(horizon('6')?.aware.result.delivered.find((item) => item.id === 'hot')).toEqual({
+      id: 'hot',
+      tick: 5,
+      value: 0,
+    });
+    const split = data.sweeps.split.find((item) => item.parameter === '2')?.boards[1];
+    expect(split?.aware.inputs[0]).toEqual({
+      type: 'support-batch',
+      teams: ['platform', 'incident'],
+    });
+    expect(split?.blind.inputs[0]).toEqual({
+      type: 'support-batch',
+      teams: ['incident', 'platform'],
+    });
+    expect(split?.aware.result.delivered.find((item) => item.id === 'hot')?.value).toBe(0);
+    const openDeadline = data.sweeps.deadline.flatMap((item) =>
+      item.boards.filter((board) => board.horizon === 4).map((board) => board.preference),
+    );
+    expect(openDeadline).toEqual(['aware', 'aware', 'aware', 'aware']);
+  });
+
+  it('自チーム処理があっても、完了と同じ期間には下流を進めない', () => {
+    const rules = { ...baselineDependencyRules, passive: 1 };
+    let state = createTeamDependencyFactorState(4, rules);
+    state = apply(state, { type: 'support', team: 'platform' }, rules);
+    expect(state.jobs.find((job) => job.id === 'gate')).toMatchObject({ workLeft: 0, doneTick: 0 });
+    expect(state.jobs.find((job) => job.id === 'feature')?.workLeft).toBe(2);
+    expect(jobEligible(state, 'feature')).toBe(true);
+    expect(state.version).toBe(1);
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、期末後は同じ状態を返す', () => {
+    const data = compareTeamDependencyFactors();
+    for (const item of Object.values(data.sweeps).flat()) {
+      for (const board of item.boards) {
+        for (const judgment of ['aware', 'blind'] as const) {
+          const run = board[judgment];
+          let state = createTeamDependencyFactorState(board.horizon, item.rules);
+          expect(state.jobs.find((job) => job.id === 'hot')?.deadline).toBe(item.rules.deadline);
+          for (const input of run.inputs) {
+            const previous = state;
+            const before = structuredClone(state);
+            expect(chooseDependencyFactorInput(state, judgment, item.rules)).toEqual(input);
+            if (item.rules.split <= 1) {
+              const legacy = judgment === 'aware' ? 'upstream' : 'crisis';
+              expect(chooseDependencyAction(state, legacy)).toEqual(input);
+            }
+            state = apply(state, input, item.rules);
+            const restored = apply(JSON.parse(JSON.stringify(before)), input, item.rules);
+            expect(previous).toEqual(before);
+            expect(restored).toEqual(state);
+          }
+          expect(summarizeTeamDependency(state)).toEqual(run.result);
+          expect(state.inputs).toEqual(run.inputs);
+          expect(state.tick).toBe(board.horizon);
+          expect(apply(state, { type: 'support', team: 'platform' }, item.rules)).toBe(state);
+        }
+      }
     }
   });
 });

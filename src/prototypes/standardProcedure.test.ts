@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   applyStandardAction,
   applyStandardProcedure as apply,
+  baselineStandardRules,
   chooseStandardAction,
+  compareStandardFactorReversals,
   compareStandardProcedures,
   createStandardProcedure as create,
   summarizeStandardProcedure,
   viewStandardProcedure,
 } from './standardProcedure';
 import comparison from '../../docs/prototypes/standard-procedure-comparison.json';
+import factors from '../../docs/prototypes/standard-procedure-factor-comparison.json';
 
 describe('RI-227 標準化と現場実験', () => {
   it('適合、移行費用、手順差の支援費用、支援しない罰を操作前に示す', () => {
@@ -104,5 +107,225 @@ describe('RI-227 標準化と現場実験', () => {
       }
       expect(summarizeStandardProcedure(live)).toEqual(row.result);
     }
+  });
+});
+
+describe('RI-227 要因の反転', () => {
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareStandardFactorReversals();
+    expect(data).toEqual(factors);
+    const nets = (axis: keyof typeof data.sweeps) =>
+      data.sweeps[axis].map((point) => [
+        point.parameter,
+        ...point.boards.flatMap((board) => [
+          board.standardize.result.score,
+          board.experiment.result.score,
+          board.preference,
+        ]),
+      ]);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-227',
+      horizon: 3,
+      blocker: 5,
+      supportSame: 1,
+      missShip: 3,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+      omitted: '様子見は初回JSONのまま再出力しない',
+    });
+    expect(data.conditions.baseline).toEqual({ supportDiff: 4, migrationFee: 5, fitGap: 3 });
+    expect(data.conditions.plans).toEqual({
+      standardize: ['migrate', 'support', 'support'],
+      experiment: ['support', 'support', 'support'],
+    });
+    expect(nets('supportDiff')).toEqual([
+      ['0', 24, 27, 'experiment', 15, 36, 'experiment'],
+      ['1', 24, 24, 'tie', 15, 33, 'experiment'],
+      ['2', 24, 21, 'standardize', 15, 30, 'experiment'],
+      ['4', 24, 15, 'standardize', 15, 24, 'experiment'],
+      ['6', 24, 9, 'standardize', 15, 18, 'experiment'],
+      ['7', 24, 6, 'standardize', 15, 15, 'tie'],
+      ['8', 24, 3, 'standardize', 15, 12, 'standardize'],
+    ]);
+    expect(nets('migrationFee')).toEqual([
+      ['0', 29, 15, 'standardize', 20, 24, 'experiment'],
+      ['5', 24, 15, 'standardize', 15, 24, 'experiment'],
+      ['13', 16, 15, 'standardize', 7, 24, 'experiment'],
+      ['14', 15, 15, 'tie', 6, 24, 'experiment'],
+      ['15', 14, 15, 'experiment', 5, 24, 'experiment'],
+    ]);
+    expect(nets('fitGap')).toEqual([
+      ['-1', 0, 3, 'experiment', 3, 0, 'standardize'],
+      ['0', 6, 6, 'tie', 6, 6, 'tie'],
+      ['1', 12, 9, 'standardize', 9, 12, 'experiment'],
+      ['3', 24, 15, 'standardize', 15, 24, 'experiment'],
+      ['6', 42, 24, 'standardize', 24, 42, 'experiment'],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.board,
+        item.before.parameter,
+        item.before.preference,
+        item.after.parameter,
+        item.after.preference,
+      ]),
+    ).toEqual([
+      ['supportDiff', 'same', '0', 'experiment', '1', 'tie'],
+      ['supportDiff', 'same', '1', 'tie', '2', 'standardize'],
+      ['supportDiff', 'different', '6', 'experiment', '7', 'tie'],
+      ['supportDiff', 'different', '7', 'tie', '8', 'standardize'],
+      ['migrationFee', 'same', '13', 'standardize', '14', 'tie'],
+      ['migrationFee', 'same', '14', 'tie', '15', 'experiment'],
+      ['fitGap', 'same', '-1', 'experiment', '0', 'tie'],
+      ['fitGap', 'different', '-1', 'standardize', '0', 'tie'],
+      ['fitGap', 'same', '0', 'tie', '1', 'standardize'],
+      ['fitGap', 'different', '0', 'tie', '1', 'experiment'],
+    ]);
+    expect(
+      data.reversals.some((item) => item.axis === 'migrationFee' && item.board === 'different'),
+    ).toBe(false);
+  });
+
+  it('基準行は初回の標準化と現場手順と一致し、動かした規則は一つである', () => {
+    const data = compareStandardFactorReversals();
+    const first = compareStandardProcedures(comparison.seed);
+    expect(first.some((row) => row.strategy === 'hold')).toBe(true);
+    const baselines = [
+      data.sweeps.supportDiff.find((item) => item.parameter === '4'),
+      data.sweeps.migrationFee.find((item) => item.parameter === '5'),
+      data.sweeps.fitGap.find((item) => item.parameter === '3'),
+    ];
+    for (const point of baselines) {
+      if (!point) throw new Error('baseline');
+      expect(point.sameAsFirstComparison).toBe(true);
+      expect(point.rules).toEqual(baselineStandardRules);
+      for (const board of point.boards) {
+        for (const strategy of ['standardize', 'experiment'] as const) {
+          const prior = first.find((row) => row.board === board.board && row.strategy === strategy);
+          if (!prior) throw new Error(`${board.board}:${strategy}`);
+          expect(board[strategy].inputs).toEqual(prior.inputs);
+          expect(board[strategy].result).toEqual(prior.result);
+        }
+      }
+    }
+    const only = {
+      supportDiff: 'supportDiff',
+      migrationFee: 'migrationFee',
+      fitGap: 'fitGap',
+    } as const;
+    for (const axis of Object.keys(only) as (keyof typeof only)[]) {
+      for (const point of data.sweeps[axis]) {
+        const changed = (Object.keys(point.rules) as (keyof typeof point.rules)[]).filter(
+          (key) => point.rules[key] !== baselineStandardRules[key],
+        );
+        expect(changed.every((key) => key === only[axis])).toBe(true);
+        expect(point.sameAsFirstComparison).toBe(changed.length === 0);
+      }
+    }
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const board of point.boards) {
+        expect(board.standardize.inputs).toEqual([
+          { type: 'act', action: 'migrate' },
+          { type: 'act', action: 'support' },
+          { type: 'act', action: 'support' },
+        ]);
+        expect(board.experiment.inputs).toEqual([
+          { type: 'act', action: 'support' },
+          { type: 'act', action: 'support' },
+          { type: 'act', action: 'support' },
+        ]);
+        expect(board.standardize.result.lost).toBe(false);
+        expect(board.experiment.result.lost).toBe(false);
+        expect(board.margin).toBe(board.standardize.result.score - board.experiment.result.score);
+      }
+    }
+    for (const point of data.sweeps.supportDiff) {
+      for (const board of point.boards) {
+        expect(board.standardize.result).toMatchObject({ support: 2, migration: 5, penalty: 5 });
+        expect(board.experiment.result).toMatchObject({
+          support: point.rules.supportDiff * 3,
+          migration: 0,
+          penalty: 0,
+        });
+      }
+    }
+    for (const point of data.sweeps.migrationFee) {
+      const same = point.boards.find((board) => board.board === 'same');
+      const different = point.boards.find((board) => board.board === 'different');
+      expect(same?.experiment.result.score).toBe(15);
+      expect(different?.experiment.result.score).toBe(24);
+      expect(different?.preference).toBe('experiment');
+      expect(same?.standardize.result.migration).toBe(point.rules.migrationFee);
+      expect(different?.standardize.result.migration).toBe(point.rules.migrationFee);
+    }
+    const freeMove = data.sweeps.migrationFee.find((point) => point.parameter === '0');
+    expect(freeMove?.boards.find((board) => board.board === 'different')).toMatchObject({
+      preference: 'experiment',
+      margin: -4,
+    });
+    for (const point of data.sweeps.fitGap) {
+      const same = point.boards.find((board) => board.board === 'same');
+      const different = point.boards.find((board) => board.board === 'different');
+      expect(same?.margin).toBe(point.rules.fitGap * 3);
+      expect(different?.margin).toBe(0 - point.rules.fitGap * 3);
+      expect(same?.experiment.result.support).toBe(12);
+      expect(same?.standardize.result.migration).toBe(5);
+    }
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、基準の作成は掃引で変わらない', () => {
+    const data = compareStandardFactorReversals();
+    const untouched = create('RI-227', 'same');
+    const before = structuredClone(untouched);
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const board of point.boards) {
+        for (const strategy of ['standardize', 'experiment'] as const) {
+          const run = board[strategy];
+          let live = create(data.conditions.seed, board.board, point.rules);
+          let saved = structuredClone(live);
+          for (const input of run.inputs) {
+            const previous = live;
+            const snapshot = structuredClone(live);
+            expect(chooseStandardAction(previous, strategy)).toEqual(input);
+            live = apply(live, input);
+            saved = apply(JSON.parse(JSON.stringify(saved)), input);
+            expect(previous).toEqual(snapshot);
+            expect(saved).toEqual(live);
+          }
+          expect(summarizeStandardProcedure(live)).toEqual(run.result);
+          expect(live.inputs).toEqual(run.inputs);
+          expect(apply(live, { type: 'act', action: 'support' })).toBe(live);
+        }
+      }
+    }
+    expect(untouched).toEqual(before);
+    expect(create('RI-227', 'same', baselineStandardRules)).toEqual(untouched);
+    expect(viewStandardProcedure(untouched)).toMatchObject({
+      migrationFee: 5,
+      supportCost: 4,
+      blockerIfIdle: 5,
+      teams: [
+        { id: 'alpha', fit: true, periodShip: 6 },
+        { id: 'beta', work: 'batch', fit: false, periodShip: 3 },
+      ],
+    });
+    const costly = create('RI-227', 'different', { supportDiff: 8, migrationFee: 5, fitGap: 3 });
+    expect(viewStandardProcedure(costly)).toMatchObject({
+      migrationFee: 5,
+      supportCost: 8,
+      teams: [{ periodShip: 6 }, { periodShip: 6 }],
+    });
+    const wide = create('RI-227', 'same', { supportDiff: 4, migrationFee: 5, fitGap: 6 });
+    expect(wide.fitShip).toBe(9);
+    expect(wide.missShip).toBe(3);
+    expect(viewStandardProcedure(wide).teams.map((item) => item.periodShip)).toEqual([9, 3]);
+    const inverted = create('RI-227', 'different', { supportDiff: 4, migrationFee: 5, fitGap: -1 });
+    expect(inverted.fitShip).toBe(2);
+    expect(viewStandardProcedure(inverted).teams.map((item) => item.periodShip)).toEqual([2, 2]);
+    expect(untouched.fitShip).toBe(6);
   });
 });

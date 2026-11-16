@@ -1,0 +1,607 @@
+{
+  "seed": "RI-240-pressure",
+  "humanPlay": false,
+  "definedPayment": "reject",
+  "definedPriority": "follow-up-first",
+  "productionLossCheck": false,
+  "note": "固定戦略の再計算であり、人間のプレイ評価はしていない。支払えない選択の定義は拒否。normal-first と fallback は比較腕で、提示と既定解決は後日談優先と拒否のまま。新しいビートは足していない。本番の即時敗北判定は実行しない。",
+  "nextUncertainty": "支払えない追加相談を拒否しているあいだは繰り延べた休息へ進まず、その相談を閉じないまま次の既存ビートの休息のあとへ戻せるかは未決。",
+  "coefficients": {
+    "restSeniorHp": 40,
+    "restMorale": 10,
+    "shopBudget": 12,
+    "reviewAccept": {
+      "budget": -6,
+      "seniorHp": 4,
+      "quality": 6
+    },
+    "reviewDecline": {
+      "seniorHp": 2,
+      "quality": -3
+    },
+    "splitAccept": {
+      "seniorHp": -4,
+      "morale": 8,
+      "quality": 4
+    },
+    "splitDecline": {
+      "morale": -4
+    }
+  },
+  "inputs": [
+    {
+      "id": "low-hp-consult-blocked",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "originChoice": 1,
+      "completedSprints": 7,
+      "budget": 40,
+      "seniorHp": 3,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "rest-offer",
+      "beatChoices": [[0]]
+    },
+    {
+      "id": "low-hp-rest-next-beat",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "originChoice": 1,
+      "completedSprints": 7,
+      "budget": 40,
+      "seniorHp": 3,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "rest-offer",
+      "beatChoices": [[0, 1], [0]]
+    },
+    {
+      "id": "low-hp-rest-first-arm",
+      "order": "normal-first",
+      "policy": "reject",
+      "originChoice": 1,
+      "completedSprints": 7,
+      "budget": 40,
+      "seniorHp": 3,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "rest-offer",
+      "beatChoices": [[0], [0]]
+    },
+    {
+      "id": "shop-after-follow-up",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "originChoice": 0,
+      "completedSprints": 7,
+      "budget": 16,
+      "seniorHp": 80,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "shop-offer",
+      "beatChoices": [[0], [0, 1]]
+    },
+    {
+      "id": "shop-before-follow-up-arm",
+      "order": "normal-first",
+      "policy": "reject",
+      "originChoice": 0,
+      "completedSprints": 7,
+      "budget": 16,
+      "seniorHp": 80,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "shop-offer",
+      "beatChoices": [[0], [0, 1]]
+    },
+    {
+      "id": "budget-short-reject",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "originChoice": 0,
+      "completedSprints": 7,
+      "budget": 5,
+      "seniorHp": 80,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "shop-offer",
+      "beatChoices": [
+        [0, 1],
+        [0, 1]
+      ]
+    },
+    {
+      "id": "budget-short-fallback-arm",
+      "order": "follow-up-first",
+      "policy": "fallback",
+      "originChoice": 0,
+      "completedSprints": 7,
+      "budget": 5,
+      "seniorHp": 80,
+      "morale": 70,
+      "quality": 60,
+      "usualBeat": "shop-offer",
+      "beatChoices": [[0], [0]]
+    }
+  ],
+  "results": [
+    {
+      "id": "low-hp-consult-blocked",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "phase": "beat",
+      "completedSprints": 7,
+      "budget": 40,
+      "seniorHp": 3,
+      "morale": 70,
+      "quality": 60,
+      "relics": [],
+      "reservation": {
+        "originChoice": 1,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": null
+      },
+      "active": "giant-pr-follow-up",
+      "deferred": "rest-offer",
+      "shopPaid": false,
+      "restTaken": false,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 40,
+          "seniorHp": 3,
+          "morale": 70,
+          "quality": 60
+        }
+      ],
+      "history": []
+    },
+    {
+      "id": "low-hp-rest-next-beat",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 40,
+      "seniorHp": 43,
+      "morale": 76,
+      "quality": 60,
+      "relics": [],
+      "reservation": {
+        "originChoice": 1,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 7
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": false,
+      "restTaken": true,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 40,
+          "seniorHp": 3,
+          "morale": 70,
+          "quality": 60
+        },
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 1,
+          "applied": 1,
+          "rejected": false,
+          "budget": 40,
+          "seniorHp": 3,
+          "morale": 66,
+          "quality": 60
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "rest-offer",
+          "requested": 0,
+          "applied": 0,
+          "rejected": false,
+          "budget": 40,
+          "seniorHp": 43,
+          "morale": 76,
+          "quality": 60
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 1,
+          "outcome": {
+            "morale": -4
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "rest-offer",
+          "choice": 0,
+          "outcome": {
+            "seniorHp": 40,
+            "morale": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "low-hp-rest-first-arm",
+      "order": "normal-first",
+      "policy": "reject",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 40,
+      "seniorHp": 39,
+      "morale": 88,
+      "quality": 64,
+      "relics": [],
+      "reservation": {
+        "originChoice": 1,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 8
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": false,
+      "restTaken": true,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "rest-offer",
+          "requested": 0,
+          "applied": 0,
+          "rejected": false,
+          "budget": 40,
+          "seniorHp": 43,
+          "morale": 80,
+          "quality": 60
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": 0,
+          "rejected": false,
+          "budget": 40,
+          "seniorHp": 39,
+          "morale": 88,
+          "quality": 64
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "rest-offer",
+          "choice": 0,
+          "outcome": {
+            "seniorHp": 40,
+            "morale": 10
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "giant-pr-follow-up",
+          "choice": 0,
+          "outcome": {
+            "seniorHp": -4,
+            "morale": 8,
+            "quality": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "shop-after-follow-up",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 10,
+      "seniorHp": 84,
+      "morale": 70,
+      "quality": 66,
+      "relics": [],
+      "reservation": {
+        "originChoice": 0,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 7
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": false,
+      "restTaken": false,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": 0,
+          "rejected": false,
+          "budget": 10,
+          "seniorHp": 84,
+          "morale": 70,
+          "quality": 66
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 10,
+          "seniorHp": 84,
+          "morale": 70,
+          "quality": 66
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "requested": 1,
+          "applied": 1,
+          "rejected": false,
+          "budget": 10,
+          "seniorHp": 84,
+          "morale": 70,
+          "quality": 66
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 0,
+          "outcome": {
+            "budget": -6,
+            "seniorHp": 4,
+            "quality": 6
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "choice": 1,
+          "outcome": {}
+        }
+      ]
+    },
+    {
+      "id": "shop-before-follow-up-arm",
+      "order": "normal-first",
+      "policy": "reject",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 4,
+      "seniorHp": 82,
+      "morale": 70,
+      "quality": 57,
+      "relics": [],
+      "reservation": {
+        "originChoice": 0,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 8
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": true,
+      "restTaken": false,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "shop-offer",
+          "requested": 0,
+          "applied": 0,
+          "rejected": false,
+          "budget": 4,
+          "seniorHp": 80,
+          "morale": 70,
+          "quality": 60
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 4,
+          "seniorHp": 80,
+          "morale": 70,
+          "quality": 60
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "giant-pr-follow-up",
+          "requested": 1,
+          "applied": 1,
+          "rejected": false,
+          "budget": 4,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "shop-offer",
+          "choice": 0,
+          "outcome": {
+            "budget": -12
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "giant-pr-follow-up",
+          "choice": 1,
+          "outcome": {
+            "seniorHp": 2,
+            "quality": -3
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget-short-reject",
+      "order": "follow-up-first",
+      "policy": "reject",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 5,
+      "seniorHp": 82,
+      "morale": 70,
+      "quality": 57,
+      "relics": [],
+      "reservation": {
+        "originChoice": 0,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 7
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": false,
+      "restTaken": false,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 5,
+          "seniorHp": 80,
+          "morale": 70,
+          "quality": 60
+        },
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 1,
+          "applied": 1,
+          "rejected": false,
+          "budget": 5,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "requested": 0,
+          "applied": null,
+          "rejected": true,
+          "budget": 5,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "requested": 1,
+          "applied": 1,
+          "rejected": false,
+          "budget": 5,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 1,
+          "outcome": {
+            "seniorHp": 2,
+            "quality": -3
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "choice": 1,
+          "outcome": {}
+        }
+      ]
+    },
+    {
+      "id": "budget-short-fallback-arm",
+      "order": "follow-up-first",
+      "policy": "fallback",
+      "phase": "sprint",
+      "completedSprints": 8,
+      "budget": 5,
+      "seniorHp": 82,
+      "morale": 70,
+      "quality": 57,
+      "relics": [],
+      "reservation": {
+        "originChoice": 0,
+        "selectedAfter": 5,
+        "dueAfter": 7,
+        "resolvedAfter": 7
+      },
+      "active": null,
+      "deferred": null,
+      "shopPaid": false,
+      "restTaken": false,
+      "attempts": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "requested": 0,
+          "applied": 1,
+          "rejected": false,
+          "budget": 5,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "requested": 0,
+          "applied": 1,
+          "rejected": false,
+          "budget": 5,
+          "seniorHp": 82,
+          "morale": 70,
+          "quality": 57
+        }
+      ],
+      "history": [
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 1,
+          "outcome": {
+            "seniorHp": 2,
+            "quality": -3
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "shop-offer",
+          "choice": 1,
+          "outcome": {}
+        }
+      ]
+    }
+  ]
+}

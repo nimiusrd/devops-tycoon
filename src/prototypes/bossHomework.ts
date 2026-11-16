@@ -209,6 +209,103 @@ function preview(state: HomeworkState, strategy: HomeworkStrategy) {
   };
 }
 
+const RESIDUAL_SCORE_VALUES = [8, 9, 10, 11, 12, 13, 14, 15, 16] as const;
+
+function preferenceOf(homeworkScore: number, goalScore: number) {
+  if (homeworkScore === goalScore) return 'tie' as const;
+  return homeworkScore > goalScore ? ('homework' as const) : ('goal' as const);
+}
+
+function chargeResidual(homeworkLeft: number, residualAtFull: number, fullEvidence: number) {
+  if (homeworkLeft === 0 || fullEvidence === 0) return 0;
+  const charged = (homeworkLeft * residualAtFull) / fullEvidence;
+  if (!Number.isInteger(charged)) throw new Error(`residual ${residualAtFull}`);
+  return charged;
+}
+
+function scoredResidual(
+  result: ReturnType<typeof summarizeBossHomework>,
+  residualAtFull: number,
+  fullEvidence: number,
+) {
+  const residual = chargeResidual(result.homeworkLeft, residualAtFull, fullEvidence);
+  return {
+    delivered: result.delivered,
+    penalty: result.penalty,
+    score: result.score,
+    homeworkLeft: result.homeworkLeft,
+    residual,
+    included: result.score - residual,
+    resolved: result.resolved,
+    goalMissed: result.goalMissed,
+    sourceFailures: result.sourceFailures,
+    path: result.path,
+    lost: result.lost,
+  };
+}
+
+/**
+ * 初回の今期限り盤面だけを使い、残リスクを期末の得点から一度引く。
+ * 固定戦略の再計算であり、人間のプレイ評価ではない。初回の2盤面は再計算しない。
+ */
+export function compareBossHomeworkResidual(seed = 'RI-251') {
+  const homework = runHomework(seed, 'exposed', 'homework');
+  const goal = runHomework(seed, 'exposed', 'goal');
+  const fullEvidence = goal.initial.homeworkTotal;
+  const recordedResidual = goal.result.residual;
+  const rows = RESIDUAL_SCORE_VALUES.map((residual) => {
+    const homeworkScore = scoredResidual(homework.result, residual, fullEvidence);
+    const goalScore = scoredResidual(goal.result, residual, fullEvidence);
+    return {
+      residual,
+      homework: homeworkScore,
+      goal: goalScore,
+      preference: preferenceOf(homeworkScore.included, goalScore.included),
+    };
+  });
+  const recorded = rows.find((row) => row.residual === recordedResidual);
+  if (!recorded) throw new Error(`recorded residual ${recordedResidual} is outside the sweep`);
+  const goalRows = rows.filter((row) => row.preference === 'goal');
+  const homeworkRows = rows.filter((row) => row.preference === 'homework');
+  return {
+    conditions: {
+      seed,
+      board: 'exposed' as const,
+      capacity: goal.initial.capacity,
+      homeworkTotal: goal.initial.homeworkTotal,
+      goalTotal: goal.initial.goalTotal,
+      goalValue: goal.initial.goalValue,
+      goalWindow: goal.initial.goalWindow,
+      penaltyRate: goal.initial.penaltyRate,
+      horizon: goal.initial.horizon,
+      score: 'delivered - penalty - residual',
+      residualRule:
+        '未解消の残証拠に、残証拠×(指定残リスク÷初回の証拠4)を引く。解消済みは0。期間ペナルティは初回のまま',
+      residualValues: [...RESIDUAL_SCORE_VALUES],
+      recordedResidual,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      repeatedFirstComparison: false,
+      productionIntegration: false,
+      provesBossContinuation: false,
+    },
+    runs: {
+      homework: { initial: homework.initial, inputs: homework.inputs, base: homework.result },
+      goal: { initial: goal.initial, inputs: goal.inputs, base: goal.result },
+    },
+    rows,
+    reversal: {
+      goalExceedsThrough: goalRows.length ? Math.max(...goalRows.map((row) => row.residual)) : null,
+      tieAt: rows.filter((row) => row.preference === 'tie').map((row) => row.residual),
+      homeworkExceedsFrom: homeworkRows.length
+        ? Math.min(...homeworkRows.map((row) => row.residual))
+        : null,
+      recordedResidual,
+      recordedPreference: recorded.preference,
+    },
+  };
+}
+
 export function viewBossHomework(state: HomeworkState) {
   return {
     tick: state.tick,

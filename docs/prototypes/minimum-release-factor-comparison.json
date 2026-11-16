@@ -1,0 +1,6363 @@
+{
+  "conditions": {
+    "seed": "RI-158",
+    "pressures": ["tight", "roomy"],
+    "horizons": {
+      "tight": 5,
+      "roomy": 8
+    },
+    "slots": 1,
+    "core": {
+      "work": 3,
+      "value": 6
+    },
+    "extra": {
+      "work": 4
+    },
+    "urgent": {
+      "work": 2,
+      "value": 8
+    },
+    "startTrust": 5,
+    "decision": {
+      "full": "必須のあと追加を進め、先送りしない",
+      "minimum": "必須公開の直後に追加を先送りし、別仕事を進める",
+      "score": "net = releasedValue - trustLost"
+    },
+    "baseline": {
+      "additionalValue": 10,
+      "trustLoss": 1,
+      "urgentDeadline": null,
+      "promiseTicks": 0
+    },
+    "held": {
+      "additionalValue": "追加価値だけを動かす。信頼低下1、期限なし、次期0",
+      "trustLoss": "先送りで失う信頼だけを動かす。追加価値10、期限なし、次期0。下限は置かない",
+      "urgentDeadline": "別仕事の完了tickが期限を超えたときだけ公開価値に入れない。作業入力は変えない",
+      "promiseTicks": "今期のあとに同じ1枠で残作業を消化するtick数だけを足す。先送りは今期だけ追加を拒む"
+    },
+    "deferConsumesTick": false,
+    "coreBeforeExtra": true,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "additionalValue": [
+      {
+        "axis": "additionalValue",
+        "parameter": "0",
+        "rules": {
+          "additionalValue": 0,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 0
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 0
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 0
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 0
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "4",
+        "rules": {
+          "additionalValue": 4,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 4
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 4
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "minimum",
+            "margin": -3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 10,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 4
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 10
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 4
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "6",
+        "rules": {
+          "additionalValue": 6,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 6
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 6
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "minimum",
+            "margin": -1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 12,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 12
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 6
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "7",
+        "rules": {
+          "additionalValue": 7,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 7
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 7
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "tie",
+            "margin": 0,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 13,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 7
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 13
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 7
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "8",
+        "rules": {
+          "additionalValue": 8,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 8
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 8
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 14
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 8
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "10",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "additionalValue",
+        "parameter": "14",
+        "rules": {
+          "additionalValue": 14,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 14
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 14
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 20,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 14
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 20
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 14
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      }
+    ],
+    "trustLoss": [
+      {
+        "axis": "trustLoss",
+        "parameter": "0",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 0,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -8,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 14
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 2,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 14
+            }
+          }
+        ]
+      },
+      {
+        "axis": "trustLoss",
+        "parameter": "1",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "trustLoss",
+        "parameter": "4",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 4,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -4,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 1,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 4,
+              "net": 10
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 6,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 1,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 4,
+              "net": 10
+            }
+          }
+        ]
+      },
+      {
+        "axis": "trustLoss",
+        "parameter": "7",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 7,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -2,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 7,
+              "net": 7
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 9,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -2,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 7,
+              "net": 7
+            }
+          }
+        ]
+      },
+      {
+        "axis": "trustLoss",
+        "parameter": "8",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 8,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "tie",
+            "margin": 0,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -3,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 8,
+              "net": 6
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 10,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -3,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 8,
+              "net": 6
+            }
+          }
+        ]
+      },
+      {
+        "axis": "trustLoss",
+        "parameter": "9",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 9,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 9,
+              "net": 5
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": -4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 9,
+              "net": 5
+            }
+          }
+        ]
+      }
+    ],
+    "urgentDeadline": [
+      {
+        "axis": "urgentDeadline",
+        "parameter": "3",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": 3,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 5
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 5
+            }
+          }
+        ]
+      },
+      {
+        "axis": "urgentDeadline",
+        "parameter": "4",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": 4,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 5
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 5
+            }
+          }
+        ]
+      },
+      {
+        "axis": "urgentDeadline",
+        "parameter": "5",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": 5,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "urgentDeadline",
+        "parameter": "8",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": 8,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "urgentDeadline",
+        "parameter": "none",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      }
+    ],
+    "promiseTicks": [
+      {
+        "axis": "promiseTicks",
+        "parameter": "0",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 0
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 5,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 4,
+                  "additionalValue": 10
+                },
+                "workSpent": 5
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "promiseTicks",
+        "parameter": "1",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 1
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "minimum",
+            "margin": -7,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 6,
+                "edition": "minimum",
+                "value": 6,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  }
+                ],
+                "trust": 5,
+                "promise": {
+                  "part": "extra",
+                  "deferred": false,
+                  "workLeft": 1,
+                  "additionalValue": 10
+                },
+                "workSpent": 6
+              },
+              "trustLost": 0,
+              "net": 6
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 6,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 3,
+                  "additionalValue": 10
+                },
+                "workSpent": 6
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 9,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 9,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 0,
+              "net": 24
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 9,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 3,
+                  "additionalValue": 10
+                },
+                "workSpent": 6
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "promiseTicks",
+        "parameter": "2",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 2
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 7,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 7
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 7,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 7
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 10,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 9,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 0,
+              "net": 24
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 10,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 2,
+                  "additionalValue": 10
+                },
+                "workSpent": 7
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "promiseTicks",
+        "parameter": "3",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 3
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 3,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 8,
+                "edition": "full",
+                "value": 16,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 8
+              },
+              "trustLost": 0,
+              "net": 16
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 8,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 1,
+                  "additionalValue": 10
+                },
+                "workSpent": 8
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 11,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 11,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 9,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 0,
+              "net": 24
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 11,
+                "edition": "minimum",
+                "value": 14,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "trust": 4,
+                "promise": {
+                  "part": "extra",
+                  "deferred": true,
+                  "workLeft": 1,
+                  "additionalValue": 10
+                },
+                "workSpent": 8
+              },
+              "trustLost": 1,
+              "net": 13
+            }
+          }
+        ]
+      },
+      {
+        "axis": "promiseTicks",
+        "parameter": "4",
+        "rules": {
+          "additionalValue": 10,
+          "trustLoss": 1,
+          "urgentDeadline": null,
+          "promiseTicks": 4
+        },
+        "pressures": [
+          {
+            "pressure": "tight",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 9,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 9,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 0,
+              "net": 24
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 9,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 9,
+                    "value": 10
+                  }
+                ],
+                "trust": 4,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 1,
+              "net": 23
+            }
+          },
+          {
+            "pressure": "roomy",
+            "preference": "full",
+            "margin": 1,
+            "full": {
+              "strategy": "full",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                }
+              ],
+              "decisions": [],
+              "summary": {
+                "tick": 12,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 7,
+                    "value": 10
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 9,
+                    "value": 8
+                  }
+                ],
+                "trust": 5,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 0,
+              "net": 24
+            },
+            "minimum": {
+              "strategy": "minimum",
+              "inputs": [
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "work",
+                  "id": "core"
+                },
+                {
+                  "kind": "defer"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "work",
+                  "id": "urgent"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "wait"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                },
+                {
+                  "kind": "work",
+                  "id": "extra"
+                }
+              ],
+              "decisions": [
+                {
+                  "kind": "defer",
+                  "tick": 3,
+                  "workLeft": 4
+                }
+              ],
+              "summary": {
+                "tick": 12,
+                "edition": "full",
+                "value": 24,
+                "released": [
+                  {
+                    "part": "core",
+                    "tick": 3,
+                    "value": 6
+                  },
+                  {
+                    "part": "urgent",
+                    "tick": 5,
+                    "value": 8
+                  },
+                  {
+                    "part": "extra",
+                    "tick": 12,
+                    "value": 10
+                  }
+                ],
+                "trust": 4,
+                "promise": null,
+                "workSpent": 9
+              },
+              "trustLost": 1,
+              "net": 23
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "additionalValue",
+      "pressure": "roomy",
+      "before": {
+        "parameter": "6",
+        "preference": "minimum",
+        "full": 12,
+        "minimum": 13
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "tie",
+        "full": 13,
+        "minimum": 13
+      }
+    },
+    {
+      "axis": "additionalValue",
+      "pressure": "roomy",
+      "before": {
+        "parameter": "7",
+        "preference": "tie",
+        "full": 13,
+        "minimum": 13
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "full",
+        "full": 14,
+        "minimum": 13
+      }
+    },
+    {
+      "axis": "trustLoss",
+      "pressure": "tight",
+      "before": {
+        "parameter": "7",
+        "preference": "minimum",
+        "full": 6,
+        "minimum": 7
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "tie",
+        "full": 6,
+        "minimum": 6
+      }
+    },
+    {
+      "axis": "trustLoss",
+      "pressure": "tight",
+      "before": {
+        "parameter": "8",
+        "preference": "tie",
+        "full": 6,
+        "minimum": 6
+      },
+      "after": {
+        "parameter": "9",
+        "preference": "full",
+        "full": 6,
+        "minimum": 5
+      }
+    },
+    {
+      "axis": "urgentDeadline",
+      "pressure": "tight",
+      "before": {
+        "parameter": "4",
+        "preference": "full",
+        "full": 6,
+        "minimum": 5
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "minimum",
+        "full": 6,
+        "minimum": 13
+      }
+    },
+    {
+      "axis": "promiseTicks",
+      "pressure": "tight",
+      "before": {
+        "parameter": "1",
+        "preference": "minimum",
+        "full": 6,
+        "minimum": 13
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "full",
+        "full": 16,
+        "minimum": 13
+      }
+    }
+  ]
+}

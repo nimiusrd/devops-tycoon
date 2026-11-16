@@ -1,0 +1,2186 @@
+{
+  "conditions": {
+    "seed": "RI-178",
+    "horizon": 6,
+    "slotCapacity": 2,
+    "work": 2,
+    "complexValue": 14,
+    "routineValue": 8,
+    "complexSoloRework": 2,
+    "complexJobs": 3,
+    "leadingRoutines": [1, 2, 3],
+    "baselinePairPace": 1,
+    "fastPairPace": 2,
+    "strategies": {
+      "solo": "未着手の先頭を1枠で始める",
+      "pair": "未着手の先頭を2枠で始める",
+      "mixed": "複雑仕事は2枠が空いていればペア。定型は1枠で単独。複雑を単独では始めない"
+    },
+    "score": "netValue",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionIntegration": false
+  },
+  "leadingRoutines": {
+    "pairPace": 1,
+    "held": "進捗は1。複雑仕事3件の前に定型を1件ずつ足す。速度は動かさない。",
+    "points": [
+      {
+        "leadingRoutines": 1,
+        "pairPace": 1,
+        "solo": 36,
+        "pair": 36,
+        "mixed": 42,
+        "pairVsSolo": "tie",
+        "mixedVsSolo": "mixed",
+        "pairVsMixed": "mixed",
+        "runs": [
+          {
+            "strategy": "solo",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "solo",
+                "id": "r1"
+              },
+              {
+                "type": "solo",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 36,
+              "doneCount": 3,
+              "unfinishedValue": 14,
+              "freeSlots": 1,
+              "acquired": 4,
+              "released": 3,
+              "reworkSpent": 4,
+              "heldSlots": 1,
+              "netValue": 36
+            },
+            "doneIds": ["r1", "c1", "c2"]
+          },
+          {
+            "strategy": "pair",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "r1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 36,
+              "doneCount": 3,
+              "unfinishedValue": 14,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 36
+            },
+            "doneIds": ["r1", "c1", "c2"]
+          },
+          {
+            "strategy": "mixed",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 42,
+              "doneCount": 3,
+              "unfinishedValue": 8,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 42
+            },
+            "doneIds": ["c1", "c2", "c3"]
+          }
+        ]
+      },
+      {
+        "leadingRoutines": 2,
+        "pairPace": 1,
+        "solo": 44,
+        "pair": 30,
+        "mixed": 42,
+        "pairVsSolo": "solo",
+        "mixedVsSolo": "solo",
+        "pairVsMixed": "mixed",
+        "runs": [
+          {
+            "strategy": "solo",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "solo",
+                "id": "r1"
+              },
+              {
+                "type": "solo",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "c1"
+              },
+              {
+                "type": "solo",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 44,
+              "doneCount": 4,
+              "unfinishedValue": 14,
+              "freeSlots": 2,
+              "acquired": 4,
+              "released": 4,
+              "reworkSpent": 4,
+              "heldSlots": 0,
+              "netValue": 44
+            },
+            "doneIds": ["r1", "r2", "c1", "c2"]
+          },
+          {
+            "strategy": "pair",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "r1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 30,
+              "doneCount": 3,
+              "unfinishedValue": 28,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 30
+            },
+            "doneIds": ["r1", "r2", "c1"]
+          },
+          {
+            "strategy": "mixed",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 42,
+              "doneCount": 3,
+              "unfinishedValue": 16,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 42
+            },
+            "doneIds": ["c1", "c2", "c3"]
+          }
+        ]
+      },
+      {
+        "leadingRoutines": 3,
+        "pairPace": 1,
+        "solo": 38,
+        "pair": 24,
+        "mixed": 42,
+        "pairVsSolo": "solo",
+        "mixedVsSolo": "mixed",
+        "pairVsMixed": "mixed",
+        "runs": [
+          {
+            "strategy": "solo",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r3",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "solo",
+                "id": "r1"
+              },
+              {
+                "type": "solo",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "r3"
+              },
+              {
+                "type": "solo",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 38,
+              "doneCount": 4,
+              "unfinishedValue": 28,
+              "freeSlots": 1,
+              "acquired": 5,
+              "released": 4,
+              "reworkSpent": 2,
+              "heldSlots": 1,
+              "netValue": 38
+            },
+            "doneIds": ["r1", "r2", "r3", "c1"]
+          },
+          {
+            "strategy": "pair",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r3",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "r1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 24,
+              "doneCount": 3,
+              "unfinishedValue": 42,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 24
+            },
+            "doneIds": ["r1", "r2", "r3"]
+          },
+          {
+            "strategy": "mixed",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r3",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": []
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 42,
+              "doneCount": 3,
+              "unfinishedValue": 24,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 42
+            },
+            "doneIds": ["c1", "c2", "c3"]
+          }
+        ]
+      }
+    ],
+    "reversals": [
+      {
+        "decision": "pair",
+        "before": {
+          "leadingRoutines": 1,
+          "preference": "tie",
+          "solo": 36,
+          "other": 36
+        },
+        "after": {
+          "leadingRoutines": 2,
+          "preference": "solo",
+          "solo": 44,
+          "other": 30
+        },
+        "strict": false
+      },
+      {
+        "decision": "mixed",
+        "before": {
+          "leadingRoutines": 1,
+          "preference": "mixed",
+          "solo": 36,
+          "other": 42
+        },
+        "after": {
+          "leadingRoutines": 2,
+          "preference": "solo",
+          "solo": 44,
+          "other": 42
+        },
+        "strict": true
+      },
+      {
+        "decision": "mixed",
+        "before": {
+          "leadingRoutines": 2,
+          "preference": "solo",
+          "solo": 44,
+          "other": 42
+        },
+        "after": {
+          "leadingRoutines": 3,
+          "preference": "mixed",
+          "solo": 38,
+          "other": 42
+        },
+        "strict": true
+      }
+    ]
+  },
+  "firstBoardPace": {
+    "pairPace": 2,
+    "held": "初回と同じ複雑3件と定型6件。進捗だけを2にする。混合方針は動かさない。",
+    "points": [
+      {
+        "board": "complex",
+        "pairPace": 2,
+        "baselineSolo": 28,
+        "baselinePair": 42,
+        "solo": 28,
+        "pair": 42,
+        "preferenceAtPace1": "pair",
+        "preferenceAtPace2": "pair",
+        "strictReversal": false,
+        "runs": [
+          {
+            "strategy": "solo",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": [],
+              "pairPace": 2
+            },
+            "inputs": [
+              {
+                "type": "solo",
+                "id": "c1"
+              },
+              {
+                "type": "solo",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 28,
+              "doneCount": 2,
+              "unfinishedValue": 14,
+              "freeSlots": 1,
+              "acquired": 3,
+              "released": 2,
+              "reworkSpent": 4,
+              "heldSlots": 1,
+              "netValue": 28
+            },
+            "doneIds": ["c1", "c2"]
+          },
+          {
+            "strategy": "pair",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "c1",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c2",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "c3",
+                  "complex": true,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 14,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": [],
+              "pairPace": 2
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "c1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "c3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 42,
+              "doneCount": 3,
+              "unfinishedValue": 0,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 42
+            },
+            "doneIds": ["c1", "c2", "c3"]
+          }
+        ]
+      },
+      {
+        "board": "routine",
+        "pairPace": 2,
+        "baselineSolo": 48,
+        "baselinePair": 24,
+        "solo": 48,
+        "pair": 48,
+        "preferenceAtPace1": "solo",
+        "preferenceAtPace2": "tie",
+        "strictReversal": false,
+        "runs": [
+          {
+            "strategy": "solo",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r3",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r4",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r5",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r6",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": [],
+              "pairPace": 2
+            },
+            "inputs": [
+              {
+                "type": "solo",
+                "id": "r1"
+              },
+              {
+                "type": "solo",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "r3"
+              },
+              {
+                "type": "solo",
+                "id": "r4"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "solo",
+                "id": "r5"
+              },
+              {
+                "type": "solo",
+                "id": "r6"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 48,
+              "doneCount": 6,
+              "unfinishedValue": 0,
+              "freeSlots": 2,
+              "acquired": 6,
+              "released": 6,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 48
+            },
+            "doneIds": ["r1", "r2", "r3", "r4", "r5", "r6"]
+          },
+          {
+            "strategy": "pair",
+            "initial": {
+              "version": 1,
+              "seed": "RI-178",
+              "tick": 0,
+              "horizon": 6,
+              "freeSlots": 2,
+              "slotCapacity": 2,
+              "jobs": [
+                {
+                  "id": "r1",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r2",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r3",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r4",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r5",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                },
+                {
+                  "id": "r6",
+                  "complex": false,
+                  "work": 2,
+                  "progress": 0,
+                  "reworkLeft": 0,
+                  "reworkSpent": 0,
+                  "value": 8,
+                  "stage": "backlog",
+                  "slots": 0,
+                  "acquired": 0,
+                  "released": 0
+                }
+              ],
+              "inputs": [],
+              "pairPace": 2
+            },
+            "inputs": [
+              {
+                "type": "pair",
+                "id": "r1"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r2"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r3"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r4"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r5"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "pair",
+                "id": "r6"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 48,
+              "doneCount": 6,
+              "unfinishedValue": 0,
+              "freeSlots": 2,
+              "acquired": 12,
+              "released": 12,
+              "reworkSpent": 0,
+              "heldSlots": 0,
+              "netValue": 48
+            },
+            "doneIds": ["r1", "r2", "r3", "r4", "r5", "r6"]
+          }
+        ]
+      }
+    ]
+  },
+  "twoRoutinePace": {
+    "leadingRoutines": 2,
+    "pairPace": 2,
+    "held": "先頭定型2件・複雑3件のまま。進捗だけを2にする。",
+    "baseline": {
+      "pairPace": 1,
+      "solo": 44,
+      "pair": 30,
+      "mixed": 42,
+      "pairVsSolo": "solo",
+      "mixedVsSolo": "solo",
+      "pairVsMixed": "mixed"
+    },
+    "solo": 44,
+    "pair": 58,
+    "mixed": 58,
+    "pairVsSolo": "pair",
+    "mixedVsSolo": "mixed",
+    "pairVsMixed": "tie",
+    "strictReversals": {
+      "pair": true,
+      "mixed": true,
+      "pairVsMixed": false
+    },
+    "runs": [
+      {
+        "strategy": "solo",
+        "initial": {
+          "version": 1,
+          "seed": "RI-178",
+          "tick": 0,
+          "horizon": 6,
+          "freeSlots": 2,
+          "slotCapacity": 2,
+          "jobs": [
+            {
+              "id": "r1",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "r2",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c1",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c2",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c3",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            }
+          ],
+          "inputs": [],
+          "pairPace": 2
+        },
+        "inputs": [
+          {
+            "type": "solo",
+            "id": "r1"
+          },
+          {
+            "type": "solo",
+            "id": "r2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "solo",
+            "id": "c1"
+          },
+          {
+            "type": "solo",
+            "id": "c2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 44,
+          "doneCount": 4,
+          "unfinishedValue": 14,
+          "freeSlots": 2,
+          "acquired": 4,
+          "released": 4,
+          "reworkSpent": 4,
+          "heldSlots": 0,
+          "netValue": 44
+        },
+        "doneIds": ["r1", "r2", "c1", "c2"]
+      },
+      {
+        "strategy": "pair",
+        "initial": {
+          "version": 1,
+          "seed": "RI-178",
+          "tick": 0,
+          "horizon": 6,
+          "freeSlots": 2,
+          "slotCapacity": 2,
+          "jobs": [
+            {
+              "id": "r1",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "r2",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c1",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c2",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c3",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            }
+          ],
+          "inputs": [],
+          "pairPace": 2
+        },
+        "inputs": [
+          {
+            "type": "pair",
+            "id": "r1"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "r2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "c1"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "c2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "c3"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 58,
+          "doneCount": 5,
+          "unfinishedValue": 0,
+          "freeSlots": 2,
+          "acquired": 10,
+          "released": 10,
+          "reworkSpent": 0,
+          "heldSlots": 0,
+          "netValue": 58
+        },
+        "doneIds": ["r1", "r2", "c1", "c2", "c3"]
+      },
+      {
+        "strategy": "mixed",
+        "initial": {
+          "version": 1,
+          "seed": "RI-178",
+          "tick": 0,
+          "horizon": 6,
+          "freeSlots": 2,
+          "slotCapacity": 2,
+          "jobs": [
+            {
+              "id": "r1",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "r2",
+              "complex": false,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 8,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c1",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c2",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            },
+            {
+              "id": "c3",
+              "complex": true,
+              "work": 2,
+              "progress": 0,
+              "reworkLeft": 0,
+              "reworkSpent": 0,
+              "value": 14,
+              "stage": "backlog",
+              "slots": 0,
+              "acquired": 0,
+              "released": 0
+            }
+          ],
+          "inputs": [],
+          "pairPace": 2
+        },
+        "inputs": [
+          {
+            "type": "pair",
+            "id": "c1"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "c2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "pair",
+            "id": "c3"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "solo",
+            "id": "r1"
+          },
+          {
+            "type": "solo",
+            "id": "r2"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 58,
+          "doneCount": 5,
+          "unfinishedValue": 0,
+          "freeSlots": 2,
+          "acquired": 8,
+          "released": 8,
+          "reworkSpent": 0,
+          "heldSlots": 0,
+          "netValue": 58
+        },
+        "doneIds": ["r1", "r2", "c1", "c2", "c3"]
+      }
+    ]
+  }
+}

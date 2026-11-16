@@ -1,0 +1,2539 @@
+{
+  "conditions": {
+    "seed": "RI-179",
+    "horizons": [5, 10],
+    "decision": {
+      "keep": "ship",
+      "replace": "replace",
+      "score": "netValue"
+    },
+    "baseline": {
+      "migrationTicks": 3,
+      "legacyPerTick": 4,
+      "dualPerTick": 2,
+      "modernMultiplier": 2
+    },
+    "dualBurdenDefinition": "負担 = 旧系出荷 - 二重出荷。移行tickの出荷は0のまま",
+    "held": {
+      "migrationTicks": "件数だけを動かす。各1tick、出荷0。旧系4、二重出荷2、倍率2",
+      "dualBurden": "負担だけを動かす。件数3、倍率2。移行tickの出荷は0",
+      "modernMultiplier": "新系出荷 = 旧系4 × 倍率。件数3、二重出荷2"
+    },
+    "migrationYield": 0,
+    "cutoverConsumesTick": false,
+    "startConsumesTick": false,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "migrationTicks": [
+      {
+        "axis": "migrationTicks",
+        "parameter": "1",
+        "rules": {
+          "migrationTicks": 1,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "replace",
+            "margin": 12,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 1,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 32,
+                "netValue": 32
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 32,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 1,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 72,
+                "netValue": 72
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationTicks",
+        "parameter": "2",
+        "rules": {
+          "migrationTicks": 2,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "replace",
+            "margin": 4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 2,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 24,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 24,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 2,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 64,
+                "netValue": 64
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationTicks",
+        "parameter": "3",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 16,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 16,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 56,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationTicks",
+        "parameter": "4",
+        "rules": {
+          "migrationTicks": 4,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -12,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 4,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 8,
+                "netValue": 8
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 8,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 4,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 48,
+                "netValue": 48
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationTicks",
+        "parameter": "5",
+        "rules": {
+          "migrationTicks": 5,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -20,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                }
+              ],
+              "result": {
+                "mode": "dual",
+                "doneTasks": 5,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 0
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 5,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 40,
+                "netValue": 40
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationTicks",
+        "parameter": "6",
+        "rules": {
+          "migrationTicks": 6,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -20,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                }
+              ],
+              "result": {
+                "mode": "dual",
+                "doneTasks": 5,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 0
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "keep",
+            "margin": -8,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 6,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 32,
+                "netValue": 32
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "dualBurden": [
+      {
+        "axis": "dualBurden",
+        "parameter": "0",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 4,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 16,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 16,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 56,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "dualBurden",
+        "parameter": "2",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 16,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 16,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 56,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "dualBurden",
+        "parameter": "4",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 0,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 16,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 16,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 56,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "modernMultiplier": [
+      {
+        "axis": "modernMultiplier",
+        "parameter": "1",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 1
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -12,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 8,
+                "netValue": 8
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "keep",
+            "margin": -12,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 28,
+                "netValue": 28
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "modernMultiplier",
+        "parameter": "1.5",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 1.5
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -8,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 12,
+                "netValue": 12
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 2,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 42,
+                "netValue": 42
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "modernMultiplier",
+        "parameter": "2",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "keep",
+            "margin": -4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 16,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 16,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 56,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "modernMultiplier",
+        "parameter": "2.5",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 2.5
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "tie",
+            "margin": 0,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 20,
+                "netValue": 20
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 30,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 70,
+                "netValue": 70
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "modernMultiplier",
+        "parameter": "3",
+        "rules": {
+          "migrationTicks": 3,
+          "legacyPerTick": 4,
+          "dualPerTick": 2,
+          "modernMultiplier": 3
+        },
+        "horizons": [
+          {
+            "horizon": 5,
+            "preference": "replace",
+            "margin": 4,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 20,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 20
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 24,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "replace",
+            "margin": 44,
+            "keep": {
+              "inputs": [
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "legacy",
+                "doneTasks": 0,
+                "legacyValue": 40,
+                "dualValue": 0,
+                "modernValue": 0,
+                "netValue": 40
+              }
+            },
+            "replace": {
+              "inputs": [
+                {
+                  "type": "start"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "migrate"
+                },
+                {
+                  "type": "cutover"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                },
+                {
+                  "type": "ship"
+                }
+              ],
+              "result": {
+                "mode": "modern",
+                "doneTasks": 3,
+                "legacyValue": 0,
+                "dualValue": 0,
+                "modernValue": 84,
+                "netValue": 84
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "migrationTicks",
+      "horizon": 5,
+      "before": {
+        "parameter": "2",
+        "preference": "replace",
+        "keep": 20,
+        "replace": 24
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "keep",
+        "keep": 20,
+        "replace": 16
+      }
+    },
+    {
+      "axis": "migrationTicks",
+      "horizon": 10,
+      "before": {
+        "parameter": "4",
+        "preference": "replace",
+        "keep": 40,
+        "replace": 48
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "keep": 40,
+        "replace": 40
+      }
+    },
+    {
+      "axis": "migrationTicks",
+      "horizon": 10,
+      "before": {
+        "parameter": "5",
+        "preference": "tie",
+        "keep": 40,
+        "replace": 40
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "keep",
+        "keep": 40,
+        "replace": 32
+      }
+    },
+    {
+      "axis": "modernMultiplier",
+      "horizon": 10,
+      "before": {
+        "parameter": "1",
+        "preference": "keep",
+        "keep": 40,
+        "replace": 28
+      },
+      "after": {
+        "parameter": "1.5",
+        "preference": "replace",
+        "keep": 40,
+        "replace": 42
+      }
+    },
+    {
+      "axis": "modernMultiplier",
+      "horizon": 5,
+      "before": {
+        "parameter": "2",
+        "preference": "keep",
+        "keep": 20,
+        "replace": 16
+      },
+      "after": {
+        "parameter": "2.5",
+        "preference": "tie",
+        "keep": 20,
+        "replace": 20
+      }
+    },
+    {
+      "axis": "modernMultiplier",
+      "horizon": 5,
+      "before": {
+        "parameter": "2.5",
+        "preference": "tie",
+        "keep": 20,
+        "replace": 20
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "replace",
+        "keep": 20,
+        "replace": 24
+      }
+    }
+  ]
+}

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/mentorship-comparison.json';
+import factors from '../../docs/prototypes/mentorship-factor-comparison.json';
 import { assignMember } from '../sim/member/roster';
 import {
   advanceMentorshipPeriod,
+  compareMentorshipFactorReversals,
   compareMentorshipStrategies,
   createMentorshipPrototype,
   previewMentorship,
@@ -199,5 +201,124 @@ describe('師弟育成の期間単位試作', () => {
       apprenticeWork: 0,
       apprenticeGrowthWork: 0,
     });
+  });
+});
+
+describe('RI-206 要因を一つずつ動かした比較', () => {
+  const data = compareMentorshipFactorReversals();
+  const point = (axis: 'load' | 'deadline' | 'return', parameter: string) => {
+    const found = data.sweeps[axis].find((row) => row.parameter === parameter);
+    if (!found) throw new Error(`${axis}:${parameter}`);
+    return found;
+  };
+  const delivered = (axis: 'load' | 'deadline' | 'return', parameter: string) => {
+    const row = point(axis, parameter);
+    return [row.runs.concentrate.delivered, row.runs.mentor.delivered];
+  };
+
+  it('記録した要因比較を再計算と照合する', () => {
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-206',
+      horizon: 8,
+      baselineDemand: 12,
+      score: 'delivered',
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionIntegration: false,
+      traitsStaminaGrowth: false,
+    });
+  });
+
+  it('需要・失効・復帰はそれぞれ一つだけ動き、8期間の対照は初回と一致する', () => {
+    expect(
+      data.sweeps.load.every(
+        (row) =>
+          row.schedule.every((step) => step.mentorPresent && !step.expireBacklog) &&
+          new Set(row.schedule.map((step) => step.demand)).size === 1,
+      ),
+    ).toBe(true);
+    expect(
+      data.sweeps.deadline.every((row) => {
+        const expiries = row.schedule.filter((step) => step.expireBacklog);
+        return (
+          row.schedule.every((step) => step.mentorPresent && step.demand === 12) &&
+          expiries.length === (row.parameter === 'none' ? 0 : 1)
+        );
+      }),
+    ).toBe(true);
+    expect(
+      data.sweeps.return.every((row) =>
+        row.schedule.every((step) => step.demand === 12 && !step.expireBacklog),
+      ),
+    ).toBe(true);
+    const [focus, taught] = compareMentorshipStrategies('RI-206', 8);
+    expect(point('load', '12').runs.concentrate.history).toEqual(focus.history);
+    expect(point('load', '12').runs.mentor.history).toEqual(taught.history);
+    expect(point('deadline', 'none').runs.concentrate.history).toEqual(focus.history);
+    expect(point('return', '1').runs.mentor.history).toEqual(taught.history);
+  });
+
+  it('需要9と10、復帰3と4で優劣が変わり、期限の失効では出荷が反転しない', () => {
+    expect(delivered('load', '9')).toEqual([72, 72]);
+    expect(point('load', '9').runs.mentor.apprenticeGrowthWork).toBe(8);
+    expect(delivered('load', '10')).toEqual([72, 77]);
+    expect(delivered('load', '12')).toEqual([72, 77]);
+    expect(point('load', '12').preference).toBe('mentor');
+    for (const parameter of ['none', '1', '5', '6', '8']) {
+      expect(delivered('deadline', parameter)).toEqual([72, 77]);
+      expect(point('deadline', parameter).preference).toBe('mentor');
+    }
+    expect(point('deadline', '5').runs.concentrate.expired).toBe(15);
+    expect(point('deadline', '5').runs.mentor.expired).toBe(16);
+    expect(point('deadline', '6').runs.concentrate.expired).toBe(18);
+    expect(point('deadline', '6').runs.mentor.expired).toBe(17);
+    expect(point('deadline', '1').runs.concentrate.history[1]?.backlog).toBe(3);
+    expect(point('deadline', 'none').runs.concentrate.history[1]?.backlog).toBe(6);
+    expect(delivered('return', '3')).toEqual([60, 61]);
+    expect(delivered('return', '4')).toEqual([54, 53]);
+    expect(point('return', '4').runs.mentor.teach).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(point('return', '4').runs.mentor.history.map((period) => period.taught)).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(delivered('return', '8')).toEqual([30, 26]);
+    expect(point('return', '8').runs.mentor.apprenticeReview).toBe(42);
+    expect(point('return', '8').runs.mentor.apprenticeGrowthWork).toBe(0);
+    expect(delivered('return', 'absent')).toEqual([24, 24]);
+    expect(data.reversals).toEqual([
+      {
+        axis: 'load',
+        before: { parameter: '9', preference: 'tie', concentrate: 72, mentor: 72 },
+        after: { parameter: '10', preference: 'mentor', concentrate: 72, mentor: 77 },
+      },
+      {
+        axis: 'return',
+        before: { parameter: '3', preference: 'mentor', concentrate: 60, mentor: 61 },
+        after: { parameter: '4', preference: 'concentrate', concentrate: 54, mentor: 53 },
+      },
+      {
+        axis: 'return',
+        before: { parameter: '8', preference: 'concentrate', concentrate: 30, mentor: 26 },
+        after: { parameter: 'absent', preference: 'tie', concentrate: 24, mentor: 24 },
+      },
+    ]);
   });
 });

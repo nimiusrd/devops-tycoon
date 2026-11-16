@@ -150,6 +150,17 @@ const BOARD_ACTORS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) =
   y: BOARD_STATION_CENTERS[lane].y,
 }));
 
+const BOARD_ACTOR_BOUNDS = BOARD_ACTORS.map((actor) => {
+  const half = boardActorHalfExtents();
+  return {
+    lane: actor.lane,
+    left: actor.x - half.x,
+    right: actor.x + half.x,
+    top: actor.y - half.y,
+    bottom: actor.y + half.y,
+  };
+});
+
 /**
  * 山の基準点が自分の工程の中心からこの距離以内なら、その工程の粒として収める。
  * 完了の山が工程中心から約 80 設計px 離れるため、それより広く、任意座標の判定用の粒は含めない。
@@ -192,13 +203,28 @@ function circleHitsOtherStation(
   });
 }
 
-/** その中心なら、盤面の内側に収まり、静止粒は別工程のキャラに入らない。 */
-function pointFits(dot: BoardDotPlan, x: number, y: number, cssScale: number): boolean {
+type PointFitTest = (x: number, y: number) => boolean;
+
+/** 二分探索中も変わらない半径と工程所属を、一粒・一縮尺につき一度だけ求める。 */
+function pointFitTest(dot: BoardDotPlan, cssScale: number): PointFitTest {
   const radius = presentedDotRadius(dot.size, cssScale);
-  if (circleLeavesDesignBoard(x, y, radius)) return false;
   // フロー上の粒は工程の間を通る。基準点が工程の山でない粒は、判定用の任意座標なので動かさない。
-  if (dot.motion || !belongsToOwnStationPile(dot)) return true;
-  return !circleHitsOtherStation(x, y, radius, dot.lane, BOARD_ACTORS);
+  const avoidActors = !dot.motion && belongsToOwnStationPile(dot);
+  const limit = radius - 0.5;
+  return (x, y) => {
+    if (circleLeavesDesignBoard(x, y, radius)) return false;
+    if (!avoidActors || limit <= 0) return true;
+    // circleHitsOtherStation と同じ演算順。固定のキャラ枠と半径を二分探索で再計算しない。
+    for (const actor of BOARD_ACTOR_BOUNDS) {
+      if (actor.lane === dot.lane) continue;
+      const nearestX = Math.max(actor.left, Math.min(x, actor.right));
+      const nearestY = Math.max(actor.top, Math.min(y, actor.bottom));
+      const dx = x - nearestX;
+      const dy = y - nearestY;
+      if (dx * dx + dy * dy < limit * limit) return false;
+    }
+    return true;
+  };
 }
 
 /**
@@ -213,8 +239,8 @@ function containmentScale(
   spreadY: number,
   cssScale: number,
 ): number {
-  const fits = (t: number) =>
-    pointFits(dot, anchorX + spreadX * t, anchorY + spreadY * t, cssScale);
+  const pointFits = pointFitTest(dot, cssScale);
+  const fits = (t: number) => pointFits(anchorX + spreadX * t, anchorY + spreadY * t);
   if (fits(1)) return 1;
   let lo = 0;
   let hi = 1;
@@ -236,6 +262,7 @@ function retreatTowardOwnStation(
   y: number,
   cssScale: number,
 ): BoardPoint {
+  const pointFits = pointFitTest(dot, cssScale);
   const station = BOARD_STATION_CENTERS[dot.lane];
   let dirX = station.x - x;
   let dirY = station.y - y;
@@ -264,13 +291,13 @@ function retreatTowardOwnStation(
     x: x + dirX * distance,
     y: y + dirY * distance,
   });
-  if (!pointFits(dot, at(maxDist).x, at(maxDist).y, cssScale)) {
+  if (!pointFits(at(maxDist).x, at(maxDist).y)) {
     let best = { x, y };
     for (let distance = 0; distance <= maxDist; distance += 4) {
       const point = at(distance);
       if (circleLeavesDesignBoard(point.x, point.y, presentedDotRadius(dot.size, cssScale))) break;
       best = point;
-      if (pointFits(dot, point.x, point.y, cssScale)) return point;
+      if (pointFits(point.x, point.y)) return point;
     }
     return best;
   }
@@ -279,7 +306,7 @@ function retreatTowardOwnStation(
   for (let i = 0; i < 16; i += 1) {
     const mid = (lo + hi) / 2;
     const point = at(mid);
-    if (pointFits(dot, point.x, point.y, cssScale)) hi = mid;
+    if (pointFits(point.x, point.y)) hi = mid;
     else lo = mid;
   }
   return at(hi);
@@ -307,9 +334,9 @@ function maxFitDistance(
   dy: number,
   maxDist: number,
   cssScale: number,
+  pointFits: PointFitTest = pointFitTest(dot, cssScale),
 ): number {
-  const fits = (distance: number) =>
-    pointFits(dot, origin.x + dx * distance, origin.y + dy * distance, cssScale);
+  const fits = (distance: number) => pointFits(origin.x + dx * distance, origin.y + dy * distance);
   if (maxDist <= 0 || !fits(0)) return 0;
   if (fits(maxDist)) return maxDist;
   let lo = 0;
@@ -376,7 +403,7 @@ export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPl
   let x = anchorX + spreadX * t;
   let y = anchorY + spreadY * t;
   // 山の中心自体が隣の工程に入る大きい粒は、自分の工程の中心側へ寄せる。
-  if (!dot.motion && belongsToOwnStationPile(dot) && !pointFits(dot, x, y, cssScale)) {
+  if (!dot.motion && belongsToOwnStationPile(dot) && !pointFitTest(dot, cssScale)(x, y)) {
     const retreated = retreatTowardOwnStation(dot, x, y, cssScale);
     x = retreated.x;
     y = retreated.y;
@@ -411,6 +438,7 @@ function nudgeOverlappingPair(
   i: number,
   j: number,
   cssScale: number,
+  fitTests: readonly PointFitTest[],
 ): boolean {
   const a = presented[i];
   const b = presented[j];
@@ -435,8 +463,8 @@ function nudgeOverlappingPair(
   const ux = dx / axisLen;
   const uy = dy / axisLen;
   const deficit = need - presentedDist;
-  const iRoom = maxFitDistance(planned[i], a, -ux, -uy, deficit, cssScale);
-  const jRoom = maxFitDistance(planned[j], b, ux, uy, deficit, cssScale);
+  const iRoom = maxFitDistance(planned[i], a, -ux, -uy, deficit, cssScale, fitTests[i]);
+  const jRoom = maxFitDistance(planned[j], b, ux, uy, deficit, cssScale, fitTests[j]);
   let iDist = Math.min(iRoom, deficit / 2);
   let jDist = Math.min(jRoom, deficit - iDist);
   if (iDist + jDist + 0.01 < deficit) iDist = Math.min(iRoom, deficit - jDist);
@@ -486,6 +514,7 @@ function separateOverlappingPileDots(
   cssScale: number,
   lanes?: readonly BoardDotPlan['lane'][],
 ): void {
+  const fitTests = planned.map((dot) => pointFitTest(dot, cssScale));
   const indexesByPile = new Map<string, number[]>();
   for (let i = 0; i < planned.length; i += 1) {
     const dot = planned[i];
@@ -504,7 +533,7 @@ function separateOverlappingPileDots(
           const li = indexes[left];
           const ri = indexes[right];
           if (!presentedDotsOverlap(presented[li], presented[ri], cssScale)) continue;
-          if (nudgeOverlappingPair(presented, planned, li, ri, cssScale)) moved = true;
+          if (nudgeOverlappingPair(presented, planned, li, ri, cssScale, fitTests)) moved = true;
         }
       }
       if (!moved) break;

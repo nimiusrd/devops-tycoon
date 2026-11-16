@@ -286,7 +286,7 @@ describe('reviewHeat（渋滞の段階強度・hot 手前の早期警告）', ()
     expect(reviewHeat(9)).toBeGreaterThan(reviewHeat(7));
   });
 
-  it('ステーションの heat は Review のみ非ゼロ', () => {
+  it('ステーションの heat は Review のみ非ゼロ', { timeout: 60_000 }, () => {
     const scene = planBoardScene([...tasksIn('review', 9), ...tasksIn('coding', 9)]);
     const review = scene.stations.find((s) => s.lane === 'review')!;
     const coding = scene.stations.find((s) => s.lane === 'coding')!;

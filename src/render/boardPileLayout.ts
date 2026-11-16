@@ -91,8 +91,7 @@ function tightenReviewPileShiftForArmedContainment(
     for (let dy = base.dy - 12; dy <= base.dy + 12; dy += 4) {
       const shift = { dx, dy };
       const candidate = applyLanePileShift(dots, 'review', shift);
-      if (!pilesStayOnBoardWithCaches(candidate, caches)) continue;
-      if (countReviewCrossStationOverlapsWithCaches(candidate, caches) > 0) continue;
+      if (!reviewPileFitsWithCaches(candidate, caches)) continue;
       if (!reviewDotsSatisfyArmedContainment(candidate, containmentScales)) continue;
       const centerOff = reviewPilePlannedCenteringOffset(candidate, scales);
       const dist = Math.hypot(dx, dy);
@@ -131,6 +130,9 @@ interface ReviewOverlapCache {
   basePresented: BoardDotPlan[];
   others: Array<{ x: number; y: number; size: BoardDotPlan['size'] }>;
   reviewIndexes: number[];
+  presented: WeakMap<readonly BoardDotPlan[], BoardDotPlan[]>;
+  reusable?: Map<string, Array<{ x: number; y: number }>>;
+  shiftAnchorIndex: number;
 }
 
 function buildReviewOverlapCaches(
@@ -148,21 +150,68 @@ function buildReviewOverlapCaches(
         others.push({ x: presented.x, y: presented.y, size: presented.size });
       }
     });
-    return { scale, basePresented, others, reviewIndexes };
+    const shiftAnchorIndex =
+      reviewIndexes.find(
+        (index) => dots[index].clusterX !== undefined && dots[index].clusterY !== undefined,
+      ) ?? -1;
+    return {
+      scale,
+      basePresented,
+      others,
+      reviewIndexes,
+      presented: new WeakMap(),
+      shiftAnchorIndex,
+    };
   });
+}
+
+/** 同じ候補・縮尺の押し離しを、盤外判定・交差判定・重心計算で共有する。 */
+function reviewPresentation(
+  dots: readonly BoardDotPlan[],
+  cache: ReviewOverlapCache,
+): BoardDotPlan[] {
+  let presented = cache.presented.get(dots);
+  if (!presented) {
+    // この cache の元入力から applyLanePileShift した候補だけが来る。
+    // 全ての可動 Review 粒は同じ dx/dy なので、最初の可動基準点でシフトを識別できる。
+    const anchor = dots[cache.shiftAnchorIndex];
+    const shiftKey = `${anchor?.clusterX}:${anchor?.clusterY}`;
+    const reused = cache.reusable?.get(shiftKey);
+    if (reused) {
+      presented = [...cache.basePresented];
+      cache.reviewIndexes.forEach((index, offset) => {
+        presented![index] = { ...dots[index], ...reused[offset] };
+      });
+    } else {
+      presented = presentBoardDotsWithShiftedReview(dots, cache.basePresented, cache.scale);
+      cache.reusable?.set(
+        shiftKey,
+        cache.reviewIndexes.map((index) => ({
+          x: presented![index].x,
+          y: presented![index].y,
+        })),
+      );
+    }
+    cache.presented.set(dots, presented);
+  }
+  return presented;
 }
 
 function countOverlapsFromPresented(
   reviewDots: readonly BoardDotPlan[],
   others: ReviewOverlapCache['others'],
   scale: number,
+  stopAtFirst = false,
 ): number {
   let count = 0;
   for (const left of reviewDots) {
     const lr = presentedDotRadius(left.size, scale);
     for (const right of others) {
       const rr = presentedDotRadius(right.size, scale);
-      if (circlesOverlap(left.x, left.y, lr, right.x, right.y, rr)) count += 1;
+      if (circlesOverlap(left.x, left.y, lr, right.x, right.y, rr)) {
+        if (stopAtFirst) return 1;
+        count += 1;
+      }
     }
   }
   return count;
@@ -182,12 +231,14 @@ export function countReviewCrossStationOverlaps(
 function countReviewCrossStationOverlapsWithCaches(
   dots: readonly BoardDotPlan[],
   caches: readonly ReviewOverlapCache[],
+  stopAtFirst = false,
 ): number {
   let count = 0;
   for (const cache of caches) {
-    const presented = presentBoardDotsWithShiftedReview(dots, cache.basePresented, cache.scale);
+    const presented = reviewPresentation(dots, cache);
     const review = cache.reviewIndexes.map((index) => presented[index]);
-    count += countOverlapsFromPresented(review, cache.others, cache.scale);
+    count += countOverlapsFromPresented(review, cache.others, cache.scale, stopAtFirst);
+    if (stopAtFirst && count > 0) return count;
   }
   return count;
 }
@@ -235,13 +286,14 @@ function reviewDotsAvoidOtherStations(
   return true;
 }
 
-function pilesStayOnBoardWithCaches(
+/** 盤外または交差を見つけた縮尺で打ち切り、残りの縮尺を提示しない。 */
+function reviewPileFitsWithCaches(
   dots: readonly BoardDotPlan[],
   caches: readonly ReviewOverlapCache[],
 ): boolean {
   const { w, h } = DESIGN_SPACES.sprint;
   for (const cache of caches) {
-    const presented = presentBoardDotsWithShiftedReview(dots, cache.basePresented, cache.scale);
+    const presented = reviewPresentation(dots, cache);
     for (const index of cache.reviewIndexes) {
       const dot = presented[index];
       const radius = presentedDotRadius(dot.size, cache.scale);
@@ -254,6 +306,8 @@ function pilesStayOnBoardWithCaches(
         return false;
       }
     }
+    const review = cache.reviewIndexes.map((index) => presented[index]);
+    if (countOverlapsFromPresented(review, cache.others, cache.scale, true) > 0) return false;
   }
   return true;
 }
@@ -295,14 +349,11 @@ function reviewPilePlannedCenteringOffset(
 function reviewPilePresentedCentroidX(
   dots: readonly BoardDotPlan[],
   scale: number,
-  basePresented?: readonly BoardDotPlan[],
+  cache?: ReviewOverlapCache,
 ): number | null {
   const review = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
   if (review.length === 0) return null;
-  const presented =
-    basePresented && basePresented.length === dots.length
-      ? presentBoardDotsWithShiftedReview(dots, basePresented, scale)
-      : presentBoardDots(dots, scale);
+  const presented = cache ? reviewPresentation(dots, cache) : presentBoardDots(dots, scale);
   const shown = presented.filter((dot) => dot.lane === 'review' && !dot.motion);
   if (shown.length === 0) return null;
   return shown.reduce((sum, dot) => sum + dot.x, 0) / shown.length;
@@ -315,27 +366,25 @@ function refineReviewPilePresentedCentering(
   base: BoardPileShift,
 ): BoardPileShift {
   const stationX = BOARD_STATION_CENTERS.review.x;
-  const centroidAt = (shift: BoardPileShift): number => {
-    const shifted = applyLanePileShift(dots, 'review', shift);
+  const centroidAt = (shifted: readonly BoardDotPlan[]): number => {
     let maxOff = 0;
     for (const scale of scales) {
       const cache = caches.find((entry) => Math.abs(entry.scale - scale) < 1e-9);
-      const centroidX = reviewPilePresentedCentroidX(shifted, scale, cache?.basePresented);
+      const centroidX = reviewPilePresentedCentroidX(shifted, scale, cache);
       if (centroidX === null) continue;
       maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
     }
     return maxOff;
   };
   let bestShift = base;
-  let bestOff = centroidAt(bestShift);
+  let bestOff = centroidAt(applyLanePileShift(dots, 'review', bestShift));
   for (let dx = base.dx - 16; dx <= base.dx + 16; dx += 4) {
     for (let dy = base.dy - 8; dy <= base.dy + 8; dy += 4) {
       const shift = { dx, dy };
       const shifted = applyLanePileShift(dots, 'review', shift);
-      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
-      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      const off = centroidAt(shift);
+      if (!reviewPileFitsWithCaches(shifted, caches)) continue;
+      const off = centroidAt(shifted);
       const dist = Math.hypot(dx, dy);
       const bestDist = Math.hypot(bestShift.dx, bestShift.dy);
       const better =
@@ -378,11 +427,13 @@ function findReviewPileShiftInRange(
   for (let dx = range.dxMin; dx <= range.dxMax; dx += range.step) {
     for (let dy = range.dyMin; dy <= range.dyMax; dy += range.step) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
-      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
-      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
-      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
-      best = pickBetterShift(best, dx, dy, centerOff);
+      const ranked = pickBetterShift(best, dx, dy, centerOff);
+      // 列挙順と同点判定を保ち、採用されない候補の提示計算だけを省く。
+      if (ranked === best) continue;
+      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
+      if (!reviewPileFitsWithCaches(shifted, caches)) continue;
+      best = ranked;
     }
   }
   return best ? { dx: best.dx, dy: best.dy } : null;
@@ -411,11 +462,12 @@ function refineReviewPileShift(
       dy += 2
     ) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
-      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
-      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
-      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
-      best = pickBetterShift(best, dx, dy, centerOff)!;
+      const ranked = pickBetterShift(best, dx, dy, centerOff)!;
+      if (ranked === best) continue;
+      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
+      if (!reviewPileFitsWithCaches(shifted, caches)) continue;
+      best = ranked;
     }
   }
   return { dx: best.dx, dy: best.dy };
@@ -430,8 +482,32 @@ export function findReviewPileShift(
   scales: readonly number[] = boardPhonePresentationScales(),
 ): BoardPileShift {
   const caches = buildReviewOverlapCaches(dots, scales);
+  return findReviewPileShiftWithCaches(dots, scales, caches);
+}
+
+/**
+ * フローの進行は交差判定をやり直すが、Review の押し離しには影響しない。
+ * 順序・サイズ・座標・基準点を含む元入力と縮尺が完全一致するときだけ、候補の提示座標を共有する。
+ * 最後の一形状だけを保持し、Review の件数や形状が変われば旧候補を解放する。
+ */
+let lastReviewPresentations:
+  { key: string; scales: NonNullable<ReviewOverlapCache['reusable']>[] } | undefined;
+
+function findReviewPileShiftWithCaches(
+  dots: readonly BoardDotPlan[],
+  scales: readonly number[],
+  caches: readonly ReviewOverlapCache[],
+): BoardPileShift {
+  const key = JSON.stringify([dots.filter((dot) => dot.lane === 'review' && !dot.motion), scales]);
+  if (lastReviewPresentations?.key !== key) {
+    lastReviewPresentations = { key, scales: scales.map(() => new Map()) };
+  }
+  const reusable = lastReviewPresentations.scales;
+  caches.forEach((cache, index) => {
+    cache.reusable = reusable[index];
+  });
   const containmentScales = boardPhoneContainmentScales(scales);
-  if (countReviewCrossStationOverlapsWithCaches(dots, caches) === 0) {
+  if (countReviewCrossStationOverlapsWithCaches(dots, caches, true) === 0) {
     return { dx: 0, dy: 0 };
   }
   const centeringScales = reviewPilePresentationScales(scales);
@@ -483,14 +559,16 @@ const reviewPileShiftCache = new Map<string, BoardPileShift>();
 export function adjustReviewPileLayout(dots: readonly BoardDotPlan[]): BoardDotPlan[] {
   const reviewPileDots = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
   if (reviewPileDots.length === 0) return [...dots];
-  if (countReviewCrossStationOverlaps(dots) === 0) return [...dots];
+  const scales = boardPhonePresentationScales();
+  const caches = buildReviewOverlapCaches(dots, scales);
+  if (countReviewCrossStationOverlapsWithCaches(dots, caches, true) === 0) return [...dots];
   const cacheKey = reviewPileShiftCacheKey(dots);
   const cached = reviewPileShiftCache.get(cacheKey);
   if (cached) {
     const shifted = applyLanePileShift(dots, 'review', cached);
-    if (countReviewCrossStationOverlaps(shifted) === 0) return shifted;
+    if (countReviewCrossStationOverlapsWithCaches(shifted, caches, true) === 0) return shifted;
   }
-  const shift = findReviewPileShift(dots);
+  const shift = findReviewPileShiftWithCaches(dots, scales, caches);
   reviewPileShiftCache.set(cacheKey, shift);
   return applyLanePileShift(dots, 'review', shift);
 }

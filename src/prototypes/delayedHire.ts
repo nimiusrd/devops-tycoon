@@ -29,6 +29,8 @@ export interface HireState {
   joined: boolean;
   power: number;
   tacticLeft: number;
+  /** 即時施策の持続。未設定の保存は初回の3期間として再生する。 */
+  tacticTicks?: number;
   periods: HirePeriod[];
   inputs: HireInput[];
 }
@@ -40,6 +42,10 @@ const HIRE_POWER = 4;
 const TACTIC_COST = 6;
 const TACTIC_POWER = 5;
 const TACTIC_TICKS = 3;
+const EXTENDED_TACTIC_TICKS = 4;
+const DURATION_STEPS = [1, 2, 3, 4, 5, 6, 7] as const;
+
+type DurationPreference = 'hire' | 'tactic' | 'tie';
 
 const BOARDS: Record<HireBoard, { workTicks: number; slots: number }> = {
   boss: { workTicks: 3, slots: 1 },
@@ -62,9 +68,9 @@ function pushPeriod(state: HireState, action: HirePeriod['action']) {
   state.tick += 1;
 }
 
-export function createDelayedHire(seed: string, board: HireBoard): HireState {
+export function createDelayedHire(seed: string, board: HireBoard, tacticTicks?: number): HireState {
   const spec = BOARDS[board];
-  return {
+  const state: HireState = {
     version: 1,
     seed,
     board,
@@ -81,9 +87,11 @@ export function createDelayedHire(seed: string, board: HireBoard): HireState {
     joined: false,
     power: 0,
     tacticLeft: 0,
+    ...(tacticTicks !== undefined ? { tacticTicks } : {}),
     periods: [],
     inputs: [],
   };
+  return state;
 }
 
 export function applyDelayedHire(state: HireState, input: HireInput): HireState {
@@ -94,7 +102,7 @@ export function applyDelayedHire(state: HireState, input: HireInput): HireState 
     next.strategy = input.type;
     next.fee = input.type === 'hire' ? HIRE_COST : TACTIC_COST;
     if (input.type === 'hire') next.waiting = 1;
-    else next.tacticLeft = TACTIC_TICKS;
+    else next.tacticLeft = next.tacticTicks ?? TACTIC_TICKS;
     pushPeriod(next, input.type);
     next.inputs.push({ type: input.type });
     return next;
@@ -146,8 +154,11 @@ export function chooseDelayedHireAction(state: HireState, strategy: HireStrategy
   return { type: 'work' };
 }
 
-function runHire(seed: string, board: HireBoard, strategy: HireStrategy) {
-  const initial = createDelayedHire(seed, board);
+function runHire(seed: string, board: HireBoard, strategy: HireStrategy, tacticTicks?: number) {
+  const initial =
+    tacticTicks === undefined
+      ? createDelayedHire(seed, board)
+      : createDelayedHire(seed, board, tacticTicks);
   let state = initial;
   let guard = 0;
   while (state.tick < state.horizon) {
@@ -168,6 +179,96 @@ export function compareDelayedHires(seed = 'RI-250') {
       ...runHire(seed, board, strategy),
     })),
   );
+}
+
+function preferenceOf(hireScore: number, tacticScore: number): DurationPreference {
+  if (hireScore > tacticScore) return 'hire';
+  if (tacticScore > hireScore) return 'tactic';
+  return 'tie';
+}
+
+/**
+ * 初回の次期と同じ費用・戦力・入社待ち・空き枠・作業期間の上で、即時施策の持続だけを1期間ずつ動かす。
+ * 固定戦略の計算。短期と空き枠0、初回の3盤面表は再実行しない。
+ */
+export function compareDelayedHireDurations(seed = 'RI-250') {
+  const points = DURATION_STEPS.map((tacticTicks) => {
+    const runs = (['hire', 'tactic'] as const).map((strategy) => {
+      const played = runHire(seed, 'next', strategy, tacticTicks);
+      return { strategy, ...played };
+    });
+    const hire = runs[0];
+    const tactic = runs[1];
+    if (!hire || !tactic) throw new Error(`tactic ticks ${tacticTicks}`);
+    const hireScore = hire.result.score;
+    const tacticScore = tactic.result.score;
+    const preference = preferenceOf(hireScore, tacticScore);
+    return {
+      tacticTicks,
+      hireScore,
+      tacticScore,
+      preference,
+      hireStillWins: preference === 'hire',
+      runs,
+    };
+  });
+  const reversals = [];
+  for (let index = 1; index < points.length; index += 1) {
+    const before = points[index - 1];
+    const after = points[index];
+    if (!before || !after || before.preference === after.preference) continue;
+    reversals.push({
+      before: {
+        tacticTicks: before.tacticTicks,
+        preference: before.preference,
+        hireScore: before.hireScore,
+        tacticScore: before.tacticScore,
+      },
+      after: {
+        tacticTicks: after.tacticTicks,
+        preference: after.preference,
+        hireScore: after.hireScore,
+        tacticScore: after.tacticScore,
+      },
+      strict: before.preference !== 'tie' && after.preference !== 'tie',
+    });
+  }
+  const extended = points.find((point) => point.tacticTicks === EXTENDED_TACTIC_TICKS);
+  if (!extended) throw new Error('tactic ticks 4');
+  return {
+    conditions: {
+      seed,
+      board: 'next' as const,
+      excludedBoards: ['boss', 'blocked'] as const,
+      workTicks: BOARDS.next.workTicks,
+      slots: BOARDS.next.slots,
+      horizon: BOARDS.next.workTicks + 1,
+      fee: HIRE_COST,
+      hirePower: HIRE_POWER,
+      tacticPower: TACTIC_POWER,
+      joinAfterTicks: JOIN_AFTER,
+      quarterAt: QUARTER_AT,
+      baselineTacticTicks: TACTIC_TICKS,
+      extendedTacticTicks: EXTENDED_TACTIC_TICKS,
+      durations: [...DURATION_STEPS],
+      held: '費用、両戦力、入社までの作業、四半期、空き枠、作業期間は初回の次期と同じ。動かすのは即時施策の持続だけ。',
+      score: 'power - fee',
+      repeatedFirstComparison: false,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      productionIntegration: false,
+    },
+    extended: {
+      tacticTicks: EXTENDED_TACTIC_TICKS,
+      hireScore: extended.hireScore,
+      tacticScore: extended.tacticScore,
+      preference: extended.preference,
+      hireStillWins: extended.hireStillWins,
+    },
+    points,
+    reversals,
+  };
 }
 
 function preview(state: HireState, strategy: HireStrategy) {
@@ -200,7 +301,7 @@ export function viewDelayedHire(state: HireState) {
     joinAfterTicks: JOIN_AFTER,
     hirePower: HIRE_POWER,
     tacticPower: TACTIC_POWER,
-    tacticTicks: TACTIC_TICKS,
+    tacticTicks: state.tacticTicks ?? TACTIC_TICKS,
     slots: state.slots,
     waiting: state.waiting,
     quarterAt: state.quarterAt,

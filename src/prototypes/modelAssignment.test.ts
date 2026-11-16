@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyModelInput as apply,
+  baselineModelRules,
   canAffordModel,
   chooseModelAction,
+  compareModelFactorReversals,
   compareModelStrategies,
   createModelBoard,
   createModelPrototype as create,
   summarizeModel,
   viewModel,
+  type ModelRules,
+  type ModelScenario,
 } from './modelAssignment';
 import comparison from '../../docs/prototypes/model-assignment-comparison.json';
+import factors from '../../docs/prototypes/model-assignment-factor-comparison.json';
 
 describe('RI-189 モデルの使い分け', () => {
   it('割当は対象仕事の速度・利用費・欠陥へ一貫して反映され、次の仕事には移る', () => {
@@ -164,5 +169,398 @@ describe('RI-189 モデルの使い分け', () => {
       const again = row.inputs.reduce((state, input) => apply(state, input), row.initial);
       expect(again).toEqual(live);
     }
+  });
+});
+
+function changedKeys(rules: ModelRules): (keyof ModelRules)[] {
+  return (Object.keys(baselineModelRules) as (keyof ModelRules)[]).filter(
+    (key) => rules[key] !== baselineModelRules[key],
+  );
+}
+
+function nets(axis: keyof ReturnType<typeof compareModelFactorReversals>['sweeps']) {
+  const data = compareModelFactorReversals();
+  return data.sweeps[axis].map((item) => [
+    item.parameter,
+    item.scenarios.map((scenario) => [
+      scenario.scenario,
+      scenario.fast.result.netValue,
+      scenario.precise.result.netValue,
+      scenario.preference,
+    ]),
+  ]);
+}
+
+describe('RI-189 要因の反転', () => {
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareModelFactorReversals();
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-189',
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    });
+    expect(nets('preciseCost')).toEqual([
+      [
+        '0',
+        [
+          ['volume', 32, 14, 'fast'],
+          ['hard', 12, 36, 'precise'],
+          ['mixed', 20, 25, 'precise'],
+          ['broke', 5, 25, 'precise'],
+        ],
+      ],
+      [
+        '1',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 12, 28, 'precise'],
+          ['mixed', 20, 17, 'fast'],
+          ['broke', 5, 17, 'precise'],
+        ],
+      ],
+      [
+        '2',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 15, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '3',
+        [
+          ['volume', 32, 1, 'fast'],
+          ['hard', 12, 21, 'precise'],
+          ['mixed', 20, -2, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '4',
+        [
+          ['volume', 32, -1, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, -1, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '5',
+        [
+          ['volume', 32, 2, 'fast'],
+          ['hard', 12, 3, 'fast'],
+          ['mixed', 20, -3, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '6',
+        [
+          ['volume', 32, 1, 'fast'],
+          ['hard', 12, 6, 'fast'],
+          ['mixed', 20, 1, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+    ]);
+    expect(nets('defectPenalty')).toEqual([
+      [
+        '0',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 48, 20, 'fast'],
+          ['mixed', 32, 15, 'fast'],
+          ['broke', 17, 18, 'precise'],
+        ],
+      ],
+      [
+        '6',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 30, 20, 'fast'],
+          ['mixed', 26, 15, 'fast'],
+          ['broke', 11, 18, 'precise'],
+        ],
+      ],
+      [
+        '9',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 21, 20, 'fast'],
+          ['mixed', 23, 15, 'fast'],
+          ['broke', 8, 18, 'precise'],
+        ],
+      ],
+      [
+        '10',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 18, 20, 'precise'],
+          ['mixed', 22, 15, 'fast'],
+          ['broke', 7, 18, 'precise'],
+        ],
+      ],
+      [
+        '12',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 15, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '16',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 0, 20, 'precise'],
+          ['mixed', 16, 15, 'fast'],
+          ['broke', 1, 18, 'precise'],
+        ],
+      ],
+      [
+        '17',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', -3, 20, 'precise'],
+          ['mixed', 15, 15, 'tie'],
+          ['broke', 0, 18, 'precise'],
+        ],
+      ],
+      [
+        '18',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', -6, 20, 'precise'],
+          ['mixed', 14, 15, 'precise'],
+          ['broke', -1, 18, 'precise'],
+        ],
+      ],
+    ]);
+    expect(nets('simpleReview')).toEqual([
+      [
+        '0',
+        [
+          ['volume', 32, 12, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 18, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '1',
+        [
+          ['volume', 32, 10, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 17, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '2',
+        [
+          ['volume', 32, 8, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 16, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '3',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 15, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '6',
+        [
+          ['volume', 32, 0, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 12, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+    ]);
+    expect(nets('budgetRecovery')).toEqual([
+      [
+        '0',
+        [
+          ['volume', 32, 6, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 15, 'fast'],
+          ['broke', 5, 18, 'precise'],
+        ],
+      ],
+      [
+        '1',
+        [
+          ['volume', 32, -2, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 9, 'fast'],
+          ['broke', 12, 14, 'precise'],
+        ],
+      ],
+      [
+        '2',
+        [
+          ['volume', 32, -2, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 9, 'fast'],
+          ['broke', 12, 14, 'precise'],
+        ],
+      ],
+      [
+        '4',
+        [
+          ['volume', 32, -2, 'fast'],
+          ['hard', 12, 20, 'precise'],
+          ['mixed', 20, 9, 'fast'],
+          ['broke', 12, 14, 'precise'],
+        ],
+      ],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.scenario,
+        item.before.parameter,
+        item.before.preference,
+        item.after.parameter,
+        item.after.preference,
+      ]),
+    ).toEqual([
+      ['preciseCost', 'mixed', '0', 'precise', '1', 'fast'],
+      ['preciseCost', 'hard', '4', 'precise', '5', 'fast'],
+      ['defectPenalty', 'hard', '9', 'fast', '10', 'precise'],
+      ['defectPenalty', 'mixed', '16', 'fast', '17', 'tie'],
+      ['defectPenalty', 'mixed', '17', 'tie', '18', 'precise'],
+    ]);
+    expect(data.reversals.some((item) => item.axis === 'simpleReview')).toBe(false);
+    expect(data.reversals.some((item) => item.axis === 'budgetRecovery')).toBe(false);
+  });
+
+  it('基準行は初回の安いモデル・高いモデルと一致し、動かした規則は一つである', () => {
+    const data = compareModelFactorReversals();
+    const first = compareModelStrategies(comparison.seed);
+    const baselines = [
+      data.sweeps.preciseCost.find((item) => item.parameter === '2'),
+      data.sweeps.defectPenalty.find((item) => item.parameter === '12'),
+      data.sweeps.simpleReview.find((item) => item.parameter === '3'),
+      data.sweeps.budgetRecovery.find((item) => item.parameter === '0'),
+    ];
+    for (const point of baselines) {
+      if (!point) throw new Error('baseline');
+      expect(changedKeys(point.rules)).toEqual([]);
+      for (const scenario of point.scenarios) {
+        for (const strategy of ['fast', 'precise'] as const) {
+          const original = first.find(
+            (row) => row.scenario === scenario.scenario && row.strategy === strategy,
+          );
+          if (!original) throw new Error('first');
+          expect(scenario[strategy].inputs).toEqual(original.inputs);
+          expect(scenario[strategy].result).toEqual(original.result);
+        }
+      }
+    }
+    const only: Record<string, keyof ModelRules> = {
+      preciseCost: 'preciseCost',
+      defectPenalty: 'defectPenalty',
+      simpleReview: 'simpleReview',
+      budgetRecovery: 'budgetRecovery',
+    };
+    for (const [axis, key] of Object.entries(only)) {
+      for (const item of data.sweeps[axis as keyof typeof data.sweeps]) {
+        expect(changedKeys(item.rules).every((name) => name === key)).toBe(true);
+        expect(item.rules.fastCost).toBe(1);
+      }
+    }
+    const free = data.sweeps.preciseCost.find((item) => item.parameter === '0');
+    const costly = data.sweeps.preciseCost.find((item) => item.parameter === '5');
+    expect(free?.scenarios.find((item) => item.scenario === 'mixed')?.precise.result.netValue).toBe(
+      25,
+    );
+    const hardCostly = costly?.scenarios.find((item) => item.scenario === 'hard')?.precise.result;
+    expect(hardCostly?.shippedJobs).toHaveLength(1);
+    expect(hardCostly?.netValue).toBe(3);
+    const mild = data.sweeps.defectPenalty.find((item) => item.parameter === '0');
+    expect(mild?.scenarios.find((item) => item.scenario === 'hard')?.fast.result.defects).toEqual(
+      [],
+    );
+    const heavy = data.sweeps.simpleReview.find((item) => item.parameter === '0');
+    expect(
+      heavy?.scenarios.find((item) => item.scenario === 'volume')?.precise.result.reviewLoad,
+    ).toBe(0);
+  });
+
+  it('回復は予算上限だけを足し、予算1の高いモデルは最初の仕事を人間のままにする', () => {
+    const rules = { ...baselineModelRules, budgetRecovery: 1 };
+    const opened = apply(
+      create('RI-189', 'broke'),
+      chooseModelAction(create('RI-189', 'broke'), 'precise', rules),
+      rules,
+    );
+    expect(opened.budget).toBe(2);
+    expect(opened.spent).toBe(0);
+    expect(opened.resolutions[0]).toBe('t1:c1:default-none+1');
+    const plain = apply(create('RI-189', 'broke'), { type: 'tick' });
+    expect(plain.budget).toBe(1);
+    expect(plain.resolutions[0]).toBe(opened.resolutions[0]);
+    const recovered = compareModelFactorReversals().sweeps.budgetRecovery.find(
+      (item) => item.parameter === '1',
+    );
+    const broke = recovered?.scenarios.find((item) => item.scenario === 'broke');
+    expect(broke?.fast.result.shippedJobs.map((job) => job.id)).toEqual(['c1', 's2']);
+    expect(broke?.fast.result.spent).toBe(4);
+    expect(broke?.precise.result.shippedJobs).toEqual([
+      { id: 'c1', model: 'none', shipped: 18, defect: false },
+    ]);
+    expect(broke?.precise.result.spent).toBe(4);
+    expect(broke?.precise.result.reviewLoad).toBe(0);
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、規則なしの再生は初回の規則になる', () => {
+    const data = compareModelFactorReversals();
+    for (const item of Object.values(data.sweeps).flat()) {
+      for (const scenario of item.scenarios) {
+        for (const strategy of ['fast', 'precise'] as const) {
+          const run = scenario[strategy];
+          let state = create(data.conditions.seed, scenario.scenario as ModelScenario);
+          expect(state.budget).toBe(
+            data.conditions.scenarios.find((row) => row.scenario === scenario.scenario)?.budget,
+          );
+          for (const input of run.inputs) {
+            const previous = state;
+            const before = structuredClone(state);
+            expect(chooseModelAction(state, strategy, item.rules)).toEqual(input);
+            state = apply(state, input, item.rules);
+            const restored = apply(JSON.parse(JSON.stringify(before)), input, item.rules);
+            expect(previous).toEqual(before);
+            expect(restored).toEqual(state);
+            expect(state.spent).toBeLessThanOrEqual(state.budget);
+            expect(state.jobs.reduce((sum, job) => sum + (job.shipped ?? 0), 0)).toBe(
+              state.shippedValue,
+            );
+          }
+          expect(summarizeModel(state)).toEqual(run.result);
+          expect(state.inputs).toEqual(run.inputs);
+          expect(apply(state, { type: 'tick' }, item.rules)).toBe(state);
+        }
+      }
+    }
+    const started = apply(apply(create('RI-189', 'hard'), { type: 'assign', model: 'fast' }), {
+      type: 'tick',
+    });
+    const replayed = apply(JSON.parse(JSON.stringify(started)), { type: 'tick' });
+    expect(replayed.budget).toBe(16);
+    expect(replayed.spent).toBe(2);
+    expect(replayed).toEqual(apply(started, { type: 'tick' }, baselineModelRules));
   });
 });

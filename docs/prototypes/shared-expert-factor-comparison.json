@@ -1,0 +1,5831 @@
+{
+  "conditions": {
+    "seed": "RI-218",
+    "boards": ["due", "exposure"],
+    "horizon": 4,
+    "periodSlots": 1,
+    "decision": {
+      "allocate": ["deadline", "impact"],
+      "proceed": "wait",
+      "score": "value - pending openRisk",
+      "preference": "配る差引が大きいとき配る、配らない差引が大きいとき配らない、同じとき同点"
+    },
+    "baseline": {
+      "slots": 2,
+      "deadlineShift": 0,
+      "riskScale": 1,
+      "blocked": false
+    },
+    "blockedRequest": {
+      "id": "blocked",
+      "team": "platform",
+      "requires": "design",
+      "deadline": 2,
+      "openRisk": 6,
+      "value": 1,
+      "fixedAgainst": ["deadlineShift", "riskScale"],
+      "follows": "slots"
+    },
+    "held": {
+      "slots": "全依頼の必要枠だけを動かす。期限シフトは0、未解決リスク倍率は1。ブロック依頼の必要枠も同じ値",
+      "deadlineShift": "初回の3件の期限へ足す値だけを動かす。必要枠は2、未解決リスク倍率は1。ブロック依頼の期限2は動かさない",
+      "riskScale": "初回の3件の未解決リスクへ掛ける倍率だけを動かす。必要枠は2、期限シフトは0。ブロック依頼の未解決リスク6は動かさない"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false,
+    "avoidsBlocked": false
+  },
+  "sweeps": {
+    "slots": [
+      {
+        "axis": "slots",
+        "parameter": "1",
+        "rules": {
+          "slots": 1,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 15,
+                  "risk": 0,
+                  "score": 15,
+                  "expert": null,
+                  "pending": [],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 0,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 4
+                    },
+                    {
+                      "id": "design",
+                      "tick": 2,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 25
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 15,
+                  "risk": 0,
+                  "score": 15,
+                  "expert": null,
+                  "pending": [],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 0,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 4
+                    },
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 25
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 0,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 16,
+                  "risk": 0,
+                  "score": 16,
+                  "expert": null,
+                  "pending": [],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 0,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 2,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 35
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 0,
+                  "score": 8,
+                  "expert": null,
+                  "pending": [],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 0,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 27
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "risk": 10,
+                  "score": 4,
+                  "expert": "platform",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 0,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 29
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 0,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "slots",
+        "parameter": "2",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 4,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 10,
+                  "score": -2,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "slots",
+        "parameter": "3",
+        "rules": {
+          "slots": 3,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 8,
+                  "score": 1,
+                  "expert": "incident",
+                  "pending": ["risk", "design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 2,
+                  "risk": 5,
+                  "score": -3,
+                  "expert": "incident",
+                  "pending": ["ship", "risk"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 2,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 7
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 18,
+                  "score": -18,
+                  "expert": "incident",
+                  "pending": ["risk", "design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 1
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 5,
+                  "score": 1,
+                  "expert": "platform",
+                  "pending": ["ship", "design"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 2,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 24,
+                  "score": -24,
+                  "expert": "incident",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 2,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 1
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 2,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "slots",
+        "parameter": "4",
+        "rules": {
+          "slots": 4,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 8,
+                  "score": -8,
+                  "expert": "product",
+                  "pending": ["risk", "design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 2
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 2,
+                  "risk": 5,
+                  "score": -3,
+                  "expert": "platform",
+                  "pending": ["ship", "risk"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 7
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 14,
+                  "score": -14,
+                  "expert": "product",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 2
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 18,
+                  "score": -18,
+                  "expert": "product",
+                  "pending": ["risk", "design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 1
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 5,
+                  "score": -5,
+                  "expert": "incident",
+                  "pending": ["ship", "design"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 24,
+                  "score": -24,
+                  "expert": "product",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 1
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 11,
+                  "score": -11,
+                  "expert": "incident",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "slots",
+        "parameter": "5",
+        "rules": {
+          "slots": 5,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 10,
+                  "score": -10,
+                  "expert": "product",
+                  "pending": ["ship", "risk", "design"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 10,
+                  "score": -10,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "product",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 19,
+                  "score": -19,
+                  "expert": "product",
+                  "pending": ["ship", "risk", "design"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 19,
+                  "score": -19,
+                  "expert": "incident",
+                  "pending": ["ship", "risk", "design"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 25,
+                  "score": -25,
+                  "expert": "product",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 25,
+                  "score": -25,
+                  "expert": "incident",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "deadlineShift": [
+      {
+        "axis": "deadlineShift",
+        "parameter": "-1",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": -1,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 4,
+                  "score": -4,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 0
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 15
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 10,
+                  "score": -10,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 0
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 15
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "deadlineShift",
+        "parameter": "0",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 4,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 10,
+                  "score": -2,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "deadlineShift",
+        "parameter": "1",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 1,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "risk": 4,
+                  "score": 10,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 29
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 24,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 9
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "deadlineShift",
+        "parameter": "2",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 2,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "risk": 4,
+                  "score": 10,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 29
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 25,
+                  "score": -25,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "riskScale": [
+      {
+        "axis": "riskScale",
+        "parameter": "0",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 0,
+          "riskScale": 0,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 0,
+                "score": 0,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 0,
+                  "score": 13,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 13
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 11,
+                  "risk": 0,
+                  "score": 11,
+                  "expert": "platform",
+                  "pending": ["risk"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 6,
+                "score": -6,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 6,
+                  "score": 3,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 9
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 6,
+                  "score": -6,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 0,
+                "score": 0,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 0,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 8
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 0,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 8
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 6,
+                "score": -6,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 6,
+                  "score": 2,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 8
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 6,
+                  "score": -6,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "riskScale",
+        "parameter": "1",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 0,
+          "riskScale": 1,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 10,
+                "score": -10,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 5,
+                  "score": 8,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 2,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 14
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 16,
+                "score": -16,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 14,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 11
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "risk": 16,
+                  "score": -16,
+                  "expert": "platform",
+                  "pending": ["ship", "risk", "design", "blocked"],
+                  "delivered": [],
+                  "lost": false
+                },
+                "preference": "tie",
+                "margin": 0
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 19,
+                "score": -19,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 4,
+                  "score": 4,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 1,
+                  "score": 7,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 26
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 25,
+                "score": -25,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 10,
+                  "score": -2,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 11,
+                  "score": -5,
+                  "expert": "platform",
+                  "pending": ["ship", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "riskScale",
+        "parameter": "2",
+        "rules": {
+          "slots": 2,
+          "deadlineShift": 0,
+          "riskScale": 2,
+          "blocked": false
+        },
+        "rows": [
+          {
+            "board": "due",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 20,
+                "score": -20,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 13,
+                  "risk": 10,
+                  "score": 3,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 23
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 6,
+                  "risk": 4,
+                  "score": 2,
+                  "expert": "incident",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 4
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 22
+              }
+            ]
+          },
+          {
+            "board": "due",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 26,
+                "score": -26,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 9,
+                  "risk": 22,
+                  "score": -13,
+                  "expert": "platform",
+                  "pending": ["risk", "design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 9
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 13
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "blocked"
+                  }
+                ],
+                "result": {
+                  "value": 2,
+                  "risk": 10,
+                  "score": -8,
+                  "expert": "platform",
+                  "pending": ["ship", "risk"],
+                  "delivered": [
+                    {
+                      "id": "design",
+                      "tick": 1,
+                      "value": 2
+                    },
+                    {
+                      "id": "blocked",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 18
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": false,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 38,
+                "score": -38,
+                "expert": null,
+                "pending": ["ship", "risk", "design"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 8,
+                  "score": 0,
+                  "expert": "incident",
+                  "pending": ["design"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 38
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 2,
+                  "score": 6,
+                  "expert": "platform",
+                  "pending": ["ship"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 44
+              }
+            ]
+          },
+          {
+            "board": "exposure",
+            "blocked": true,
+            "proceed": {
+              "inputs": [
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 0,
+                "risk": 44,
+                "score": -44,
+                "expert": null,
+                "pending": ["ship", "risk", "design", "blocked"],
+                "delivered": [],
+                "lost": false
+              }
+            },
+            "allocations": [
+              {
+                "strategy": "deadline",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ship"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 14,
+                  "score": -6,
+                  "expert": "incident",
+                  "pending": ["design", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "ship",
+                      "tick": 1,
+                      "value": 8
+                    },
+                    {
+                      "id": "risk",
+                      "tick": 3,
+                      "value": 0
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 38
+              },
+              {
+                "strategy": "impact",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "risk"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "design"
+                  }
+                ],
+                "result": {
+                  "value": 8,
+                  "risk": 8,
+                  "score": 0,
+                  "expert": "platform",
+                  "pending": ["ship", "blocked"],
+                  "delivered": [
+                    {
+                      "id": "risk",
+                      "tick": 1,
+                      "value": 6
+                    },
+                    {
+                      "id": "design",
+                      "tick": 3,
+                      "value": 2
+                    }
+                  ],
+                  "lost": false
+                },
+                "preference": "allocate",
+                "margin": 44
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "slots",
+      "board": "due",
+      "blocked": false,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -8,
+        "proceed": -10
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -10,
+        "proceed": -10
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "due",
+      "blocked": false,
+      "strategy": "impact",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -3,
+        "proceed": -10
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -10,
+        "proceed": -10
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "due",
+      "blocked": true,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -14,
+        "proceed": -16
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -16,
+        "proceed": -16
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "exposure",
+      "blocked": false,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -18,
+        "proceed": -19
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -19,
+        "proceed": -19
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "exposure",
+      "blocked": false,
+      "strategy": "impact",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -5,
+        "proceed": -19
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -19,
+        "proceed": -19
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "exposure",
+      "blocked": true,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -24,
+        "proceed": -25
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -25,
+        "proceed": -25
+      }
+    },
+    {
+      "axis": "slots",
+      "board": "exposure",
+      "blocked": true,
+      "strategy": "impact",
+      "before": {
+        "parameter": "4",
+        "preference": "allocate",
+        "allocate": -11,
+        "proceed": -25
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "allocate": -25,
+        "proceed": -25
+      }
+    },
+    {
+      "axis": "deadlineShift",
+      "board": "due",
+      "blocked": true,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "0",
+        "preference": "allocate",
+        "allocate": -5,
+        "proceed": -16
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "tie",
+        "allocate": -16,
+        "proceed": -16
+      }
+    },
+    {
+      "axis": "deadlineShift",
+      "board": "exposure",
+      "blocked": true,
+      "strategy": "deadline",
+      "before": {
+        "parameter": "1",
+        "preference": "allocate",
+        "allocate": -16,
+        "proceed": -25
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie",
+        "allocate": -25,
+        "proceed": -25
+      }
+    },
+    {
+      "axis": "riskScale",
+      "board": "exposure",
+      "blocked": true,
+      "strategy": "impact",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "allocate": -6,
+        "proceed": -6
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "allocate",
+        "allocate": -5,
+        "proceed": -25
+      }
+    },
+    {
+      "axis": "riskScale",
+      "board": "due",
+      "blocked": true,
+      "strategy": "impact",
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "allocate": -16,
+        "proceed": -16
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "allocate",
+        "allocate": -8,
+        "proceed": -26
+      }
+    }
+  ],
+  "blockedOnlyReversals": [
+    {
+      "axis": "deadlineShift",
+      "board": "due",
+      "strategy": "deadline",
+      "before": {
+        "parameter": "0",
+        "plain": "allocate",
+        "blocked": "allocate",
+        "blockedAllocate": -5,
+        "blockedProceed": -16
+      },
+      "after": {
+        "parameter": "1",
+        "plain": "allocate",
+        "blocked": "tie",
+        "blockedAllocate": -16,
+        "blockedProceed": -16
+      }
+    },
+    {
+      "axis": "deadlineShift",
+      "board": "exposure",
+      "strategy": "deadline",
+      "before": {
+        "parameter": "1",
+        "plain": "allocate",
+        "blocked": "allocate",
+        "blockedAllocate": -16,
+        "blockedProceed": -25
+      },
+      "after": {
+        "parameter": "2",
+        "plain": "allocate",
+        "blocked": "tie",
+        "blockedAllocate": -25,
+        "blockedProceed": -25
+      }
+    },
+    {
+      "axis": "riskScale",
+      "board": "exposure",
+      "strategy": "impact",
+      "before": {
+        "parameter": "0",
+        "plain": "allocate",
+        "blocked": "tie",
+        "blockedAllocate": -6,
+        "blockedProceed": -6
+      },
+      "after": {
+        "parameter": "1",
+        "plain": "allocate",
+        "blocked": "allocate",
+        "blockedAllocate": -5,
+        "blockedProceed": -25
+      }
+    },
+    {
+      "axis": "riskScale",
+      "board": "due",
+      "strategy": "impact",
+      "before": {
+        "parameter": "1",
+        "plain": "allocate",
+        "blocked": "tie",
+        "blockedAllocate": -16,
+        "blockedProceed": -16
+      },
+      "after": {
+        "parameter": "2",
+        "plain": "allocate",
+        "blocked": "allocate",
+        "blockedAllocate": -8,
+        "blockedProceed": -26
+      }
+    }
+  ],
+  "differsWithBlocked": [
+    {
+      "axis": "slots",
+      "parameter": "1",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "slots",
+      "parameter": "2",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "slots",
+      "parameter": "3",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "slots",
+      "parameter": "4",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "-1",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "0",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "1",
+      "board": "due",
+      "strategy": "deadline",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "1",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "2",
+      "board": "due",
+      "strategy": "deadline",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "2",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "deadlineShift",
+      "parameter": "2",
+      "board": "exposure",
+      "strategy": "deadline",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "riskScale",
+      "parameter": "0",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "riskScale",
+      "parameter": "0",
+      "board": "exposure",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    },
+    {
+      "axis": "riskScale",
+      "parameter": "1",
+      "board": "due",
+      "strategy": "impact",
+      "plain": "allocate",
+      "blocked": "tie"
+    }
+  ],
+  "allocateNeverBelowProceed": true
+}

@@ -3,13 +3,17 @@ import { rosterHeadcount } from './customerSegments';
 import { PRODUCT_CAPACITY } from './productGrowth';
 import {
   applyStabilityContract as apply,
+  boardContractRules,
   chooseContractAction,
   compareStabilityContracts,
+  compareStabilityContractSensitivity,
   createStabilityContract as create,
+  evaluateStabilityContractRules,
   summarizeStabilityContract,
   viewStabilityContract,
 } from './stabilityContract';
 import comparison from '../../docs/prototypes/stability-contract-comparison.json';
+import sensitivity from '../../docs/prototypes/stability-contract-sensitivity.json';
 
 describe('RI-236 安定運用の契約', () => {
   it('契約前に確保枠、報酬、違反の影響を示し、閲覧では期間が動かない', () => {
@@ -116,5 +120,181 @@ describe('RI-236 安定運用の契約', () => {
       }
       expect(summarizeStabilityContract(live)).toEqual(row.result);
     }
+  });
+});
+
+describe('RI-236 契約係数の感度', () => {
+  it('初回の係数とJSONを維持し、変更した係数を契約前に閲覧できる', () => {
+    expect(boardContractRules('calm')).toEqual({ reserve: 2, reward: 4, penalty: 1 });
+    expect(boardContractRules('strict')).toEqual({ reserve: 2, reward: 4, penalty: 10 });
+    expect(compareStabilityContracts(comparison.seed)).toEqual(comparison.results);
+    const rules = { reserve: 3, reward: 7, penalty: 5 };
+    const initial = create('RI-236', 'calm', rules);
+    rules.reserve = 1;
+    expect(viewStabilityContract(initial)).toMatchObject({ reserve: 3, reward: 7, penalty: 5 });
+    for (const patch of [
+      { reserve: -1 },
+      { reserve: 5 },
+      { reserve: 0.5 },
+      { reward: -1 },
+      { reward: NaN },
+      { penalty: Infinity },
+      { penalty: Number.MAX_SAFE_INTEGER + 1 },
+    ]) {
+      expect(() => create('RI-236', 'calm', { ...boardContractRules('calm'), ...patch })).toThrow(
+        RangeError,
+      );
+    }
+  });
+
+  it('一係数ずつ比較し、反転と同点の位置をJSONへ固定する', () => {
+    const data = compareStabilityContractSensitivity();
+    expect(data).toEqual(sensitivity);
+    expect(
+      data.sweeps.map((sweep) => [sweep.id, sweep.axis, sweep.points.map((p) => p.value)]),
+    ).toEqual([
+      ['reserve-calm', 'reserve', [0, 1, 2, 3, 4]],
+      ['reserve-boundary', 'reserve', [0, 1, 2, 3, 4]],
+      ['reward', 'reward', [0, 4, 6, 7, 8]],
+      ['penalty', 'penalty', [0, 1, 3, 4, 5, 10]],
+    ]);
+    for (const sweep of data.sweeps) {
+      for (const point of sweep.points) {
+        expect(point.rules).toEqual({ ...sweep.anchor, [sweep.axis]: point.value });
+        expect(point.initial).toMatchObject(point.rules);
+      }
+    }
+    expect(data.sweeps.map((sweep) => [sweep.id, sweep.transitions])).toEqual([
+      [
+        'reserve-calm',
+        [
+          {
+            before: { value: 0, preference: 'tie', margin: 0 },
+            after: { value: 1, preference: 'rush', margin: -9 },
+          },
+        ],
+      ],
+      [
+        'reserve-boundary',
+        [
+          {
+            before: { value: 0, preference: 'tie', margin: 0 },
+            after: { value: 1, preference: 'steady', margin: 3 },
+          },
+          {
+            before: { value: 2, preference: 'steady', margin: 3 },
+            after: { value: 3, preference: 'rush', margin: -9 },
+          },
+        ],
+      ],
+      [
+        'reward',
+        [
+          {
+            before: { value: 6, preference: 'rush', margin: -3 },
+            after: { value: 7, preference: 'tie', margin: 0 },
+          },
+          {
+            before: { value: 7, preference: 'tie', margin: 0 },
+            after: { value: 8, preference: 'steady', margin: 3 },
+          },
+        ],
+      ],
+      [
+        'penalty',
+        [
+          {
+            before: { value: 3, preference: 'rush', margin: -3 },
+            after: { value: 4, preference: 'tie', margin: 0 },
+          },
+          {
+            before: { value: 4, preference: 'tie', margin: 0 },
+            after: { value: 5, preference: 'steady', margin: 3 },
+          },
+        ],
+      ],
+    ]);
+  });
+
+  it('成果の段差と報酬・損失の境界式を、各列の外側を含む整数範囲でも確認する', () => {
+    const completedByReserve = [3, 1, 1, 0, 0];
+    for (let reserve = 0; reserve <= 4; reserve++) {
+      for (let reward = 0; reward <= 12; reward++) {
+        for (let penalty = 0; penalty <= 12; penalty++) {
+          const point = evaluateStabilityContractRules('RI-236', { reserve, reward, penalty });
+          const [steady, rush] = point.runs;
+          const expectedSteady = 12 * completedByReserve[reserve] + 3 * reward;
+          const expectedRush = reserve === 0 ? 36 + 3 * reward : 36 - 3 * penalty;
+          expect(steady.result.completed.length).toBe(completedByReserve[reserve]);
+          expect(rush.result.completed).toEqual(['api', 'screen', 'billing']);
+          expect(steady.result.budget).toBe(expectedSteady);
+          expect(rush.result.budget).toBe(expectedRush);
+          expect(point.margin).toBe(expectedSteady - expectedRush);
+          expect(point.preference).toBe(
+            expectedSteady > expectedRush
+              ? 'steady'
+              : expectedSteady < expectedRush
+                ? 'rush'
+                : 'tie',
+          );
+          for (const run of point.runs) {
+            const a = run.accounting;
+            expect(run.result.budget).toBe(a.completedValue + a.rewardIncome - a.breachLoss);
+            expect(a.maintenanceWork + a.assignedFeatureWork).toBe(12);
+            expect(a.acceptedFeatureWork + a.discardedFeatureWork).toBe(a.assignedFeatureWork);
+            expect(a.acceptedFeatureWork).toBe(run.result.completed.length * 4 + a.unfinishedWork);
+            expect(run.result.lost).toBe(false);
+          }
+        }
+      }
+    }
+    const point = evaluateStabilityContractRules('RI-236', { reserve: 1, reward: 4, penalty: 5 });
+    expect(point.runs[0].accounting).toEqual({
+      completedValue: 12,
+      rewardIncome: 12,
+      breachLoss: 0,
+      maintenanceWork: 3,
+      assignedFeatureWork: 9,
+      acceptedFeatureWork: 7,
+      discardedFeatureWork: 2,
+      unfinishedWork: 3,
+    });
+    expect(
+      evaluateStabilityContractRules('RI-236', { reserve: 4, reward: 0, penalty: 24 }).runs.map(
+        (run) => run.result.budget,
+      ),
+    ).toEqual([0, -36]);
+  });
+
+  it('全42入力列で閲覧・毎入力の保存再開・方針の再生が一致し、期間終了後は動かない', () => {
+    const data = compareStabilityContractSensitivity();
+    let count = 0;
+    for (const sweep of data.sweeps) {
+      for (const point of sweep.points) {
+        for (const run of point.runs) {
+          count++;
+          let live = point.initial;
+          let saved = JSON.parse(JSON.stringify(live));
+          for (const input of run.inputs) {
+            const previous = live;
+            const before = structuredClone(live);
+            expect(chooseContractAction(previous, run.strategy)).toEqual(input);
+            expect(chooseContractAction(saved, run.strategy)).toEqual(input);
+            expect(apply(live, { type: 'view' })).toBe(live);
+            expect(viewStabilityContract(live)).toEqual(viewStabilityContract(saved));
+            live = apply(live, input);
+            saved = apply(JSON.parse(JSON.stringify(saved)), input);
+            expect(previous).toEqual(before);
+            expect(saved).toEqual(live);
+          }
+          expect(summarizeStabilityContract(live)).toEqual(run.result);
+          expect(live.tick).toBe(3);
+          expect(live.rewards + live.breaches).toBe(3);
+          expect(apply(live, chooseContractAction(live, run.strategy))).toBe(live);
+          expect(point.initial.tick).toBe(0);
+        }
+      }
+    }
+    expect(count).toBe(42);
   });
 });

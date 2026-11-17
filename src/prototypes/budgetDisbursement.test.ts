@@ -3,11 +3,24 @@ import {
   applyBudgetDisbursement as apply,
   chooseFundingAction,
   compareBudgetDisbursements,
+  compareBudgetDisbursementSensitivity,
   createBudgetDisbursement as create,
   summarizeBudgetDisbursement,
   viewBudgetDisbursement,
 } from './budgetDisbursement';
+import type { FundingBoard, FundingMethod, FundingParameters } from './budgetDisbursement';
 import comparison from '../../docs/prototypes/budget-disbursement-comparison.json';
+import sensitivity from '../../docs/prototypes/budget-disbursement-sensitivity.json';
+
+function finish(
+  board: FundingBoard,
+  method: FundingMethod,
+  parameters: Partial<FundingParameters>,
+) {
+  let state = apply(create('boundary', board, parameters), { type: 'choose', method });
+  for (let tick = 0; tick < state.horizon; tick++) state = apply(state, { type: 'advance' });
+  return state;
+}
 
 describe('RI-237 予算の支給方式', () => {
   it('総額と支給時点と条件と返済義務を一緒に示し、閲覧では資金が動かない', () => {
@@ -135,5 +148,131 @@ describe('RI-237 予算の支給方式', () => {
       }
       expect(summarizeBudgetDisbursement(live)).toEqual(row.result);
     }
+  });
+
+  it.each([
+    ['early', 'advance', 3],
+    ['early', 'staged', 5],
+    ['early', 'conditional', 9],
+    ['late', 'advance', 7],
+    ['late', 'staged', 3],
+    ['late', 'conditional', 2],
+  ] as const)(
+    '%s の %s は手持ち %i から完成し、その直前は支払不能になる',
+    (board, method, minimum) => {
+      for (const startCash of [minimum - 1, minimum, minimum + 1]) {
+        const state = finish(board, method, { startCash });
+        expect(state.complete).toBe(startCash >= minimum);
+        expect(state.shortfall > 0).toBe(startCash < minimum);
+        expect(state.periods.some((period) => !period.paid)).toBe(startCash < minimum);
+      }
+    },
+  );
+
+  it('手持ちの境界で前払い・段階・条件付きの得点首位が切り替わる', () => {
+    const rows = compareBudgetDisbursementSensitivity();
+    const winner = (id: string) => rows.find((row) => row.id === id)!.ranking[0];
+    expect(winner('early-cash-3')).toEqual(['advance']);
+    expect(winner('early-cash-4')).toEqual(['advance']);
+    expect(winner('early-cash-5')).toEqual(['staged']);
+    expect(winner('early-cash-8')).toEqual(['staged']);
+    expect(winner('early-cash-9')).toEqual(['conditional']);
+    expect(winner('late-cash-1')).toEqual(['staged']);
+    expect(winner('late-cash-2')).toEqual(['conditional']);
+  });
+
+  it('完成価値3と4で首位が同点・反転し、8で段階と前払いの順位が反転する', () => {
+    const rows = compareBudgetDisbursementSensitivity();
+    const rank = (id: string) => rows.find((row) => row.id === id)!.ranking;
+    expect(rank('early-value-2')).toEqual([['staged'], ['advance'], ['conditional']]);
+    expect(rank('early-value-3')).toEqual([['advance', 'staged'], ['conditional']]);
+    expect(rank('early-value-4')).toEqual([['advance'], ['staged'], ['conditional']]);
+    expect(rank('late-value-3')).toEqual([['advance'], ['conditional'], ['staged']]);
+    expect(rank('late-value-4')).toEqual([['advance', 'conditional'], ['staged']]);
+    expect(rank('late-value-5')).toEqual([['conditional'], ['advance'], ['staged']]);
+    expect(rank('late-value-7')).toEqual([['conditional'], ['advance'], ['staged']]);
+    expect(rank('late-value-8')).toEqual([['conditional'], ['advance', 'staged']]);
+    expect(rank('late-value-9')).toEqual([['conditional'], ['staged'], ['advance']]);
+  });
+
+  it.each([
+    ['early', 1, 8],
+    ['early', 2, 9],
+    ['early', 3, 10],
+    ['late', 1, 1],
+    ['late', 2, 2],
+    ['late', 3, 3],
+  ] as const)('%s の条件達成を最初の %i 期にすると最小手持ちは %i', (board, after, minimum) => {
+    for (const startCash of [minimum - 1, minimum, minimum + 1]) {
+      const initial = create('timing', board, { startCash, conditionalAfterPaidPeriods: after });
+      const offer = viewBudgetDisbursement(initial).offers.find(
+        (item) => item.method === 'conditional',
+      )!;
+      expect(offer.total).toBe(16);
+      expect(offer.condition).toBe(['first-paid', 'first-two-paid', 'first-three-paid'][after - 1]);
+      expect(offer.schedule).toEqual(
+        Array.from({ length: 4 }, (_, tick) => (tick === after ? 16 : 0)),
+      );
+      const state = finish(board, 'conditional', { startCash, conditionalAfterPaidPeriods: after });
+      expect(state.received).toBe(startCash >= minimum ? 16 : 0);
+      expect(state.unpaid).toBe(startCash >= minimum ? 0 : 16);
+      expect(state.complete).toBe(startCash >= minimum);
+      expect(state.periods.map((period) => period.disbursed)).toEqual(
+        offer.schedule.map((amount) => (startCash >= minimum ? amount : 0)),
+      );
+      expect(state.repayment).toBe(0);
+      expect(apply(state, { type: 'advance' })).toBe(state);
+    }
+  });
+
+  it('感度比較JSONの32条件・96戦略を再生成し、毎入力保存再開と再生と資金保存則が一致する', () => {
+    const rows = compareBudgetDisbursementSensitivity(sensitivity.seed);
+    expect(rows).toHaveLength(32);
+    expect(new Set(rows.map((row) => row.id)).size).toBe(rows.length);
+    expect(rows).toEqual(sensitivity.results);
+    for (const row of rows) {
+      expect(row.initial).toEqual(create(sensitivity.seed, row.initial.board, row.parameters));
+      for (const strategy of row.strategies) {
+        let live = row.initial;
+        let saved = structuredClone(live);
+        for (const input of strategy.inputs) {
+          const previous = live;
+          const before = structuredClone(previous);
+          expect(chooseFundingAction(previous, strategy.method)).toEqual(input);
+          live = apply(live, input);
+          saved = apply(JSON.parse(JSON.stringify(saved)), input);
+          expect(saved).toEqual(live);
+          expect(previous).toEqual(before);
+          expect(live.cash).toBeGreaterThanOrEqual(0);
+        }
+        const { paidCost: recordedCost, firstUnpaidTick, ...summary } = strategy.result;
+        expect(summarizeBudgetDisbursement(live)).toEqual(summary);
+        const paidCost = live.periods.reduce(
+          (sum, period) => sum + (period.paid ? period.cost : 0),
+          0,
+        );
+        expect(recordedCost).toBe(paidCost);
+        expect(firstUnpaidTick).toBe(
+          live.paid.indexOf(false) === -1 ? null : live.paid.indexOf(false),
+        );
+        expect(live.cash + paidCost).toBe(live.startCash + live.received);
+        expect(live.received + live.unpaid).toBe(
+          live.offers.find((offer) => offer.method === strategy.method)!.total,
+        );
+        expect(live.tick).toBe(live.horizon);
+        expect(live.complete).toBe(live.paid.every(Boolean));
+        expect(apply(live, { type: 'advance' })).toBe(live);
+      }
+    }
+  });
+
+  it('感度係数は非負の安全な整数と1〜3期に限定する', () => {
+    for (const value of [-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => create('invalid', 'early', { startCash: value })).toThrow();
+      expect(() => create('invalid', 'early', { completionValue: value })).toThrow();
+    }
+    const invalidTiming = JSON.parse('{"conditionalAfterPaidPeriods": 4}');
+    expect(() => create('invalid', 'early', invalidTiming)).toThrow();
+    expect(create('zero', 'early', { startCash: 0, completionValue: 0 }).cash).toBe(0);
   });
 });

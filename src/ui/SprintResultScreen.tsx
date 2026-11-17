@@ -13,6 +13,7 @@ import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { sprintResultDiagnosisPhrases } from '../render/sprintResultDiagnosisPhrases';
 import { planSprintGradeView } from '../render/sprintGradeView';
 import { PhraseText } from './PhraseText';
+import { PromotionVoices } from './PromotionVoices';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { DiagnosisType, GrowthOutcome } from '../sim/run/types';
@@ -263,6 +264,7 @@ export function SprintResultScreen({
                     </li>
                   )}
                 </ul>
+                <PromotionVoices growth={growth} key={JSON.stringify(growth.promotions)} />
               </div>
             )}
             {burnLog.showSection && (

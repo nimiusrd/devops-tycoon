@@ -8294,6 +8294,24 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 
 .result-growth {
   margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.promotion-voices {
+  margin-top: 0.25rem;
+}
+.promotion-voice {
+  margin: 0.75rem 0;
+}
+.promotion-voice figcaption {
+  font-weight: 800;
+}
+.promotion-voice blockquote {
+  margin: 0.25rem 0;
+}
+.promotion-voices-note {
+  margin: 0.25rem 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
 }
 .growth-list {
   list-style: none;

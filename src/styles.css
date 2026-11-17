@@ -7587,6 +7587,42 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--text-dim);
   margin-bottom: 12px;
 }
+.run-ending {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--panel);
+}
+.run-ending-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.45rem 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.run-ending-text {
+  margin: 0 0 0.85rem;
+  line-height: 1.7;
+}
+.run-ending-facts {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+}
+.run-ending-facts > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+}
+.run-ending-facts dt {
+  color: var(--text-dim);
+}
+.run-ending-facts dd {
+  margin: 0;
+}
 .result-win-title {
   border: 1px solid var(--sun);
   border-radius: 12px;

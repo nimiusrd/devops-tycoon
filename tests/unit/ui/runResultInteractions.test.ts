@@ -81,6 +81,22 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('RunResultScreen の勝敗・報酬表示', () => {
+  it.each(['happiness', 'chaos'] as const)(
+    '初見とリプレイの %s に結末を添え、記録された診断を維持する',
+    (winType) => {
+      const state = makeState({ winType, diagnosis: 'seniorSacrifice' });
+      for (const isReplay of [false, true]) {
+        const screen = mountResult({ state, isReplay });
+        expect(screen.find('run-ending').props['data-ending']).toBe(winType);
+        expect(content(screen.find('diagnosis'))).toContain('Senior Sacrifice');
+        expect(screen.has('run-win-title')).toBe(true);
+        expect(screen.has('run-delivered')).toBe(true);
+        screen.click('new-run');
+        expect(screen.onNewRun).toHaveBeenCalledOnce();
+      }
+    },
+  );
+
   it.each([false, true])(
     '勝利称号の登録済み=%s とボス報酬を表示して次のランへ進む',
     (collected) => {

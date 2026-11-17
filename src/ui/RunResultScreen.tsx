@@ -39,6 +39,7 @@ import { LOSE_LABEL } from '../render/runOutcomeLabels';
 import { buildCompanyResult, type CompanyResult } from '../render/companyResultView';
 import { CompanyResultImage } from './CompanyResultImage';
 import { VisualIcon } from './VisualIcon';
+import { runEndingView } from '../render/runEndingView';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
   exceeded: '超過達成',
@@ -91,6 +92,7 @@ export function RunResultScreen({
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const win = won && state.winType ? winView(state.winType) : null;
+  const ending = runEndingView(state);
   const failureTheme = !won ? quarterFailureTheme(state.quarterReview?.outcome) : null;
   const collectedTitle = state.winType
     ? WIN_TITLE_DEFS.find((title) => title.id === state.winType)
@@ -176,6 +178,30 @@ export function RunResultScreen({
           )}
         </div>
         <p className="run-end-desc">{won ? win?.description : loseDescription}</p>
+        {ending && (
+          <section
+            className="result-title run-ending"
+            data-testid="run-ending"
+            data-ending={ending.type}
+            aria-labelledby="run-ending-title"
+          >
+            <p className="result-section-label">この会社の結末</p>
+            <h2 id="run-ending-title" className="run-ending-title">
+              <VisualIcon name={ending.icon} size="header" />
+              {ending.title}
+            </h2>
+            <p className="run-ending-text">{ending.text}</p>
+            <p className="result-section-label">決着時の記録</p>
+            <dl className="run-ending-facts">
+              {ending.facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
         {nextAction && (
           <div className="result-lose-next-action" data-testid="lose-next-action-section">
             <p className="result-section-label">次の一手</p>

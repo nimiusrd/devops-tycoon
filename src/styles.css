@@ -6026,6 +6026,83 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   flex-direction: column;
   gap: 12px;
 }
+.recruit-preview {
+  margin-block: 16px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.recruit-heading {
+  margin: 0;
+  font-size: 14px;
+}
+.recruit-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+.recruit-stats dt {
+  color: var(--text-dim);
+}
+.recruit-stats dd {
+  margin: 0;
+  font-weight: 800;
+}
+.recruit-traits {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.recruit-sample p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+.recruit-note {
+  margin: 4px 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.recruit-comparison {
+  margin-top: 12px;
+}
+.recruit-comparison summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+.recruit-compare-label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.recruit-compare-label select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.recruit-comparison summary:focus-visible,
+.recruit-compare-label select:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
+}
+@media (min-width: 700px) {
+  .recruit-preview:has(.recruit-comparison[open]) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+  .recruit-comparison[open] {
+    margin-top: 0;
+  }
+}
 .event-choice,
 .rest-option {
   display: flex;

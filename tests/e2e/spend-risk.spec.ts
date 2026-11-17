@@ -1,4 +1,5 @@
 import { RECRUIT_COST } from '../../src/sim/member';
+import { recruitCandidateView } from '../../src/render/recruitCandidateView';
 import { expect, test, type Page } from './fixtures';
 
 const PHONE_SE = { width: 320, height: 568 } as const;
@@ -135,6 +136,10 @@ test.describe('予算枯渇になる購入と採用', () => {
   for (const screen of ['shop', 'rest', 'recruit'] as const) {
     test(`${screen} は確定前にランが終わらず、取消後は元の操作へ戻る`, async ({ page }) => {
       const target = await openExactSpend(page, screen);
+      const candidate =
+        screen === 'recruit'
+          ? recruitCandidateView(await page.evaluate(() => window.game!.getState()))
+          : null;
       const dialog = page.getByTestId(target.screen === 'shop' ? 'shop' : target.screen);
       await expect(dialog).toBeVisible();
       const control = page.getByTestId(target.controlTestId);
@@ -144,6 +149,7 @@ test.describe('予算枯渇になる購入と採用', () => {
       await control.click();
       const confirm = page.getByTestId('spend-confirm');
       await expect(confirm).toBeVisible();
+      if (candidate) await expect(confirm).toContainText(`${candidate.member.name}の採用`);
       await expect(page.getByTestId('spend-confirm-cancel')).toBeFocused();
 
       const viewport = page.viewportSize() ?? PHONE_SE;

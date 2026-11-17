@@ -7580,6 +7580,24 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-weight: 800;
   margin: 0 0 1rem;
 }
+.quarter-voices {
+  margin-bottom: 1rem;
+  overflow-wrap: anywhere;
+}
+.quarter-voice {
+  margin: 0.75rem 0 0;
+}
+.quarter-voice figcaption {
+  font-weight: 800;
+}
+.quarter-voice blockquote {
+  margin: 0.25rem 0;
+}
+.quarter-voices-note {
+  margin: 0.25rem 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
 .review-history {
   margin: 0 0 1rem;
 }

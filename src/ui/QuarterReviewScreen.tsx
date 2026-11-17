@@ -9,6 +9,7 @@ import { OUTCOME_LABELS } from '../sim/run/quarterReview';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import { QuarterOkr } from './QuarterOkr';
 import { QuarterRoadmap } from './QuarterRoadmap';
+import { QuarterReviewVoices } from './QuarterReviewVoices';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { StakeholderNegotiationList } from './StakeholderNegotiationList';
@@ -121,6 +122,8 @@ export function QuarterReviewScreen({
             </ul>
           </div>
         )}
+
+        <QuarterReviewVoices state={state} />
 
         {canAdjust && (
           <StakeholderNegotiationList

@@ -1,0 +1,1962 @@
+{
+  "version": 1,
+  "results": [
+    {
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 2,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 3,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            },
+            {
+              "id": "relay-mesh",
+              "loss": 3
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            },
+            {
+              "id": "relay-mesh",
+              "loss": 3
+            },
+            {
+              "id": "palette-cache",
+              "loss": 1
+            }
+          ],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 24,
+        "incidents": 7,
+        "incidentLoss": 31,
+        "updated": [],
+        "remaining": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "implementationLeft": 4,
+            "verificationLeft": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "implementationLeft": 3,
+            "verificationLeft": 2
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "implementationLeft": 2,
+            "verificationLeft": 1
+          }
+        ],
+        "coordinationLeft": 0,
+        "carryoverWork": 14,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": -11,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 24,
+          "incidents": 7,
+          "incidentLoss": 31,
+          "updated": [],
+          "remaining": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "implementationLeft": 4,
+              "verificationLeft": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "implementationLeft": 3,
+              "verificationLeft": 2
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 14,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 17,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 24,
+          "incidents": 7,
+          "incidentLoss": 31,
+          "updated": [],
+          "remaining": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "implementationLeft": 4,
+              "verificationLeft": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "implementationLeft": 3,
+              "verificationLeft": 2
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 14,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": -67,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "batch",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 2,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "batch",
+          "order": ["ledger-kernel", "relay-mesh", "palette-cache"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 3,
+          "implementation": 1,
+          "coordination": 2,
+          "verification": 1,
+          "shipped": 0,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 4,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel", "relay-mesh", "palette-cache"]
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 8,
+        "incidents": 1,
+        "incidentLoss": 6,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 4
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 4
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "tick": 4
+          }
+        ],
+        "remaining": [],
+        "coordinationLeft": 0,
+        "carryoverWork": 0,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 10,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 8,
+          "incidents": 1,
+          "incidentLoss": 6,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 4
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 4
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 10,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 8,
+          "incidents": 1,
+          "incidentLoss": 6,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 4
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 4
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 10,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 2,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "focus",
+          "order": ["ledger-kernel", "relay-mesh"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel"]
+        },
+        {
+          "tick": 3,
+          "implementation": 1,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 1,
+          "incidents": [],
+          "updated": ["relay-mesh"]
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "palette-cache",
+              "loss": 1
+            }
+          ],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 13,
+        "incidents": 1,
+        "incidentLoss": 1,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 3
+          }
+        ],
+        "remaining": [
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "implementationLeft": 2,
+            "verificationLeft": 1
+          }
+        ],
+        "coordinationLeft": 0,
+        "carryoverWork": 3,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 19,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 13,
+          "incidents": 1,
+          "incidentLoss": 1,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            }
+          ],
+          "remaining": [
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 3,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 25,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 13,
+          "incidents": 1,
+          "incidentLoss": 1,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            }
+          ],
+          "remaining": [
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 3,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 7,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "serial-all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 2,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "focus",
+          "order": ["ledger-kernel", "relay-mesh", "palette-cache"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel"]
+        },
+        {
+          "tick": 3,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["relay-mesh"]
+        },
+        {
+          "tick": 4,
+          "implementation": 1,
+          "coordination": 0,
+          "verification": 1,
+          "shipped": 2,
+          "incidents": [],
+          "updated": ["palette-cache"]
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 10,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 3
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "tick": 4
+          }
+        ],
+        "remaining": [],
+        "coordinationLeft": 0,
+        "carryoverWork": 0,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 20,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        }
+      ]
+    }
+  ],
+  "coordinationSensitivity": [
+    {
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 0,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 3,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            },
+            {
+              "id": "relay-mesh",
+              "loss": 3
+            }
+          ],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "ledger-kernel",
+              "loss": 6
+            },
+            {
+              "id": "relay-mesh",
+              "loss": 3
+            },
+            {
+              "id": "palette-cache",
+              "loss": 1
+            }
+          ],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 24,
+        "incidents": 7,
+        "incidentLoss": 31,
+        "updated": [],
+        "remaining": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "implementationLeft": 4,
+            "verificationLeft": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "implementationLeft": 3,
+            "verificationLeft": 2
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "implementationLeft": 2,
+            "verificationLeft": 1
+          }
+        ],
+        "coordinationLeft": 0,
+        "carryoverWork": 14,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": -11,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 24,
+          "incidents": 7,
+          "incidentLoss": 31,
+          "updated": [],
+          "remaining": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "implementationLeft": 4,
+              "verificationLeft": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "implementationLeft": 3,
+              "verificationLeft": 2
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 14,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 17,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 24,
+          "incidents": 7,
+          "incidentLoss": 31,
+          "updated": [],
+          "remaining": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "implementationLeft": 4,
+              "verificationLeft": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "implementationLeft": 3,
+              "verificationLeft": 2
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 14,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": -67,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "batch",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 0,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "batch",
+          "order": ["ledger-kernel", "relay-mesh", "palette-cache"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 3,
+          "implementation": 1,
+          "coordination": 0,
+          "verification": 3,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel"]
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 2,
+          "incidents": [],
+          "updated": ["relay-mesh", "palette-cache"]
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 10,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 3
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 4
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "tick": 4
+          }
+        ],
+        "remaining": [],
+        "coordinationLeft": 0,
+        "carryoverWork": 0,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 20,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 3
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 4
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 3
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 4
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 0,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "focus",
+          "order": ["ledger-kernel", "relay-mesh"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel"]
+        },
+        {
+          "tick": 3,
+          "implementation": 1,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 1,
+          "incidents": [],
+          "updated": ["relay-mesh"]
+        },
+        {
+          "tick": 4,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [
+            {
+              "id": "palette-cache",
+              "loss": 1
+            }
+          ],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 13,
+        "incidents": 1,
+        "incidentLoss": 1,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 3
+          }
+        ],
+        "remaining": [
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "implementationLeft": 2,
+            "verificationLeft": 1
+          }
+        ],
+        "coordinationLeft": 0,
+        "carryoverWork": 3,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 19,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 13,
+          "incidents": 1,
+          "incidentLoss": 1,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            }
+          ],
+          "remaining": [
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 3,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 25,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 13,
+          "incidents": 1,
+          "incidentLoss": 1,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            }
+          ],
+          "remaining": [
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "implementationLeft": 2,
+              "verificationLeft": 1
+            }
+          ],
+          "coordinationLeft": 0,
+          "carryoverWork": 3,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 7,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "serial-all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-258",
+        "tick": 0,
+        "activeTicks": 6,
+        "capacity": 4,
+        "batchCoordinationWork": 0,
+        "coordinationLeft": 0,
+        "plan": null,
+        "libraries": [
+          {
+            "id": "ledger-kernel",
+            "importance": "critical",
+            "domains": ["billing", "orders"],
+            "implementationWork": 4,
+            "verificationWork": 2,
+            "deadlineTick": 1,
+            "graceTicks": 1,
+            "incidentLossPerTick": 6,
+            "implementationLeft": 4,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "relay-mesh",
+            "importance": "important",
+            "domains": ["search", "notifications"],
+            "implementationWork": 3,
+            "verificationWork": 2,
+            "deadlineTick": 3,
+            "graceTicks": 1,
+            "incidentLossPerTick": 3,
+            "implementationLeft": 3,
+            "verificationLeft": 2,
+            "updatedAt": null
+          },
+          {
+            "id": "palette-cache",
+            "importance": "low",
+            "domains": ["catalog"],
+            "implementationWork": 2,
+            "verificationWork": 1,
+            "deadlineTick": 4,
+            "graceTicks": 1,
+            "incidentLossPerTick": 1,
+            "implementationLeft": 2,
+            "verificationLeft": 1,
+            "updatedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan",
+          "mode": "focus",
+          "order": ["ledger-kernel", "relay-mesh", "palette-cache"]
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "implementation": 4,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 0,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 2,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["ledger-kernel"]
+        },
+        {
+          "tick": 3,
+          "implementation": 2,
+          "coordination": 0,
+          "verification": 2,
+          "shipped": 0,
+          "incidents": [],
+          "updated": ["relay-mesh"]
+        },
+        {
+          "tick": 4,
+          "implementation": 1,
+          "coordination": 0,
+          "verification": 1,
+          "shipped": 2,
+          "incidents": [],
+          "updated": ["palette-cache"]
+        },
+        {
+          "tick": 5,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        },
+        {
+          "tick": 6,
+          "implementation": 0,
+          "coordination": 0,
+          "verification": 0,
+          "shipped": 4,
+          "incidents": [],
+          "updated": []
+        }
+      ],
+      "result": {
+        "completed": true,
+        "shipped": 10,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "updated": [
+          {
+            "id": "ledger-kernel",
+            "domains": ["billing", "orders"],
+            "tick": 2
+          },
+          {
+            "id": "relay-mesh",
+            "domains": ["search", "notifications"],
+            "tick": 3
+          },
+          {
+            "id": "palette-cache",
+            "domains": ["catalog"],
+            "tick": 4
+          }
+        ],
+        "remaining": [],
+        "coordinationLeft": 0,
+        "carryoverWork": 0,
+        "carryCost": 2,
+        "shipmentValuePerWork": 2,
+        "comparisonValue": 20,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 0,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "shipped": 10,
+          "incidents": 0,
+          "incidentLoss": 0,
+          "updated": [
+            {
+              "id": "ledger-kernel",
+              "domains": ["billing", "orders"],
+              "tick": 2
+            },
+            {
+              "id": "relay-mesh",
+              "domains": ["search", "notifications"],
+              "tick": 3
+            },
+            {
+              "id": "palette-cache",
+              "domains": ["catalog"],
+              "tick": 4
+            }
+          ],
+          "remaining": [],
+          "coordinationLeft": 0,
+          "carryoverWork": 0,
+          "carryCost": 6,
+          "shipmentValuePerWork": 2,
+          "comparisonValue": 20,
+          "continued": true
+        }
+      ]
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import { RECRUIT_COST, ROSTER_CAP } from '../../../src/sim/member';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { RecruitScreen } from '../../../src/ui/RecruitScreen';
+import { recruitCandidateView } from '../../../src/render/recruitCandidateView';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
@@ -79,6 +80,13 @@ function mountRecruit(state: RunState) {
     find,
     has: (id: string) => elements(tree).some((item) => item.props['data-testid'] === id),
     onChoose,
+    compare(id: string) {
+      const select = find('recruit-compare-select');
+      (select.props.onChange as (event: { target: { value: string } }) => void)({
+        target: { value: id },
+      });
+      render();
+    },
     click(id: string) {
       const node = find(id);
       if (!node.props.disabled) (node.props.onClick as () => void)();
@@ -88,6 +96,22 @@ function mountRecruit(state: RunState) {
 }
 
 describe('RecruitScreen の採用条件と見送り', () => {
+  it('実際の候補と仕事の例を表示し、比較対象を変えても候補は変えない', () => {
+    const state = makeState(100);
+    const preview = recruitCandidateView(state)!;
+    const screen = mountRecruit(state);
+    expect(content(screen.find('recruit-candidate'))).toContain(preview.member.name);
+    expect(content(screen.find('recruit-work-sample'))).toContain(preview.sample.example);
+    expect(content(screen.find('recruit-comparison-member'))).toContain(
+      state.roster.members[0].name,
+    );
+    screen.compare(state.roster.members[1].id);
+    expect(content(screen.find('recruit-comparison-member'))).toContain(
+      state.roster.members[1].name,
+    );
+    expect(content(screen.find('recruit-work-sample'))).toContain(preview.sample.example);
+    expect(content(screen.find('recruit-candidate'))).toContain('成果を保証するものではありません');
+  });
   it('予算が残るときは支払後残高を示し、1回で hire を通知する', () => {
     const budget = RECRUIT_COST + 1;
     const state = makeState(budget);

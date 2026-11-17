@@ -49,11 +49,9 @@ import {
   assignMember,
   canRecruit,
   createInitialRoster,
-  pickRecruitArchetype,
   recoverStamina,
   membersReturnedFromLeave,
   planLeaveReturnNotices,
-  recruitMember,
   setAiAssigned,
   RECRUIT_COST,
   REST_STAMINA_RECOVER,
@@ -67,6 +65,7 @@ import type {
 } from '../member/types';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
+import { planRecruitment, recruitPhaseKey } from './recruitment';
 import { DEFAULT_SEED } from '../seed';
 import {
   applyScenarioOrg,
@@ -1594,9 +1593,7 @@ export class RunEngine {
   recruitChoose(option: 'hire' | 'skip'): void {
     if (this.phase !== 'recruit') return;
     if (option === 'hire') {
-      const hired = this.tryRecruit(
-        `recruit-phase:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
-      );
+      const hired = this.tryRecruit(recruitPhaseKey(this.quarterNumber, this.sprintIndexInQuarter));
       if (this.status === 'lost') return;
       if (!hired && this.applyRecruitSkipPenalty()) return;
     } else if (this.applyRecruitSkipPenalty()) {
@@ -1621,8 +1618,7 @@ export class RunEngine {
    */
   private tryRecruit(rngKey: string): boolean {
     if (!canRecruit(this.roster) || this.budget < RECRUIT_COST) return false;
-    const rng = createRng(`${this.seed}:${rngKey}`);
-    const next = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
+    const { roster: next } = planRecruitment(this.seed, rngKey, this.roster);
     if (next === this.roster) return false;
     this.roster = next;
     this.budget -= RECRUIT_COST;

@@ -110,6 +110,12 @@ test('ボス結果のリプレイで記録済み四半期レビューへジャ�
 
   await expect(page.getByTestId('quarter-review')).toBeVisible();
   await expect(page.getByTestId('sprint-result')).toHaveCount(0);
+  const voices = page.getByTestId('quarter-voices');
+  await voices.locator('summary').click();
+  await expect(voices).toContainText('顧客の声（抽象的な要約）');
+  await expect(voices).toContainText('直近スプリントの成長・休職記録なし');
+  await expect(voices).not.toContainText('昇格しました');
+  await expect(voices).not.toContainText('レベルが上がりました');
   await expect
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.isReplayMode()))
     .toBe(true);

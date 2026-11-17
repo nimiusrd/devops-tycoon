@@ -126,6 +126,25 @@ describe('QuarterReviewScreen のレビュー結果', () => {
     expect(screen.props.onAcknowledge).not.toHaveBeenCalled();
   });
 
+  it('声は閉じた詳細として未達理由の後に置き、空ロスターでも顧客要約と操作を残す', () => {
+    const state = makeState({ roster: { members: [], nextId: 1 }, lastGrowth: null });
+    state.quarterReview!.missedReasons = ['Delivery が目標に届かない'];
+    const before = structuredClone(state);
+    const screen = mountReview({ state });
+    const details = screen.find('quarter-voices');
+    expect(details.type).toBe('details');
+    expect(details.props.open).toBeUndefined();
+    expect(content(details)).toContain('発言できるメンバーの記録がありません');
+    expect(content(details)).toContain('顧客の声（抽象的な要約）');
+    expect(content(details)).toContain('判定・信頼・報酬は変わりません');
+    const ids = screen.nodes().map((node) => node.props['data-testid']);
+    expect(ids.indexOf('quarter-voices')).toBeGreaterThan(ids.indexOf('quarter-reasons'));
+    screen.preview('cut_scope');
+    expect(content(screen.find('quarter-voices'))).toBe(content(details));
+    expect(state).toEqual(before);
+    expect(screen.props.onChooseAdjustment).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['exceeded', '超過達成', 'quarter-acknowledge', '四半期を完遂'],
     ['met', '目標達成', 'quarter-acknowledge', '四半期を完遂'],

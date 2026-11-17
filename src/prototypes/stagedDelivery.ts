@@ -46,6 +46,11 @@ const CAPACITY = 4;
 const REVIEW = 3;
 const HORIZON: Record<DeliveryBoard, number> = { tight: 2, short: 1 };
 
+export interface DeliveryCoefficients {
+  reviewCost: number;
+  coreNeed: number;
+}
+
 function isMode(value: string): value is DeliveryMode {
   return value === 'lump' || value === 'staged';
 }
@@ -90,7 +95,16 @@ function deliver(state: DeliveryState): DeliveryState {
   return next;
 }
 
-export function createStagedDelivery(seed: string, board: DeliveryBoard): DeliveryState {
+export function createStagedDelivery(
+  seed: string,
+  board: DeliveryBoard,
+  coefficients: Partial<DeliveryCoefficients> = {},
+): DeliveryState {
+  const { reviewCost = REVIEW, coreNeed = 4 } = coefficients;
+  if (!Number.isSafeInteger(reviewCost) || reviewCost < 0)
+    throw new Error('確認費用は0以上の安全な整数');
+  if (!Number.isSafeInteger(coreNeed) || coreNeed <= 0)
+    throw new Error('核の必要作業は正の安全な整数');
   return {
     version: 1,
     seed,
@@ -98,10 +112,10 @@ export function createStagedDelivery(seed: string, board: DeliveryBoard): Delive
     tick: 0,
     horizon: HORIZON[board],
     capacity: CAPACITY,
-    reviewCost: REVIEW,
+    reviewCost,
     mode: null,
     parts: [
-      { id: 'core', need: 4, done: 0, value: 12, delivered: false },
+      { id: 'core', need: coreNeed, done: 0, value: 12, delivered: false },
       { id: 'extra', need: 4, done: 0, value: 8, delivered: false },
     ],
     value: 0,
@@ -149,7 +163,7 @@ export function viewStagedDelivery(state: DeliveryState) {
     capacity: state.capacity,
     mode: state.mode,
     reviewCost: state.reviewCost,
-    earliestCoreTick: 1,
+    earliestCoreTick: Math.ceil(core.need / state.capacity),
     core: {
       remaining: core.need - core.done,
       complete: ready(core),
@@ -174,7 +188,7 @@ export function summarizeStagedDelivery(state: DeliveryState) {
     value: state.value,
     reviews: state.reviews,
     reviewSpend: state.reviews * state.reviewCost,
-    carry: extra.need - extra.done,
+    carry: core.need - core.done + extra.need - extra.done,
     coreDelivered: core.delivered,
     extraDelivered: extra.delivered,
     score: state.value,
@@ -195,8 +209,7 @@ export function chooseDeliveryAction(state: DeliveryState, mode: DeliveryMode): 
   return { type: 'view' };
 }
 
-function runDelivery(seed: string, board: DeliveryBoard, mode: DeliveryMode) {
-  const initial = createStagedDelivery(seed, board);
+function runDelivery(initial: DeliveryState, mode: DeliveryMode) {
   let state = initial;
   let guard = 0;
   while (guard < 12) {
@@ -206,7 +219,7 @@ function runDelivery(seed: string, board: DeliveryBoard, mode: DeliveryMode) {
     if (next === state) break;
     state = next;
   }
-  if (guard >= 12) throw new Error(`${board}:${mode}`);
+  if (guard >= 12) throw new Error(`${initial.board}:${mode}`);
   return { initial, inputs: state.inputs, result: summarizeStagedDelivery(state) };
 }
 
@@ -215,7 +228,64 @@ export function compareStagedDeliveries(seed = 'RI-238') {
     (['lump', 'staged'] as const).map((mode) => ({
       board,
       mode,
-      ...runDelivery(seed, board, mode),
+      ...runDelivery(createStagedDelivery(seed, board), mode),
     })),
   );
+}
+
+/** 要因を一つずつ変え、同一初期状態の固定戦略を比較する。人間評価ではない。 */
+export function compareStagedDeliveryFactors(seed = 'RI-238') {
+  const levels = {
+    reviewCost: [0, 3, 8, 10, 12, 13, 20, 21],
+    coreNeed: [3, 4, 5, 8, 9],
+  } as const;
+  const results = (['reviewCost', 'coreNeed'] as const).flatMap((factor) =>
+    levels[factor].flatMap((level) =>
+      (['tight', 'short'] as const).map((board) => {
+        const coefficients = { reviewCost: REVIEW, coreNeed: 4, [factor]: level };
+        const initial = createStagedDelivery(seed, board, coefficients);
+        const outcomes = (['lump', 'staged'] as const).map((mode) => {
+          const run = runDelivery(initial, mode);
+          const final = run.inputs.reduce(applyStagedDelivery, initial);
+          const core = part(final, 'core');
+          const extra = part(final, 'extra');
+          return {
+            mode,
+            inputs: run.inputs,
+            result: {
+              ...run.result,
+              grossValue: final.value + final.reviews * final.reviewCost,
+              coreCarry: core.need - core.done,
+              extraCarry: extra.need - extra.done,
+              coreComplete: ready(core),
+              extraComplete: ready(extra),
+            },
+          };
+        });
+        const [lump, staged] = outcomes;
+        const valueGap = staged.result.value - lump.result.value;
+        return {
+          factor,
+          level,
+          board,
+          coefficients,
+          initial,
+          outcomes,
+          comparison: {
+            winner: valueGap === 0 ? 'tie' : valueGap > 0 ? 'staged' : 'lump',
+            valueGap,
+            additionalReviewSpend: staged.result.reviewSpend - lump.result.reviewSpend,
+            carryGap: staged.result.carry - lump.result.carry,
+          },
+        };
+      }),
+    ),
+  );
+  return {
+    seed,
+    metric: 'delivered-value-minus-review-spend',
+    humanPlay: false,
+    adaptive: false,
+    results,
+  };
 }

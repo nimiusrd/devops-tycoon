@@ -1,0 +1,2156 @@
+{
+  "version": 1,
+  "seeds": ["RI-257-5", "RI-257-9", "RI-257-1", "RI-257-2"],
+  "results": [
+    {
+      "seed": "RI-257-5",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-5",
+        "plannedDemand": [4, 7, 7, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 6,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 1,
+          "equivalentDowntimeSeconds": 86,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 1,
+          "equivalentDowntimeSeconds": 86,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 200,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 0,
+        "leaseSpent": 12,
+        "capacitySpent": 12,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 88,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 372,
+        "unusedCapacityLease": 0,
+        "served": 22,
+        "unserved": 5,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 50.8,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 372,
+          "unusedCapacityLease": 0,
+          "served": 22,
+          "unserved": 5,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 69.4,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 372,
+          "unusedCapacityLease": 0,
+          "served": 22,
+          "unserved": 5,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 32.2,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-5",
+      "strategy": "small",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-5",
+        "plannedDemand": [4, 7, 7, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 9,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 7,
+        "served": 27,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 68,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 68,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 68,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-5",
+      "strategy": "large",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-5",
+        "plannedDemand": [4, 7, 7, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "large"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 14,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 8
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 14,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 14,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 14,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 5
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 22,
+        "leaseSpent": 44,
+        "capacitySpent": 66,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 34,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 27,
+        "served": 27,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 34,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 27,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 34,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 27,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 34,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-5",
+      "strategy": "small-reactive",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-5",
+        "plannedDemand": [4, 7, 7, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 9,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 7,
+        "served": 27,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 68,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 68,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7,
+          "served": 27,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 68,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-9",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-9",
+        "plannedDemand": [4, 7, 8, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 6,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 1,
+          "equivalentDowntimeSeconds": 86,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 8,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 2,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 200,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 0,
+        "leaseSpent": 12,
+        "capacitySpent": 12,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 88,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 436,
+        "unusedCapacityLease": 0,
+        "served": 22,
+        "unserved": 6,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 44.4,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 436,
+          "unusedCapacityLease": 0,
+          "served": 22,
+          "unserved": 6,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 66.2,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 436,
+          "unusedCapacityLease": 0,
+          "served": 22,
+          "unserved": 6,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 22.60000000000001,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-9",
+      "strategy": "small",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-9",
+        "plannedDemand": [4, 7, 8, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 9,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 8,
+          "capacity": 9,
+          "served": 8,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 1
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 6,
+        "served": 28,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 68,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 6,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 68,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 6,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 68,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-9",
+      "strategy": "large",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-9",
+        "plannedDemand": [4, 7, 8, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "large"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 14,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 8
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 14,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 7
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 8,
+          "capacity": 14,
+          "served": 8,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 6
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 14,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 5
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 22,
+        "leaseSpent": 44,
+        "capacitySpent": 66,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 34,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 26,
+        "served": 28,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 34,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 26,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 34,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 26,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 34,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-9",
+      "strategy": "small-reactive",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-9",
+        "plannedDemand": [4, 7, 8, 9],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 4,
+          "capacity": 9,
+          "served": 4,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 7,
+          "capacity": 9,
+          "served": 7,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 8,
+          "capacity": 9,
+          "served": 8,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 1
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 9,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 6,
+        "served": 28,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 68,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 6,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 68,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 6,
+          "served": 28,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 68,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-1",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-1",
+        "plannedDemand": [6, 12, 14, 14],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 6,
+          "equivalentDowntimeSeconds": 300,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 8,
+          "equivalentDowntimeSeconds": 343,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 8,
+          "equivalentDowntimeSeconds": 343,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 0,
+        "leaseSpent": 12,
+        "capacitySpent": 12,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 88,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 986,
+        "unusedCapacityLease": 0,
+        "served": 24,
+        "unserved": 22,
+        "lossPerSecond": 0.1,
+        "comparisonValue": -10.600000000000009,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 986,
+          "unusedCapacityLease": 0,
+          "served": 24,
+          "unserved": 22,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 38.699999999999996,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 986,
+          "unusedCapacityLease": 0,
+          "served": 24,
+          "unserved": 22,
+          "lossPerSecond": 0.15,
+          "comparisonValue": -59.900000000000006,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-1",
+      "strategy": "small",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-1",
+        "plannedDemand": [6, 12, 14, 14],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 9,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 5,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 5,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 580,
+        "unusedCapacityLease": 3,
+        "served": 33,
+        "unserved": 13,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 10,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 580,
+          "unusedCapacityLease": 3,
+          "served": 33,
+          "unserved": 13,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 39,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 580,
+          "unusedCapacityLease": 3,
+          "served": 33,
+          "unserved": 13,
+          "lossPerSecond": 0.15,
+          "comparisonValue": -19,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-1",
+      "strategy": "large",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-1",
+        "plannedDemand": [6, 12, 14, 14],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "large"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 14,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 8
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 14,
+          "served": 12,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 14,
+          "served": 14,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 14,
+          "served": 14,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 22,
+        "leaseSpent": 44,
+        "capacitySpent": 66,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 34,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 10,
+        "served": 46,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 34,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 10,
+          "served": 46,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 34,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 10,
+          "served": 46,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 34,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-1",
+      "strategy": "small-reactive",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-1",
+        "plannedDemand": [6, 12, 14, 14],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "scale"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 9,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 14,
+          "served": 14,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 14,
+          "served": 14,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 20,
+        "leaseSpent": 44,
+        "capacitySpent": 64,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 36,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 150,
+        "unusedCapacityLease": 3,
+        "served": 43,
+        "unserved": 3,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 21,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 20,
+          "leaseSpent": 44,
+          "capacitySpent": 64,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 36,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 3,
+          "served": 43,
+          "unserved": 3,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 28.5,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 20,
+          "leaseSpent": 44,
+          "capacitySpent": 64,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 36,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 3,
+          "served": 43,
+          "unserved": 3,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 13.5,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-2",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-2",
+        "plannedDemand": [6, 14, 12, 12],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 8,
+          "equivalentDowntimeSeconds": 343,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 6,
+          "equivalentDowntimeSeconds": 300,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 6,
+          "served": 6,
+          "unserved": 6,
+          "equivalentDowntimeSeconds": 300,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 0,
+        "leaseSpent": 12,
+        "capacitySpent": 12,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 88,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 943,
+        "unusedCapacityLease": 0,
+        "served": 24,
+        "unserved": 20,
+        "lossPerSecond": 0.1,
+        "comparisonValue": -6.300000000000011,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 943,
+          "unusedCapacityLease": 0,
+          "served": 24,
+          "unserved": 20,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 40.849999999999994,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 0,
+          "leaseSpent": 12,
+          "capacitySpent": 12,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 88,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 943,
+          "unusedCapacityLease": 0,
+          "served": 24,
+          "unserved": 20,
+          "lossPerSecond": 0.15,
+          "comparisonValue": -53.44999999999999,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-2",
+      "strategy": "small",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-2",
+        "plannedDemand": [6, 14, 12, 12],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 9,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 5,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 3,
+          "equivalentDowntimeSeconds": 150,
+          "unusedCapacityLease": 0
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 8,
+        "leaseSpent": 24,
+        "capacitySpent": 32,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 68,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 515,
+        "unusedCapacityLease": 3,
+        "served": 33,
+        "unserved": 11,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 16.5,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 515,
+          "unusedCapacityLease": 3,
+          "served": 33,
+          "unserved": 11,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 42.25,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 8,
+          "leaseSpent": 24,
+          "capacitySpent": 32,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 68,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 515,
+          "unusedCapacityLease": 3,
+          "served": 33,
+          "unserved": 11,
+          "lossPerSecond": 0.15,
+          "comparisonValue": -9.25,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-2",
+      "strategy": "large",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-2",
+        "plannedDemand": [6, 14, 12, 12],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "large"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 14,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 8
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 14,
+          "served": 14,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 14,
+          "served": 12,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 14,
+          "served": 12,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 2
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 22,
+        "leaseSpent": 44,
+        "capacitySpent": 66,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 34,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 0,
+        "unusedCapacityLease": 12,
+        "served": 44,
+        "unserved": 0,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 34,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 12,
+          "served": 44,
+          "unserved": 0,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 34,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 22,
+          "leaseSpent": 44,
+          "capacitySpent": 66,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 34,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 12,
+          "served": 44,
+          "unserved": 0,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 34,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "seed": "RI-257-2",
+      "strategy": "small-reactive",
+      "initial": {
+        "version": 1,
+        "seed": "RI-257-2",
+        "plannedDemand": [6, 14, 12, 12],
+        "tick": 0,
+        "investment": null,
+        "scaled": false,
+        "setupSpent": 0,
+        "leaseSpent": 0,
+        "observations": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "invest",
+          "level": "small"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "scale"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "observations": [
+        {
+          "tick": 1,
+          "phase": "start",
+          "actualDemand": 6,
+          "capacity": 9,
+          "served": 6,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 3
+        },
+        {
+          "tick": 2,
+          "phase": "peak",
+          "actualDemand": 14,
+          "capacity": 9,
+          "served": 9,
+          "unserved": 5,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 0
+        },
+        {
+          "tick": 3,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 14,
+          "served": 12,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 4
+        },
+        {
+          "tick": 4,
+          "phase": "peak",
+          "actualDemand": 12,
+          "capacity": 14,
+          "served": 12,
+          "unserved": 0,
+          "equivalentDowntimeSeconds": 0,
+          "unusedCapacityLease": 4
+        }
+      ],
+      "result": {
+        "completed": true,
+        "account": "prototype-capacity-operations",
+        "initialBudget": 100,
+        "setupSpent": 20,
+        "leaseSpent": 44,
+        "capacitySpent": 64,
+        "committedCapacityLease": 0,
+        "normalDevelopmentBudget": 36,
+        "existingToolUpkeepCharged": false,
+        "equivalentDowntimeSeconds": 215,
+        "unusedCapacityLease": 11,
+        "served": 39,
+        "unserved": 5,
+        "lossPerSecond": 0.1,
+        "comparisonValue": 14.5,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 20,
+          "leaseSpent": 44,
+          "capacitySpent": 64,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 36,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 11,
+          "served": 39,
+          "unserved": 5,
+          "lossPerSecond": 0.05,
+          "comparisonValue": 25.25,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "account": "prototype-capacity-operations",
+          "initialBudget": 100,
+          "setupSpent": 20,
+          "leaseSpent": 44,
+          "capacitySpent": 64,
+          "committedCapacityLease": 0,
+          "normalDevelopmentBudget": 36,
+          "existingToolUpkeepCharged": false,
+          "equivalentDowntimeSeconds": 215,
+          "unusedCapacityLease": 11,
+          "served": 39,
+          "unserved": 5,
+          "lossPerSecond": 0.15,
+          "comparisonValue": 3.75,
+          "continued": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7941 @@
+{
+  "conditions": {
+    "seeds": [
+      "RI-210-0",
+      "RI-210-1",
+      "RI-210-2",
+      "RI-210-3",
+      "RI-210-4",
+      "RI-210-5",
+      "RI-210-6",
+      "RI-210-7"
+    ],
+    "candidates": ["recruit-ai-prodigy", "recruit-doc", "recruit-mega"],
+    "strategies": ["none", "implementation", "review", "learning", "two"],
+    "score": "weighted sample / 5 - paid fee - ticks * opportunityPerTick",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionAdoption": false
+  },
+  "baseline": {
+    "rules": {
+      "fee": 2,
+      "spread": 18,
+      "opportunityPerTick": 2
+    },
+    "initial": [
+      {
+        "version": 1,
+        "seed": "RI-210-0",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 27,
+              "review": 15,
+              "learning": 59
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 35,
+              "review": 27,
+              "learning": 26
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 52,
+              "review": 13,
+              "learning": 55
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-1",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 43,
+              "review": 39,
+              "learning": 77
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 32,
+              "review": 49,
+              "learning": 47
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 68,
+              "review": 32,
+              "learning": 52
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-2",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 38,
+              "review": 19,
+              "learning": 61
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 40,
+              "review": 29,
+              "learning": 34
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 76,
+              "review": 34,
+              "learning": 27
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-3",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 55,
+              "review": 24,
+              "learning": 62
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 57,
+              "review": 59,
+              "learning": 52
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 61,
+              "review": 22,
+              "learning": 28
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-4",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 32,
+              "review": 13,
+              "learning": 76
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 23,
+              "review": 53,
+              "learning": 28
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 64,
+              "review": 39,
+              "learning": 51
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-5",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 24,
+              "review": 29,
+              "learning": 71
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 33,
+              "review": 32,
+              "learning": 22
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 77,
+              "review": 41,
+              "learning": 38
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-6",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 51,
+              "review": 34,
+              "learning": 79
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 48,
+              "review": 47,
+              "learning": 37
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 66,
+              "review": 36,
+              "learning": 51
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      },
+      {
+        "version": 1,
+        "seed": "RI-210-7",
+        "mode": "additional",
+        "demand": "implementation",
+        "rules": {
+          "fee": 2,
+          "spread": 18,
+          "opportunityPerTick": 2
+        },
+        "initialBudget": 12,
+        "budget": 12,
+        "ticks": 0,
+        "horizon": 3,
+        "candidates": [
+          {
+            "id": "recruit-ai-prodigy",
+            "rank": "junior",
+            "traits": ["aiArtisan", "juniorStar"],
+            "stats": {
+              "implementation": 42,
+              "review": 30,
+              "aiMastery": 66
+            },
+            "anchors": {
+              "implementation": 42,
+              "review": 30,
+              "learning": 64
+            },
+            "sample": {
+              "implementation": 45,
+              "review": 47,
+              "learning": 64
+            }
+          },
+          {
+            "id": "recruit-doc",
+            "rank": "junior",
+            "traits": ["docMaster"],
+            "stats": {
+              "implementation": 40,
+              "review": 44,
+              "aiMastery": 40
+            },
+            "anchors": {
+              "implementation": 40,
+              "review": 44,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 32,
+              "review": 33,
+              "learning": 41
+            }
+          },
+          {
+            "id": "recruit-mega",
+            "rank": "middle",
+            "traits": ["megaPrMaker"],
+            "stats": {
+              "implementation": 60,
+              "review": 28,
+              "aiMastery": 44
+            },
+            "anchors": {
+              "implementation": 60,
+              "review": 28,
+              "learning": 40
+            },
+            "sample": {
+              "implementation": 58,
+              "review": 39,
+              "learning": 25
+            }
+          }
+        ],
+        "asked": [],
+        "hired": null,
+        "inputs": []
+      }
+    ],
+    "runs": [
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 44.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 36.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 28.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 24.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 24.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 24.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 20.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 43.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 39.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 39.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 38,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 44.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 40.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 44.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 36.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 28.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 24.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 24.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 29.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 25.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 28.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 20.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 43.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 39.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 43.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 39.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 0,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 38,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 45.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 47.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 62.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 54.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 45.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 47.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 62.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 1,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 62.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 54.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 32.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 28.200000000000003,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 41,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 37,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 28.200000000000003,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 41,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 33,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 48,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 40,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 32.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 28.200000000000003,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 41,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 37,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 32.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 28.200000000000003,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 41,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 33,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 48,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 44,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 2,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 48,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 40,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 46.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 56.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 53,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 45,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 46.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 50.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 46.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 46.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 56.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 57.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 53,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 3,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 45,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 56.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 42,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 38,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 38,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 38,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 34,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 54.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 46.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 56.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 56.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.4,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 42,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 38,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 38,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 29.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 25.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 42,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 34,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 54.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 50.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 4,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 54.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 46.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 62,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 54,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 30.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 30.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 30.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 26.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 30.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 26.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 53.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 45.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 62,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 58,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 62,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 54,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 30.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 30.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 30.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 26.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 36.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 32.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 53.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 49.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 5,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 53.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 45.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 45.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 37.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 64.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 56.400000000000006,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 57,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 53,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 57,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 49,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 45.2,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 41.2,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 46.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 42.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 45.2,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 37.2,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 64.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 60.400000000000006,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 6,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 64.4,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 56.400000000000006,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 47.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 34.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 30.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 50,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 46,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 30.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 50,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 42,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 56.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "precision",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 47.6,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 43.6,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "implementation",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-mega"
+          }
+        ],
+        "result": {
+          "hired": "recruit-mega",
+          "gross": 47.6,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 39.6,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 34.4,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 30.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 50,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 46,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-doc"
+          }
+        ],
+        "result": {
+          "hired": "recruit-doc",
+          "gross": 34.4,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 30.4,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "review",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 50,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 42,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "none",
+        "inputs": [
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 0,
+          "opportunity": 0,
+          "net": 56.8,
+          "budget": 12,
+          "workTicksLeft": 3,
+          "unasked": ["implementation", "review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "implementation",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["review", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "review",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "review"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "learning"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "learning",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 2,
+          "opportunity": 2,
+          "net": 52.8,
+          "budget": 10,
+          "workTicksLeft": 2,
+          "unasked": ["implementation", "review"]
+        }
+      },
+      {
+        "initialIndex": 7,
+        "mode": "additional",
+        "demand": "learning",
+        "strategy": "two",
+        "inputs": [
+          {
+            "type": "ask",
+            "topic": "learning"
+          },
+          {
+            "type": "ask",
+            "topic": "implementation"
+          },
+          {
+            "type": "hire",
+            "id": "recruit-ai-prodigy"
+          }
+        ],
+        "result": {
+          "hired": "recruit-ai-prodigy",
+          "gross": 56.8,
+          "fee": 4,
+          "opportunity": 4,
+          "net": 48.8,
+          "budget": 8,
+          "workTicksLeft": 1,
+          "unasked": ["review"]
+        }
+      }
+    ],
+    "summary": [
+      {
+        "mode": "precision",
+        "demand": "implementation",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 53.725,
+            "net": 53.725
+          },
+          {
+            "strategy": "implementation",
+            "gross": 54.95,
+            "net": 50.95
+          },
+          {
+            "strategy": "review",
+            "gross": 53.725,
+            "net": 49.725
+          },
+          {
+            "strategy": "learning",
+            "gross": 53.725,
+            "net": 49.725
+          },
+          {
+            "strategy": "two",
+            "gross": 54.95,
+            "net": 46.95
+          }
+        ],
+        "leaders": ["none"],
+        "singleQuestionLeaders": ["implementation"]
+      },
+      {
+        "mode": "precision",
+        "demand": "review",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 39.349999999999994,
+            "net": 39.349999999999994
+          },
+          {
+            "strategy": "implementation",
+            "gross": 39.349999999999994,
+            "net": 35.349999999999994
+          },
+          {
+            "strategy": "review",
+            "gross": 44.575,
+            "net": 40.575
+          },
+          {
+            "strategy": "learning",
+            "gross": 39.349999999999994,
+            "net": 35.349999999999994
+          },
+          {
+            "strategy": "two",
+            "gross": 44.85,
+            "net": 36.85
+          }
+        ],
+        "leaders": ["review"],
+        "singleQuestionLeaders": ["review"]
+      },
+      {
+        "mode": "precision",
+        "demand": "learning",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 54.550000000000004,
+            "net": 54.550000000000004
+          },
+          {
+            "strategy": "implementation",
+            "gross": 54.550000000000004,
+            "net": 50.550000000000004
+          },
+          {
+            "strategy": "review",
+            "gross": 54.550000000000004,
+            "net": 50.550000000000004
+          },
+          {
+            "strategy": "learning",
+            "gross": 54.824999999999996,
+            "net": 50.824999999999996
+          },
+          {
+            "strategy": "two",
+            "gross": 54.824999999999996,
+            "net": 46.824999999999996
+          }
+        ],
+        "leaders": ["none"],
+        "singleQuestionLeaders": ["learning"]
+      },
+      {
+        "mode": "additional",
+        "demand": "implementation",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 53.725,
+            "net": 53.725
+          },
+          {
+            "strategy": "implementation",
+            "gross": 54.175,
+            "net": 50.175
+          },
+          {
+            "strategy": "review",
+            "gross": 53.725,
+            "net": 49.725
+          },
+          {
+            "strategy": "learning",
+            "gross": 53.725,
+            "net": 49.725
+          },
+          {
+            "strategy": "two",
+            "gross": 54.95,
+            "net": 46.95
+          }
+        ],
+        "leaders": ["none"],
+        "singleQuestionLeaders": ["implementation"]
+      },
+      {
+        "mode": "additional",
+        "demand": "review",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 39.349999999999994,
+            "net": 39.349999999999994
+          },
+          {
+            "strategy": "implementation",
+            "gross": 39.349999999999994,
+            "net": 35.349999999999994
+          },
+          {
+            "strategy": "review",
+            "gross": 44.575,
+            "net": 40.575
+          },
+          {
+            "strategy": "learning",
+            "gross": 38.8,
+            "net": 34.800000000000004
+          },
+          {
+            "strategy": "two",
+            "gross": 44.85,
+            "net": 36.85
+          }
+        ],
+        "leaders": ["review"],
+        "singleQuestionLeaders": ["review"]
+      },
+      {
+        "mode": "additional",
+        "demand": "learning",
+        "strategies": [
+          {
+            "strategy": "none",
+            "gross": 54.550000000000004,
+            "net": 54.550000000000004
+          },
+          {
+            "strategy": "implementation",
+            "gross": 54.550000000000004,
+            "net": 50.550000000000004
+          },
+          {
+            "strategy": "review",
+            "gross": 54.550000000000004,
+            "net": 50.550000000000004
+          },
+          {
+            "strategy": "learning",
+            "gross": 54.824999999999996,
+            "net": 50.824999999999996
+          },
+          {
+            "strategy": "two",
+            "gross": 54.824999999999996,
+            "net": 46.824999999999996
+          }
+        ],
+        "leaders": ["none"],
+        "singleQuestionLeaders": ["learning"]
+      }
+    ]
+  },
+  "sensitivity": [
+    {
+      "rules": {
+        "fee": 0,
+        "spread": 18,
+        "opportunityPerTick": 2
+      },
+      "summary": [
+        {
+          "mode": "precision",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.725,
+              "net": 53.725
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.95,
+              "net": 52.95
+            },
+            {
+              "strategy": "review",
+              "gross": 53.725,
+              "net": 51.725
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.725,
+              "net": 51.725
+            },
+            {
+              "strategy": "two",
+              "gross": 54.95,
+              "net": 50.95
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation"]
+        },
+        {
+          "mode": "precision",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 39.349999999999994,
+              "net": 39.349999999999994
+            },
+            {
+              "strategy": "implementation",
+              "gross": 39.349999999999994,
+              "net": 37.349999999999994
+            },
+            {
+              "strategy": "review",
+              "gross": 44.575,
+              "net": 42.575
+            },
+            {
+              "strategy": "learning",
+              "gross": 39.349999999999994,
+              "net": 37.349999999999994
+            },
+            {
+              "strategy": "two",
+              "gross": 44.85,
+              "net": 40.85
+            }
+          ],
+          "leaders": ["review"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "precision",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 54.550000000000004,
+              "net": 54.550000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.550000000000004,
+              "net": 52.550000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 54.550000000000004,
+              "net": 52.550000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 54.824999999999996,
+              "net": 52.824999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 54.824999999999996,
+              "net": 50.824999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.725,
+              "net": 53.725
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.175,
+              "net": 52.175
+            },
+            {
+              "strategy": "review",
+              "gross": 53.725,
+              "net": 51.725
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.725,
+              "net": 51.725
+            },
+            {
+              "strategy": "two",
+              "gross": 54.95,
+              "net": 50.95
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation"]
+        },
+        {
+          "mode": "additional",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 39.349999999999994,
+              "net": 39.349999999999994
+            },
+            {
+              "strategy": "implementation",
+              "gross": 39.349999999999994,
+              "net": 37.349999999999994
+            },
+            {
+              "strategy": "review",
+              "gross": 44.575,
+              "net": 42.575
+            },
+            {
+              "strategy": "learning",
+              "gross": 38.8,
+              "net": 36.8
+            },
+            {
+              "strategy": "two",
+              "gross": 44.85,
+              "net": 40.85
+            }
+          ],
+          "leaders": ["review"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "additional",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 54.550000000000004,
+              "net": 54.550000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.550000000000004,
+              "net": 52.550000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 54.550000000000004,
+              "net": 52.550000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 54.824999999999996,
+              "net": 52.824999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 54.824999999999996,
+              "net": 50.824999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["learning"]
+        }
+      ]
+    },
+    {
+      "rules": {
+        "fee": 6,
+        "spread": 18,
+        "opportunityPerTick": 2
+      },
+      "summary": [
+        {
+          "mode": "precision",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.725,
+              "net": 53.725
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.95,
+              "net": 46.95
+            },
+            {
+              "strategy": "review",
+              "gross": 53.725,
+              "net": 45.725
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.725,
+              "net": 45.725
+            },
+            {
+              "strategy": "two",
+              "gross": 54.95,
+              "net": 38.95
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation"]
+        },
+        {
+          "mode": "precision",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 39.349999999999994,
+              "net": 39.349999999999994
+            },
+            {
+              "strategy": "implementation",
+              "gross": 39.349999999999994,
+              "net": 31.349999999999998
+            },
+            {
+              "strategy": "review",
+              "gross": 44.575,
+              "net": 36.575
+            },
+            {
+              "strategy": "learning",
+              "gross": 39.349999999999994,
+              "net": 31.349999999999998
+            },
+            {
+              "strategy": "two",
+              "gross": 44.85,
+              "net": 28.85
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "precision",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 54.550000000000004,
+              "net": 54.550000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.550000000000004,
+              "net": 46.550000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 54.550000000000004,
+              "net": 46.550000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 54.824999999999996,
+              "net": 46.824999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 54.824999999999996,
+              "net": 38.824999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.725,
+              "net": 53.725
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.175,
+              "net": 46.175
+            },
+            {
+              "strategy": "review",
+              "gross": 53.725,
+              "net": 45.725
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.725,
+              "net": 45.725
+            },
+            {
+              "strategy": "two",
+              "gross": 54.95,
+              "net": 38.95
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation"]
+        },
+        {
+          "mode": "additional",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 39.349999999999994,
+              "net": 39.349999999999994
+            },
+            {
+              "strategy": "implementation",
+              "gross": 39.349999999999994,
+              "net": 31.349999999999998
+            },
+            {
+              "strategy": "review",
+              "gross": 44.575,
+              "net": 36.575
+            },
+            {
+              "strategy": "learning",
+              "gross": 38.8,
+              "net": 30.800000000000004
+            },
+            {
+              "strategy": "two",
+              "gross": 44.85,
+              "net": 28.85
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "additional",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 54.550000000000004,
+              "net": 54.550000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 54.550000000000004,
+              "net": 46.550000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 54.550000000000004,
+              "net": 46.550000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 54.824999999999996,
+              "net": 46.824999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 54.824999999999996,
+              "net": 38.824999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["learning"]
+        }
+      ]
+    },
+    {
+      "rules": {
+        "fee": 2,
+        "spread": 0,
+        "opportunityPerTick": 2
+      },
+      "summary": [
+        {
+          "mode": "precision",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 49.60000000000001,
+              "net": 49.60000000000001
+            },
+            {
+              "strategy": "implementation",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "review",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "learning",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "two",
+              "gross": 49.60000000000001,
+              "net": 41.6
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "precision",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 42.4,
+              "net": 42.4
+            },
+            {
+              "strategy": "implementation",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "review",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "learning",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "two",
+              "gross": 42.4,
+              "net": 34.4
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "precision",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 52.800000000000004,
+              "net": 52.800000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "two",
+              "gross": 52.800000000000004,
+              "net": 44.800000000000004
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 49.60000000000001,
+              "net": 49.60000000000001
+            },
+            {
+              "strategy": "implementation",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "review",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "learning",
+              "gross": 49.60000000000001,
+              "net": 45.60000000000001
+            },
+            {
+              "strategy": "two",
+              "gross": 49.60000000000001,
+              "net": 41.6
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 42.4,
+              "net": 42.4
+            },
+            {
+              "strategy": "implementation",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "review",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "learning",
+              "gross": 42.4,
+              "net": 38.4
+            },
+            {
+              "strategy": "two",
+              "gross": 42.4,
+              "net": 34.4
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 52.800000000000004,
+              "net": 52.800000000000004
+            },
+            {
+              "strategy": "implementation",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "review",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "learning",
+              "gross": 52.800000000000004,
+              "net": 48.800000000000004
+            },
+            {
+              "strategy": "two",
+              "gross": 52.800000000000004,
+              "net": 44.800000000000004
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        }
+      ]
+    },
+    {
+      "rules": {
+        "fee": 2,
+        "spread": 9,
+        "opportunityPerTick": 2
+      },
+      "summary": [
+        {
+          "mode": "precision",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 51.675,
+              "net": 51.675
+            },
+            {
+              "strategy": "implementation",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "review",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "learning",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "two",
+              "gross": 51.675,
+              "net": 43.675
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "precision",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 40.875,
+              "net": 40.875
+            },
+            {
+              "strategy": "implementation",
+              "gross": 40.875,
+              "net": 36.875
+            },
+            {
+              "strategy": "review",
+              "gross": 42.8,
+              "net": 38.8
+            },
+            {
+              "strategy": "learning",
+              "gross": 40.875,
+              "net": 36.875
+            },
+            {
+              "strategy": "two",
+              "gross": 42.8,
+              "net": 34.8
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "precision",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.699999999999996,
+              "net": 53.699999999999996
+            },
+            {
+              "strategy": "implementation",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "review",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 53.699999999999996,
+              "net": 45.699999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "implementation",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 51.675,
+              "net": 51.675
+            },
+            {
+              "strategy": "implementation",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "review",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "learning",
+              "gross": 51.675,
+              "net": 47.675
+            },
+            {
+              "strategy": "two",
+              "gross": 51.675,
+              "net": 43.675
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        },
+        {
+          "mode": "additional",
+          "demand": "review",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 40.875,
+              "net": 40.875
+            },
+            {
+              "strategy": "implementation",
+              "gross": 40.875,
+              "net": 36.875
+            },
+            {
+              "strategy": "review",
+              "gross": 42.8,
+              "net": 38.8
+            },
+            {
+              "strategy": "learning",
+              "gross": 40.875,
+              "net": 36.875
+            },
+            {
+              "strategy": "two",
+              "gross": 42.8,
+              "net": 34.8
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["review"]
+        },
+        {
+          "mode": "additional",
+          "demand": "learning",
+          "strategies": [
+            {
+              "strategy": "none",
+              "gross": 53.699999999999996,
+              "net": 53.699999999999996
+            },
+            {
+              "strategy": "implementation",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "review",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "learning",
+              "gross": 53.699999999999996,
+              "net": 49.699999999999996
+            },
+            {
+              "strategy": "two",
+              "gross": 53.699999999999996,
+              "net": 45.699999999999996
+            }
+          ],
+          "leaders": ["none"],
+          "singleQuestionLeaders": ["implementation", "review", "learning"]
+        }
+      ]
+    }
+  ]
+}

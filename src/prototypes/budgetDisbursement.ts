@@ -2,7 +2,8 @@
 
 export type FundingMethod = 'advance' | 'staged' | 'conditional';
 export type FundingBoard = 'early' | 'late';
-export type FundingCondition = 'none' | 'previous-paid' | 'first-two-paid';
+export type FundingCondition =
+  'none' | 'previous-paid' | 'first-paid' | 'first-two-paid' | 'first-three-paid';
 export type FundingInput =
   { type: 'choose'; method: FundingMethod } | { type: 'advance' } | { type: 'view' };
 
@@ -12,6 +13,13 @@ export interface FundingOffer {
   schedule: number[];
   condition: FundingCondition;
   repayment: 0;
+}
+
+/** 感度比較専用。条件達成直後の次期間に条件付き予算を一括支給する。 */
+export interface FundingParameters {
+  startCash: number;
+  completionValue: number;
+  conditionalAfterPaidPeriods: 1 | 2 | 3;
 }
 
 export interface FundingPeriod {
@@ -83,23 +91,51 @@ function eligible(state: BudgetState, method: FundingMethod, tick: number): bool
   if ((offer.schedule[tick] ?? 0) <= 0) return false;
   if (offer.condition === 'none') return true;
   if (offer.condition === 'previous-paid') return previousPaid(state.paid, tick);
-  return state.paid[0] === true && state.paid[1] === true;
+  const required =
+    offer.condition === 'first-paid' ? 1 : offer.condition === 'first-two-paid' ? 2 : 3;
+  return state.paid.slice(0, required).every(Boolean);
 }
 
-export function createBudgetDisbursement(seed: string, board: FundingBoard): BudgetState {
+export function createBudgetDisbursement(
+  seed: string,
+  board: FundingBoard,
+  parameters: Partial<FundingParameters> = {},
+): BudgetState {
+  const {
+    startCash = START_CASH,
+    completionValue = COMPLETION,
+    conditionalAfterPaidPeriods = 2,
+  } = parameters;
+  if (
+    !Number.isSafeInteger(startCash) ||
+    startCash < 0 ||
+    !Number.isSafeInteger(completionValue) ||
+    completionValue < 0 ||
+    ![1, 2, 3].includes(conditionalAfterPaidPeriods)
+  ) {
+    throw new Error('RI-237: invalid comparison parameters');
+  }
   const costs = [...COSTS[board]];
+  const offers = OFFERS.map((offer) => ({ ...offer, schedule: [...offer.schedule] }));
+  const conditional = offerOf(offers, 'conditional');
+  conditional.schedule = costs.map((_, tick) =>
+    tick === conditionalAfterPaidPeriods ? conditional.total : 0,
+  );
+  conditional.condition = (['first-paid', 'first-two-paid', 'first-three-paid'] as const)[
+    conditionalAfterPaidPeriods - 1
+  ];
   return {
     version: 1,
     seed,
     board,
     tick: 0,
     horizon: costs.length,
-    startCash: START_CASH,
-    completionValue: COMPLETION,
+    startCash,
+    completionValue,
     costs,
-    offers: OFFERS.map((offer) => ({ ...offer, schedule: [...offer.schedule] })),
+    offers,
     method: null,
-    cash: START_CASH,
+    cash: startCash,
     received: 0,
     unpaid: 0,
     repayment: 0,
@@ -186,8 +222,13 @@ export function chooseFundingAction(state: BudgetState, method: FundingMethod): 
   return { type: 'advance' };
 }
 
-function runFunding(seed: string, board: FundingBoard, method: FundingMethod) {
-  const initial = createBudgetDisbursement(seed, board);
+function runFunding(
+  seed: string,
+  board: FundingBoard,
+  method: FundingMethod,
+  parameters: Partial<FundingParameters> = {},
+) {
+  const initial = createBudgetDisbursement(seed, board, parameters);
   let state = initial;
   let guard = 0;
   while (state.method === null || state.tick < state.horizon) {
@@ -197,15 +238,74 @@ function runFunding(seed: string, board: FundingBoard, method: FundingMethod) {
     if (next === state) throw new Error(`${board}:${method}@${state.tick}`);
     state = next;
   }
-  return { initial, inputs: state.inputs, result: summarizeBudgetDisbursement(state) };
+  return { initial, state };
 }
 
 export function compareBudgetDisbursements(seed = 'RI-237') {
   return (['early', 'late'] as const).flatMap((board) =>
-    (['advance', 'staged', 'conditional'] as const).map((method) => ({
-      board,
-      method,
-      ...runFunding(seed, board, method),
-    })),
+    (['advance', 'staged', 'conditional'] as const).map((method) => {
+      const { initial, state } = runFunding(seed, board, method);
+      return {
+        board,
+        method,
+        initial,
+        inputs: state.inputs,
+        result: summarizeBudgetDisbursement(state),
+      };
+    }),
   );
+}
+
+/** 境界を挟む条件を固定戦略で比較する。乱数・人間評価は含めない。 */
+export function compareBudgetDisbursementSensitivity(seed = 'RI-237-sensitivity') {
+  const defaults: FundingParameters = {
+    startCash: START_CASH,
+    completionValue: COMPLETION,
+    conditionalAfterPaidPeriods: 2,
+  };
+  const scenarios: { id: string; board: FundingBoard; parameters: FundingParameters }[] = [];
+  const add = (id: string, board: FundingBoard, parameters: Partial<FundingParameters>) =>
+    scenarios.push({ id, board, parameters: { ...defaults, ...parameters } });
+
+  for (const board of ['early', 'late'] as const) {
+    // 完成可能な最小手持ち: early = 3/5/9、late = 7/3/2。
+    const cash = board === 'early' ? [2, 3, 4, 5, 6, 8, 9, 10] : [1, 2, 3, 4, 6, 7, 8];
+    for (const startCash of cash) add(`${board}-cash-${startCash}`, board, { startCash });
+    const values = board === 'early' ? [2, 3, 4] : [3, 4, 5, 7, 8, 9];
+    for (const completionValue of values) {
+      add(`${board}-value-${completionValue}`, board, { completionValue });
+    }
+    // 支給を早めた/遅らせたときの条件付き予算の支払不能境界を挟む。
+    for (const conditionalAfterPaidPeriods of [1, 3] as const) {
+      const threshold =
+        board === 'early' ? 7 + conditionalAfterPaidPeriods : conditionalAfterPaidPeriods;
+      for (const startCash of [threshold - 1, threshold]) {
+        add(`${board}-after-${conditionalAfterPaidPeriods}-cash-${startCash}`, board, {
+          startCash,
+          conditionalAfterPaidPeriods,
+        });
+      }
+    }
+  }
+
+  return scenarios.map(({ id, board, parameters }) => {
+    const initial = createBudgetDisbursement(seed, board, parameters);
+    const strategies = (['advance', 'staged', 'conditional'] as const).map((method) => {
+      const { state } = runFunding(seed, board, method, parameters);
+      return {
+        method,
+        inputs: state.inputs,
+        result: {
+          ...summarizeBudgetDisbursement(state),
+          paidCost: state.periods.reduce((sum, period) => sum + (period.paid ? period.cost : 0), 0),
+          firstUnpaidTick: state.periods.find((period) => !period.paid)?.tick ?? null,
+        },
+      };
+    });
+    const scores = [...new Set(strategies.map(({ result }) => result.score))].sort((a, b) => b - a);
+    const ranking = scores.map((score) =>
+      strategies.filter(({ result }) => result.score === score).map(({ method }) => method),
+    );
+    return { id, parameters, initial, strategies, ranking };
+  });
 }

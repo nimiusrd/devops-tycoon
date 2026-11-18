@@ -1,0 +1,3058 @@
+{
+  "seed": "RI-263",
+  "stochastic": false,
+  "humanEvaluation": false,
+  "conditions": [
+    {
+      "name": "baseline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 7,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 12,
+              "optionalShipment": 0,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "equalShipment",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 1,
+                  "remaining": 2
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 12,
+              "optionalShipment": 4,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 16,
+            "optionalShipment": 4,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 9,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 6,
+                "shipment": 4
+              }
+            ],
+            "pending": [
+              {
+                "id": "bulk",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 8
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 2,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 1,
+                  "remaining": 1
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 4
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "automatic",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "step"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "step"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "step"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 16,
+              "optionalShipment": 8,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "deadline-6",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 6,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 6,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 2,
+                  "remaining": 1
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 8,
+              "optionalShipment": 0,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 2,
+            "demo": {
+              "tick": 6,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 0,
+                  "remaining": 2
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 4
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "deadline-8",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 8,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 8,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 12,
+              "optionalShipment": 0,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 8,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 20,
+              "optionalShipment": 12,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "deadline-9",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 9,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 9,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 20,
+              "optionalShipment": 8,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 9,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 1,
+                  "remaining": 2
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 20,
+              "optionalShipment": 12,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "data-work-4",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 4,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 4,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 3,
+                  "remaining": 1
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 8,
+              "optionalShipment": 0,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 10,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 0,
+                "remaining": 2,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 2,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 1,
+                  "remaining": 1
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 4
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 4
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 2,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "budget-6",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 6,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 6,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 4,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api", "screen"],
+              "missingRequired": [
+                {
+                  "id": "data",
+                  "progress": 2,
+                  "remaining": 1
+                }
+              ],
+              "partialCredit": 4,
+              "totalShipment": 8,
+              "optionalShipment": 0,
+              "trustLoss": 2
+            },
+            "ended": true,
+            "totalShipment": 8,
+            "optionalShipment": 0,
+            "spentWork": 6,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              },
+              {
+                "id": "urgent",
+                "progress": 0,
+                "remaining": 2,
+                "unshippedValue": 4
+              },
+              {
+                "id": "bulk",
+                "progress": 0,
+                "remaining": 2,
+                "unshippedValue": 8
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 2,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 0,
+                  "remaining": 2
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 4
+            },
+            "ended": true,
+            "totalShipment": 16,
+            "optionalShipment": 12,
+            "spentWork": 6,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "screen",
+                "progress": 0,
+                "remaining": 2,
+                "unshippedValue": 4
+              },
+              {
+                "id": "data",
+                "progress": 0,
+                "remaining": 3,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "bulk-value-4",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 4,
+          "trustLossPerMissing": 2
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 7,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 12,
+              "optionalShipment": 0,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 16,
+            "optionalShipment": 4,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 4
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 2,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 1,
+                  "remaining": 1
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 12,
+              "optionalShipment": 8,
+              "trustLoss": 4
+            },
+            "ended": true,
+            "totalShipment": 16,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 4
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing-loss-0",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 0
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 7,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 12,
+              "optionalShipment": 0,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 1,
+                  "remaining": 1
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing-loss-4",
+      "initial": {
+        "version": 1,
+        "seed": "RI-263",
+        "rules": {
+          "deadline": 7,
+          "horizon": 10,
+          "workBudget": 10,
+          "dataWork": 3,
+          "bulkShipment": 8,
+          "trustLossPerMissing": 4
+        },
+        "tick": 0,
+        "nextSequence": 0,
+        "priority": null,
+        "workRemaining": 10,
+        "trust": 6,
+        "tasks": [
+          {
+            "id": "api",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "screen",
+            "required": true,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "data",
+            "required": true,
+            "work": 3,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 4,
+            "completedTick": null
+          },
+          {
+            "id": "bulk",
+            "required": false,
+            "work": 2,
+            "progress": 0,
+            "shipment": 8,
+            "completedTick": null
+          }
+        ],
+        "demo": null,
+        "inputs": []
+      },
+      "plays": [
+        {
+          "strategy": "demo",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "step"
+            },
+            {
+              "seq": 10,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "step"
+            },
+            {
+              "seq": 13,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 6,
+            "demo": {
+              "tick": 7,
+              "established": true,
+              "completedRequired": ["api", "screen", "data"],
+              "missingRequired": [],
+              "partialCredit": 6,
+              "totalShipment": 12,
+              "optionalShipment": 0,
+              "trustLoss": 0
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 8,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 2,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "data",
+                "tick": 7,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 9,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "urgent",
+                "progress": 1,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        },
+        {
+          "strategy": "throughput",
+          "inputs": [
+            {
+              "seq": 0,
+              "type": "priority",
+              "taskId": "bulk"
+            },
+            {
+              "seq": 1,
+              "type": "step"
+            },
+            {
+              "seq": 2,
+              "type": "step"
+            },
+            {
+              "seq": 3,
+              "type": "priority",
+              "taskId": "urgent"
+            },
+            {
+              "seq": 4,
+              "type": "step"
+            },
+            {
+              "seq": 5,
+              "type": "step"
+            },
+            {
+              "seq": 6,
+              "type": "priority",
+              "taskId": "api"
+            },
+            {
+              "seq": 7,
+              "type": "step"
+            },
+            {
+              "seq": 8,
+              "type": "step"
+            },
+            {
+              "seq": 9,
+              "type": "priority",
+              "taskId": "screen"
+            },
+            {
+              "seq": 10,
+              "type": "step"
+            },
+            {
+              "seq": 11,
+              "type": "step"
+            },
+            {
+              "seq": 12,
+              "type": "priority",
+              "taskId": "data"
+            },
+            {
+              "seq": 13,
+              "type": "step"
+            },
+            {
+              "seq": 14,
+              "type": "step"
+            }
+          ],
+          "result": {
+            "tick": 10,
+            "workRemaining": 0,
+            "trust": 0,
+            "demo": {
+              "tick": 7,
+              "established": false,
+              "completedRequired": ["api"],
+              "missingRequired": [
+                {
+                  "id": "screen",
+                  "progress": 1,
+                  "remaining": 1
+                },
+                {
+                  "id": "data",
+                  "progress": 0,
+                  "remaining": 3
+                }
+              ],
+              "partialCredit": 2,
+              "totalShipment": 16,
+              "optionalShipment": 12,
+              "trustLoss": 6
+            },
+            "ended": true,
+            "totalShipment": 20,
+            "optionalShipment": 12,
+            "spentWork": 10,
+            "completions": [
+              {
+                "id": "api",
+                "tick": 6,
+                "shipment": 4
+              },
+              {
+                "id": "screen",
+                "tick": 8,
+                "shipment": 4
+              },
+              {
+                "id": "urgent",
+                "tick": 4,
+                "shipment": 4
+              },
+              {
+                "id": "bulk",
+                "tick": 2,
+                "shipment": 8
+              }
+            ],
+            "pending": [
+              {
+                "id": "data",
+                "progress": 2,
+                "remaining": 1,
+                "unshippedValue": 4
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -91,6 +91,7 @@ const REPLAY_FIELDS = new Set([
   'ruleset',
   'contentSnapshot',
   'exportedAt',
+  'annotation',
 ]);
 
 function unknownReplayFields(raw: unknown): Record<string, unknown> {

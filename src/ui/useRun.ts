@@ -131,6 +131,7 @@ export interface UseRun {
   importRunSaveText: (raw: string) => Promise<RunSaveShareResult>;
   exportReplayText: (id: string) => string | null;
   importReplayText: (raw: string) => Promise<ReplayShareResult>;
+  saveReplayAnnotation: GameHandle['saveReplayAnnotation'];
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -382,7 +383,18 @@ export function useRun(game: GameHandle): UseRun {
   const exportRunSaveText = useCallback(() => game.exportRunSaveText(), [game]);
   const importRunSaveText = useCallback((raw: string) => game.importRunSaveText(raw), [game]);
   const exportReplayText = useCallback((id: string) => game.exportReplayText(id), [game]);
-  const importReplayText = useCallback((raw: string) => game.importReplayText(raw), [game]);
+  const importReplayText = useCallback(
+    async (raw: string) => {
+      const result = await game.importReplayText(raw);
+      setReplays(game.listReplays());
+      return result;
+    },
+    [game],
+  );
+  const saveReplayAnnotation = useCallback<GameHandle['saveReplayAnnotation']>(
+    (...args) => game.saveReplayAnnotation(...args),
+    [game],
+  );
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => {
       const opened = game.openReplay(id, keyframeIndex);
@@ -509,6 +521,7 @@ export function useRun(game: GameHandle): UseRun {
     importRunSaveText,
     exportReplayText,
     importReplayText,
+    saveReplayAnnotation,
     purchaseMetaUnlock,
     setSoundMuted,
     setPreferredCardIds,

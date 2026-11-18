@@ -57,6 +57,7 @@ import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
   normalizeReplay,
+  withReplayAnnotation,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
@@ -104,6 +105,7 @@ import {
 export interface ActiveReplayInfo {
   ruleset: ReplayRulesetIdentity | null;
   contentSnapshot: ReplayContentSnapshot | null;
+  annotationText?: string;
 }
 
 export interface PersistenceAttachOptions<T> {
@@ -297,6 +299,12 @@ export interface GameHandle {
   listReplays(): ReplayBlob[];
   /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
   exportReplayText(id: string): string | null;
+  /** 一覧で編集を始めた記録と一致するときだけ、作者の理由を保存する。 */
+  saveReplayAnnotation(
+    expected: ReplayBlob,
+    keyframeIndex: number,
+    text: string,
+  ): Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
   /**
    * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
    * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
@@ -1625,6 +1633,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     activeReplayInfo = {
       ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
       contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
+      ...(replay.annotation && replay.annotation.keyframeId === frame.id
+        ? { annotationText: replay.annotation?.text }
+        : {}),
     };
     activeDailyDate = frame.frame.dailyDate ?? null;
     activeDailyRuleset = null;
@@ -2439,6 +2450,70 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const replay = cachedReplays.find((item) => item.id === id);
       return replay ? serializeReplay(replay) : null;
     },
+    async saveReplayAnnotation(expected, keyframeIndex, text) {
+      const conflictMessage =
+        '別のタブが記録を更新したため保存できません。再読込して引き継いでください。';
+      if (tabConflict) return { ok: false, message: conflictMessage };
+      const storage = replayStorage;
+      if (!storage) return { ok: false, message: 'リプレイの保存先を利用できません。' };
+      const previous = normalizeReplay(expected);
+      if (!previous) return { ok: false, message: 'リプレイを読み取れません。' };
+      if (
+        pendingReplays.some((row) => row.id === previous.id) ||
+        pendingFinishReplays.some((row) => row.id === previous.id)
+      ) {
+        return {
+          ok: false,
+          message:
+            'このリプレイはまだ保存できていません。保存を再試行してから注釈を保存してください。',
+        };
+      }
+      const next = withReplayAnnotation(previous, keyframeIndex, text);
+      if (!next) return { ok: false, message: '場面と注釈の長さを確認してください。' };
+      const work = replayImportWrites.then(async () => {
+        if (tabConflict) throw new TabConflictError();
+        await storage.save(next, {
+          expectedPrevious: previous,
+          pin: true,
+          protectIds: [...pinnedReplayIds, ...replayRetryKept.keys()],
+        });
+        try {
+          const listed = await refreshReplayCache();
+          if (!listed) throw new Error('replay list failed');
+          if (tabConflict) throw new TabConflictError();
+          const saved = listed.find((row) => row.id === next.id);
+          if (!saved || replayContentKey(saved) !== replayContentKey(next))
+            throw new TabConflictError();
+        } catch (error) {
+          // 保存後の読込み失敗でも、別タブの更新を巻き戻さず自分の書込みだけ戻す。
+          if (!isTabConflict(error)) await storage.revertBatch?.([previous], [next]);
+          throw error;
+        }
+        replayRevision += 1;
+        bump();
+      });
+      replayImportWrites = work.catch(() => undefined);
+      trackWrite('replay', work, () => pendingReplays.length > 0);
+      try {
+        await work;
+        return {
+          ok: true,
+          replay: structuredClone(next),
+          message: tracker.isSession('replay')
+            ? '注釈をこのセッション内に保存しました。端末への保存はできていません。'
+            : '注釈を保存しました。',
+        };
+      } catch (error) {
+        if (isTabConflict(error)) {
+          signalTabConflict();
+          return { ok: false, message: conflictMessage };
+        }
+        return {
+          ok: false,
+          message: '注釈を保存できませんでした。内容を残したまま再試行できます。',
+        };
+      }
+    },
     async importReplayText(
       raw: string,
       batch?: {
@@ -2632,6 +2707,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       const storage = replayStorage;
       pinnedReplayIds.add(loaded.replay.id);
+      const expectedPrevious = structuredClone(
+        cachedReplays.find((row) => row.id === loaded.replay.id) ?? null,
+      );
       replayImportDepth += 1;
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
@@ -2680,6 +2758,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             };
           }
           await storage.save(loaded.replay, {
+            expectedPrevious,
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,
             evictedIds,
@@ -2737,9 +2816,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           replayRevision += 1;
           bump();
           return loaded;
-        } catch {
+        } catch (error) {
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           await rollbackSingle(false);
+          if (isTabConflict(error)) signalTabConflict();
           return failedImport();
         } finally {
           replayImportDepth -= 1;

@@ -1,0 +1,46 @@
+{
+  "evidenceVersion": 1,
+  "baseCommit": "7383e6ad2810f6e6c79df474d24eaaac215fbb27",
+  "test": "tests/e2e/replay-annotation.spec.ts",
+  "seed": "annotation-e2e",
+  "difficulty": "easy",
+  "trials": [],
+  "ruleset": {
+    "version": 8,
+    "fingerprint": "32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f"
+  },
+  "initialResources": {
+    "budget": 60,
+    "org": {
+      "aiEnabled": true,
+      "aiDependency": 25,
+      "aiLiteracy": 60,
+      "testCoverage": 70,
+      "documentation": 65,
+      "quality": 70,
+      "securityLevel": 70,
+      "morale": 75,
+      "seniorHp": 100,
+      "techDebt": 0,
+      "deliveryScore": 0
+    }
+  },
+  "inputs": {
+    "stepMilliseconds": 1000,
+    "draft": "skip",
+    "eventChoiceIndex": 0,
+    "shop": "leave",
+    "rest": "heal",
+    "recruit": "skip",
+    "goalAdjustment": "first-available"
+  },
+  "outcome": {
+    "status": "lost",
+    "loseReason": "seniorBurnout",
+    "diagnosis": "seniorSacrifice",
+    "score": 6199
+  },
+  "keyframeCount": 25,
+  "annotationChangesOutcome": false,
+  "humanPlaytest": false
+}

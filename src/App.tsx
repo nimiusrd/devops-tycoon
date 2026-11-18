@@ -245,7 +245,10 @@ export default function App(props: AppProps) {
 function AppContent({ game }: AppProps) {
   const run = useRun(game);
   return (
-    <ReplayContentProvider contentSnapshot={run.activeReplayInfo?.contentSnapshot ?? null}>
+    <ReplayContentProvider
+      contentSnapshot={run.activeReplayInfo?.contentSnapshot ?? null}
+      annotationText={run.activeReplayInfo?.annotationText}
+    >
       <AppContentView game={game} run={run} />
     </ReplayContentProvider>
   );
@@ -796,6 +799,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onOpen={openReplay}
               onClose={() => setReplayListOpen(false)}
               onExportReplay={run.exportReplayText}
+              onSaveAnnotation={run.saveReplayAnnotation}
               onImportReplay={async (raw) => {
                 const result = await run.importReplayText(raw);
                 return {

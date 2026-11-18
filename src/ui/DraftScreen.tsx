@@ -5,6 +5,7 @@
  * 同じデッキでも捌き方で結果が変わり、ドラフトでデッキが育っていく（第7章）。
  * RI-81: 予算コストで引き直すマリガンを提供する（F-12）。
  */
+import { ReplayAnnotationView } from './ReplayAnnotationView';
 import { useRef } from 'react';
 import { draftCompanyGuidance, type CompanyGuidanceState } from '../render/companyGuidanceView';
 import { DRAFT_MULLIGAN_COST } from '../sim/run/constants';
@@ -79,6 +80,7 @@ export function DraftScreen({
               ? `スプリント${sprintNumber} に向けて、提示された施策を確認する`
               : `スプリント${sprintNumber} に向けて、施策を1枚選ぶ`}
           </h2>
+          <ReplayAnnotationView />
           <div className="draft-options">
             {options.map((id) => {
               const def = resolveCard(id);

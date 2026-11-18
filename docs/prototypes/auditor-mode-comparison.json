@@ -1,0 +1,785 @@
+{
+  "generatedBy": "devcontainer exec --workspace-folder . node scripts/ri265-auditor-evaluation.mjs",
+  "note": "架空の原因を明示生成した固定介入比較。人間の適応行動・楽しさは未評価。金額は試作用改善予算単位。",
+  "summary": [
+    {
+      "factor": "control",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "deadline:2",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "deadline:4",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "capacity:2",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 0, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 0, "affordable": true }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "capacity:6",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "budget:1",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": false },
+            { "plan": "contain", "cleared": 0, "affordable": false },
+            { "plan": "broad", "cleared": 4, "affordable": false }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": false },
+            { "plan": "contain", "cleared": 4, "affordable": false },
+            { "plan": "broad", "cleared": 4, "affordable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "budget:2",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": false }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": false }
+          ]
+        }
+      ]
+    },
+    {
+      "factor": "broad-cost:2",
+      "causes": [
+        {
+          "cause": "review-capacity",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 4, "affordable": true },
+            { "plan": "contain", "cleared": 0, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        },
+        {
+          "cause": "uncontained-fire",
+          "baselineMissed": 8,
+          "plans": [
+            { "plan": "review", "cleared": 0, "affordable": true },
+            { "plan": "contain", "cleared": 4, "affordable": true },
+            { "plan": "broad", "cleared": 4, "affordable": true }
+          ]
+        }
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "factor": "control",
+      "spec": {
+        "seed": "RI-265:1",
+        "generatedCause": "review-capacity",
+        "evidence": "controlled",
+        "rules": {
+          "deadline": 3,
+          "taskCount": 6,
+          "healthyCapacity": 4,
+          "impairedCapacity": 0.1,
+          "budget": 4,
+          "costs": { "review": 2, "contain": 2, "broad": 4 }
+        }
+      },
+      "initial": {
+        "org": {
+          "aiEnabled": false,
+          "aiDependency": 3,
+          "aiLiteracy": 45,
+          "testCoverage": 55,
+          "documentation": 50,
+          "quality": 60,
+          "securityLevel": 60,
+          "morale": 70,
+          "seniorHp": 100,
+          "techDebt": 0,
+          "deliveryScore": 0
+        },
+        "sprint": {
+          "config": {
+            "taskCount": 6,
+            "codingSlots": 6,
+            "maxTicks": 3,
+            "focusMax": 8,
+            "minCompleteTick": 0
+          },
+          "tasks": [
+            {
+              "id": 0,
+              "kind": "routine",
+              "highValue": true,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 1,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 2,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 3,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 4,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 5,
+              "kind": "routine",
+              "highValue": true,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            }
+          ],
+          "metrics": {
+            "delivered": 0,
+            "doneCount": 0,
+            "reworkCount": 0,
+            "incidentCount": 0,
+            "contained": 0,
+            "autoContainCount": 0,
+            "spread": 0,
+            "aiAssistedCompleted": 0,
+            "completedCount": 0,
+            "reviewQueueMax": 0,
+            "combo": 0,
+            "maxCombo": 0,
+            "seniorHpStart": 100,
+            "interventionsUsed": 0,
+            "focusSpent": 0,
+            "handExchanges": 0,
+            "actionCounts": {},
+            "stabilizingGrants": 0
+          },
+          "reviewAccumulator": 0,
+          "nextTaskId": 6,
+          "complete": false,
+          "focus": 8,
+          "cooldowns": {},
+          "modifiers": {
+            "andonUntilTick": 0,
+            "overtimeUntilTick": 0,
+            "throttleUntilTick": 0,
+            "stabilityUntilTick": 0
+          },
+          "comboGauge": 0,
+          "cardEffects": {
+            "codingSpeedMul": 1,
+            "routineSpeedMul": 1,
+            "reviewEfficiencyMul": 1,
+            "reviewCapacityMul": 0.1,
+            "seniorHpCostMul": 1,
+            "reviewHpCostMul": 1,
+            "reworkRateAdd": 0,
+            "incidentRateMul": 1,
+            "aiLiteracyAdd": 0,
+            "aiDependencyAdd": 0,
+            "qualityAdd": 0,
+            "testCoverageAdd": 0,
+            "securityAdd": 0,
+            "infraCostMul": 1
+          },
+          "cardPiles": { "drawOrder": [], "hand": [], "discard": [], "played": [] },
+          "aiAdoption": 0.85,
+          "aiMasteryNorm": 0,
+          "events": [],
+          "interventionEvents": [],
+          "fireEvents": [],
+          "timeline": []
+        },
+        "tick": 0,
+        "rngState": 2093166111,
+        "plan": null,
+        "applied": false,
+        "inputs": []
+      },
+      "baseline": {
+        "outcome": "deadline-missed",
+        "completed": 0,
+        "delivered": 0,
+        "incidents": 0,
+        "focusSpent": 0,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "timeline": [
+          { "tick": 1, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 },
+          { "tick": 2, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 },
+          { "tick": 3, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 }
+        ],
+        "inputs": ["tick", "tick", "tick"],
+        "rngState": 2093166111
+      },
+      "trials": [
+        {
+          "id": "trial:review",
+          "plan": "review",
+          "cost": 2,
+          "affordable": true,
+          "result": {
+            "outcome": "cleared",
+            "completed": 6,
+            "delivered": 41,
+            "incidents": 0,
+            "focusSpent": 0,
+            "seniorHp": 91.80000000000004,
+            "morale": 73,
+            "techDebt": 0,
+            "timeline": [
+              {
+                "tick": 1,
+                "reviewQueue": 3,
+                "burningCount": 0,
+                "combo": 3,
+                "seniorHp": 95.90000000000002
+              },
+              {
+                "tick": 2,
+                "reviewQueue": 0,
+                "burningCount": 0,
+                "combo": 6,
+                "seniorHp": 91.80000000000004
+              }
+            ],
+            "inputs": ["plan:review", "tick", "tick"],
+            "rngState": 2597119387
+          }
+        },
+        {
+          "id": "trial:contain",
+          "plan": "contain",
+          "cost": 2,
+          "affordable": true,
+          "result": {
+            "outcome": "deadline-missed",
+            "completed": 0,
+            "delivered": 0,
+            "incidents": 0,
+            "focusSpent": 0,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "timeline": [
+              { "tick": 1, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 },
+              { "tick": 2, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 },
+              { "tick": 3, "reviewQueue": 6, "burningCount": 0, "combo": 0, "seniorHp": 100 }
+            ],
+            "inputs": ["plan:contain", "firefight:no-target", "tick", "tick", "tick"],
+            "rngState": 2093166111
+          }
+        },
+        {
+          "id": "trial:broad",
+          "plan": "broad",
+          "cost": 4,
+          "affordable": true,
+          "result": {
+            "outcome": "cleared",
+            "completed": 6,
+            "delivered": 41,
+            "incidents": 0,
+            "focusSpent": 0,
+            "seniorHp": 91.80000000000004,
+            "morale": 73,
+            "techDebt": 0,
+            "timeline": [
+              {
+                "tick": 1,
+                "reviewQueue": 3,
+                "burningCount": 0,
+                "combo": 3,
+                "seniorHp": 95.90000000000002
+              },
+              {
+                "tick": 2,
+                "reviewQueue": 0,
+                "burningCount": 0,
+                "combo": 6,
+                "seniorHp": 91.80000000000004
+              }
+            ],
+            "inputs": ["plan:broad", "firefight:no-target", "tick", "tick"],
+            "rngState": 2597119387
+          }
+        }
+      ]
+    },
+    {
+      "factor": "control",
+      "spec": {
+        "seed": "RI-265:1",
+        "generatedCause": "uncontained-fire",
+        "evidence": "controlled",
+        "rules": {
+          "deadline": 3,
+          "taskCount": 6,
+          "healthyCapacity": 4,
+          "impairedCapacity": 0.1,
+          "budget": 4,
+          "costs": { "review": 2, "contain": 2, "broad": 4 }
+        }
+      },
+      "initial": {
+        "org": {
+          "aiEnabled": false,
+          "aiDependency": 3,
+          "aiLiteracy": 45,
+          "testCoverage": 55,
+          "documentation": 50,
+          "quality": 60,
+          "securityLevel": 60,
+          "morale": 70,
+          "seniorHp": 100,
+          "techDebt": 0,
+          "deliveryScore": 0
+        },
+        "sprint": {
+          "config": {
+            "taskCount": 6,
+            "codingSlots": 6,
+            "maxTicks": 3,
+            "focusMax": 8,
+            "minCompleteTick": 0
+          },
+          "tasks": [
+            {
+              "id": 0,
+              "kind": "routine",
+              "highValue": true,
+              "aiAssisted": false,
+              "lane": "rework",
+              "progress": 0,
+              "reworkAttempts": 1,
+              "wasReworked": false,
+              "incident": true,
+              "debt": false,
+              "burnTicksLeft": 35
+            },
+            {
+              "id": 1,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 2,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 3,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 4,
+              "kind": "routine",
+              "highValue": false,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            },
+            {
+              "id": 5,
+              "kind": "routine",
+              "highValue": true,
+              "aiAssisted": false,
+              "lane": "review",
+              "progress": 0,
+              "reworkAttempts": 0,
+              "wasReworked": false,
+              "incident": false,
+              "debt": false
+            }
+          ],
+          "metrics": {
+            "delivered": 0,
+            "doneCount": 0,
+            "reworkCount": 0,
+            "incidentCount": 1,
+            "contained": 0,
+            "autoContainCount": 0,
+            "spread": 0,
+            "aiAssistedCompleted": 0,
+            "completedCount": 0,
+            "reviewQueueMax": 0,
+            "combo": 0,
+            "maxCombo": 0,
+            "seniorHpStart": 100,
+            "interventionsUsed": 0,
+            "focusSpent": 0,
+            "handExchanges": 0,
+            "actionCounts": {},
+            "stabilizingGrants": 0
+          },
+          "reviewAccumulator": 0,
+          "nextTaskId": 6,
+          "complete": false,
+          "focus": 8,
+          "cooldowns": {},
+          "modifiers": {
+            "andonUntilTick": 0,
+            "overtimeUntilTick": 0,
+            "throttleUntilTick": 0,
+            "stabilityUntilTick": 0
+          },
+          "comboGauge": 0,
+          "cardEffects": {
+            "codingSpeedMul": 1,
+            "routineSpeedMul": 1,
+            "reviewEfficiencyMul": 1,
+            "reviewCapacityMul": 4,
+            "seniorHpCostMul": 1,
+            "reviewHpCostMul": 1,
+            "reworkRateAdd": 0,
+            "incidentRateMul": 1,
+            "aiLiteracyAdd": 0,
+            "aiDependencyAdd": 0,
+            "qualityAdd": 0,
+            "testCoverageAdd": 0,
+            "securityAdd": 0,
+            "infraCostMul": 1
+          },
+          "cardPiles": { "drawOrder": [], "hand": [], "discard": [], "played": [] },
+          "aiAdoption": 0.85,
+          "aiMasteryNorm": 0,
+          "events": [{ "tick": 0, "kind": "ignite", "taskId": 0, "source": "review" }],
+          "interventionEvents": [],
+          "fireEvents": [{ "tick": 0, "kind": "ignite", "taskId": 0, "source": "review" }],
+          "timeline": []
+        },
+        "tick": 0,
+        "rngState": 2093166111,
+        "plan": null,
+        "applied": false,
+        "inputs": []
+      },
+      "baseline": {
+        "outcome": "deadline-missed",
+        "completed": 5,
+        "delivered": 29,
+        "incidents": 1,
+        "focusSpent": 0,
+        "seniorHp": 93.05000000000001,
+        "morale": 72.5,
+        "techDebt": 0,
+        "timeline": [
+          { "tick": 1, "reviewQueue": 3, "burningCount": 1, "combo": 2, "seniorHp": 97.15 },
+          {
+            "tick": 2,
+            "reviewQueue": 1,
+            "burningCount": 1,
+            "combo": 4,
+            "seniorHp": 94.30000000000001
+          },
+          {
+            "tick": 3,
+            "reviewQueue": 0,
+            "burningCount": 0,
+            "combo": 5,
+            "seniorHp": 93.05000000000001
+          }
+        ],
+        "inputs": ["tick", "tick", "tick"],
+        "rngState": 3228955057
+      },
+      "trials": [
+        {
+          "id": "trial:review",
+          "plan": "review",
+          "cost": 2,
+          "affordable": true,
+          "result": {
+            "outcome": "deadline-missed",
+            "completed": 5,
+            "delivered": 29,
+            "incidents": 1,
+            "focusSpent": 0,
+            "seniorHp": 93.05000000000001,
+            "morale": 72.5,
+            "techDebt": 0,
+            "timeline": [
+              { "tick": 1, "reviewQueue": 3, "burningCount": 1, "combo": 2, "seniorHp": 97.15 },
+              {
+                "tick": 2,
+                "reviewQueue": 1,
+                "burningCount": 1,
+                "combo": 4,
+                "seniorHp": 94.30000000000001
+              },
+              {
+                "tick": 3,
+                "reviewQueue": 0,
+                "burningCount": 0,
+                "combo": 5,
+                "seniorHp": 93.05000000000001
+              }
+            ],
+            "inputs": ["plan:review", "tick", "tick", "tick"],
+            "rngState": 3228955057
+          }
+        },
+        {
+          "id": "trial:contain",
+          "plan": "contain",
+          "cost": 2,
+          "affordable": true,
+          "result": {
+            "outcome": "cleared",
+            "completed": 6,
+            "delivered": 41,
+            "incidents": 1,
+            "focusSpent": 1,
+            "seniorHp": 80.80000000000004,
+            "morale": 68,
+            "techDebt": 0,
+            "timeline": [
+              {
+                "tick": 1,
+                "reviewQueue": 3,
+                "burningCount": 0,
+                "combo": 3,
+                "seniorHp": 84.90000000000002
+              },
+              {
+                "tick": 2,
+                "reviewQueue": 0,
+                "burningCount": 0,
+                "combo": 6,
+                "seniorHp": 80.80000000000004
+              }
+            ],
+            "inputs": ["plan:contain", "firefight:applied", "tick", "tick"],
+            "rngState": 2597119387
+          }
+        },
+        {
+          "id": "trial:broad",
+          "plan": "broad",
+          "cost": 4,
+          "affordable": true,
+          "result": {
+            "outcome": "cleared",
+            "completed": 6,
+            "delivered": 41,
+            "incidents": 1,
+            "focusSpent": 1,
+            "seniorHp": 80.80000000000004,
+            "morale": 68,
+            "techDebt": 0,
+            "timeline": [
+              {
+                "tick": 1,
+                "reviewQueue": 3,
+                "burningCount": 0,
+                "combo": 3,
+                "seniorHp": 84.90000000000002
+              },
+              {
+                "tick": 2,
+                "reviewQueue": 0,
+                "burningCount": 0,
+                "combo": 6,
+                "seniorHp": 80.80000000000004
+              }
+            ],
+            "inputs": ["plan:broad", "firefight:applied", "tick", "tick"],
+            "rngState": 2597119387
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatInterventionFeedback,
+  formatSprintEvent,
   formatSprintTickerRows,
   type SprintInterventionFeedback,
 } from '../../../src/render/sprintEventView';
 import type { InterventionEffect, SprintEvent } from '../../../src/sim/types';
+import { applyAction } from '../../../src/sim/actions';
+import { createOrgState } from '../../../src/sim/org';
+import { burningTask, makeSprint, makeTask } from '../helpers/sprintFixtures';
 
 function successFeedback(
   effect: InterventionEffect,
@@ -115,7 +119,7 @@ describe('介入結果の出来事表示（#536）', () => {
     ).toContain(`${result} / 集中力 -2`);
   });
 
-  it('先消し鎮火は鎮火件数・コンボ切断・実測コストを表示する', () => {
+  it('先消し鎮火は対象PR・コンボ切断・実測コストを表示する', () => {
     const row = formatInterventionFeedback(
       successFeedback({
         actionId: 'firefight',
@@ -128,7 +132,7 @@ describe('介入結果の出来事表示（#536）', () => {
       }),
     );
     expect(row.text).toBe(
-      '緊急対応: 1件鎮火 / コンボ切断 / 追加シニアHP -0.6 / 士気 -0.3 / 集中力 -2',
+      '緊急対応: PR #7 を鎮火 → レビュー待ち / コンボ切断 / 追加シニアHP -0.6 / 士気 -0.3 / 集中力 -2',
     );
     expect(row.tone).toBe('warn');
   });
@@ -168,6 +172,105 @@ describe('介入結果の出来事表示（#536）', () => {
     expect(row.text).toBe(`割り込みレビュー: ${label}`);
     expect(row.tone).toBe('warn');
     expect(row.text).not.toMatch(/ -\d|件処理/);
+  });
+});
+
+describe('緊急対応で実際に鎮火した案件（#682）', () => {
+  const effect: InterventionEffect = {
+    actionId: 'firefight',
+    containedTaskId: 0,
+    focusCost: 2,
+    gaugeGain: 0.2,
+  };
+
+  it('ID 0 も含めて対象と直接結果を表示し、保持後の履歴にも残す', () => {
+    const feedback = formatInterventionFeedback(successFeedback(effect));
+    const history = formatSprintEvent({ tick: 1, kind: 'intervention', effect, combo: 2 });
+    for (const row of [feedback, history]) {
+      expect(row.text).toContain('緊急対応: PR #0 を鎮火 → レビュー待ち');
+      expect(row.text).not.toMatch(/出荷|納品|期限|機能|完了/);
+      expect(row.tone).toBe('good');
+    }
+  });
+
+  it('実処理のIDとレビュー待ちへの復帰だけを示し、別PRの出荷を成果に含めない', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [
+      burningTask(7, 5),
+      burningTask(42, 1),
+      makeTask(88, { lane: 'done' }),
+    ]);
+    const outcome = applyAction('firefight', sprint, org, () => 0.5, 10);
+    expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.containedTaskId).toBe(42);
+    expect(sprint.tasks[1]).toMatchObject({ lane: 'review', incident: false });
+    const row = formatInterventionFeedback({
+      id: 'firefight',
+      outcome,
+      nonce: 1,
+      previousEvents: [],
+    });
+    expect(row.text).toContain('PR #42 を鎮火 → レビュー待ち');
+    expect(row.text).not.toMatch(/#7\b|#88\b|出荷|期限|完了/);
+  });
+
+  it.each([undefined, -1, 1.5, Number.NaN])(
+    '鎮火ID %s の欠落・不正時は成功を補わない',
+    (containedTaskId) => {
+      // affectedTaskIds や処理件数だけでは、鎮火が完了した証拠にならない。
+      const incomplete = { ...effect, containedTaskId, affectedTaskIds: [7], reviewedCount: 0 };
+      for (const row of [
+        formatInterventionFeedback(successFeedback(incomplete)),
+        formatSprintEvent({ tick: 1, kind: 'intervention', effect: incomplete, combo: 0 }),
+      ]) {
+        expect(row.text).toContain('鎮火結果を確認できません');
+        expect(row.text).not.toMatch(/PR #|レビュー待ち|実行完了|件処理/);
+        expect(row.tone).toBe('warn');
+      }
+    },
+  );
+
+  it('effectの欠落や別介入のeffectを鎮火成功として扱わない', () => {
+    for (const missing of [undefined, { ...effect, actionId: 'interruptReview' as const }]) {
+      const row = formatInterventionFeedback({
+        id: 'firefight',
+        outcome: { ok: true, effect: missing },
+        nonce: 1,
+        previousEvents: [],
+      });
+      expect(row.text).toContain('鎮火結果を確認できません');
+      expect(row.tone).toBe('warn');
+    }
+  });
+
+  it.each(['no-target', 'no-focus', 'cooldown', 'complete', 'paused'] as const)(
+    '失敗 %s に鎮火IDが混ざっても成功表示を出さない',
+    (reason) => {
+      const row = formatInterventionFeedback({
+        id: 'firefight',
+        outcome: { ok: false, reason, effect },
+        nonce: 1,
+        previousEvents: [],
+      });
+      expect(row.text).not.toMatch(/PR #|鎮火 →|レビュー待ち|実行完了/);
+      expect(row.tone).toBe('warn');
+    },
+  );
+
+  it('連続介入は最新の実対象へ更新し、新しい延焼はその結果より優先する', () => {
+    const first: SprintEvent = { tick: 1, kind: 'intervention', effect, combo: 2 };
+    const next = { ...effect, containedTaskId: 42 };
+    const events: SprintEvent[] = [
+      first,
+      { tick: 1, kind: 'intervention', effect: next, combo: 2 },
+    ];
+    const feedback = successFeedback(next, [first], 2);
+    expect(formatSprintTickerRows(events, feedback)[0].text).toContain('PR #42');
+    events.push({ tick: 2, kind: 'spread', taskId: 7, debtGain: 3, moraleCost: 2 });
+    const rows = formatSprintTickerRows(events, feedback);
+    expect(rows[0].text).toContain('延焼!');
+    expect(rows[1].text).toContain('PR #42');
+    expect(rows.filter((row) => row.text.includes('PR #42'))).toHaveLength(1);
   });
 });
 

@@ -207,8 +207,12 @@ test('保存失敗で下書きを維持し、別タブの新しい注釈を上�
   await page.getByTestId('replay-annotation-text').fill('未保存の理由');
   await page.evaluate(() => {
     const put = IDBObjectStore.prototype.put;
+    let failed = false;
     IDBObjectStore.prototype.put = function (...args) {
-      if (this.name === 'replays') throw new DOMException('full', 'QuotaExceededError');
+      if (this.name === 'replays' && !failed) {
+        failed = true;
+        throw new DOMException('full', 'QuotaExceededError');
+      }
       return put.apply(this, args);
     };
   });
@@ -216,6 +220,17 @@ test('保存失敗で下書きを維持し、別タブの新しい注釈を上�
   await expect(page.getByTestId('replay-annotation-status')).toContainText('保存できませんでした');
   await expect(page.getByTestId('replay-annotation-text')).toHaveValue('未保存の理由');
   expect(await page.evaluate(() => window.game?.listReplays()[0].annotation)).toBeUndefined();
+  await page.getByTestId('replay-annotation-text').fill('再試行中も残す新しい下書き');
+  await page.getByTestId('persistence-retry').click();
+  await expect
+    .poll(() => page.evaluate(() => window.game?.listReplays()[0].annotation?.text))
+    .toBe('未保存の理由');
+  await expect(page.getByTestId('replay-annotation-text')).toHaveValue(
+    '再試行中も残す新しい下書き',
+  );
+  await expect(page.getByTestId('replay-annotation-status')).toHaveText('未保存の変更があります。');
+  await page.getByTestId('replay-annotation-save').click();
+  await expect(page.getByTestId('replay-annotation-status')).toHaveText('注釈を保存しました。');
   await page.reload();
   await expect(page.getByTestId('title')).toBeVisible();
   await openList(page);

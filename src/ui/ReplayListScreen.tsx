@@ -31,7 +31,7 @@ export interface ReplayListScreenProps {
     expected: ReplayBlob,
     index: number,
     text: string,
-  ) => Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
+  ) => Promise<{ ok: boolean; message: string; replay?: ReplayBlob; pendingReplay?: ReplayBlob }>;
 }
 
 function ReplayAnnotationEditor({
@@ -56,6 +56,23 @@ function ReplayAnnotationEditor({
   const [text, setText] = useState(replay.annotation?.text ?? '');
   const [status, setStatus] = useState('');
   const [failed, setFailed] = useState(false);
+  const [pendingReplay, setPendingReplay] = useState<ReplayBlob | null>(null);
+  // 共通バナーが自分の失敗した書込みを完了したときだけ基準を進める。
+  // 再試行中に入力した新しい下書きは消さず、別タブの別内容は承認しない。
+  if (
+    pendingReplay &&
+    JSON.stringify(replay) === JSON.stringify(pendingReplay) &&
+    JSON.stringify(replay) !== JSON.stringify(baseline)
+  ) {
+    const matchesDraft =
+      text === (pendingReplay.annotation?.text ?? '') &&
+      (!pendingReplay.annotation ||
+        pendingReplay.keyframes[index]?.id === pendingReplay.annotation.keyframeId);
+    setBaseline(replay);
+    setPendingReplay(null);
+    setFailed(false);
+    setStatus(matchesDraft ? '注釈を保存しました。' : '未保存の変更があります。');
+  }
   return (
     <form
       className="replay-annotation-editor"
@@ -69,7 +86,10 @@ function ReplayAnnotationEditor({
           .then((result) => {
             setStatus(result.message);
             setFailed(!result.ok);
-            if (result.ok && result.replay) setBaseline(result.replay);
+            if (result.ok && result.replay) {
+              setBaseline(result.replay);
+              setPendingReplay(null);
+            } else if (result.pendingReplay) setPendingReplay(result.pendingReplay);
           })
           .catch(() => {
             setFailed(true);

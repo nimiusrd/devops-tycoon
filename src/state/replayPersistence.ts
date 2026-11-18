@@ -121,6 +121,14 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         try {
           const previousRaw = await tx.store.get(snapshot.id);
           const previous = previousRaw === undefined ? null : normalizeReplay(previousRaw);
+          // 通常完走の再試行・セッション移行も、新しい注釈を無条件には消さない。
+          if (
+            !comparePrevious &&
+            previous?.annotation &&
+            JSON.stringify(previous) !== JSON.stringify(normalizeReplay(snapshot))
+          ) {
+            throw new TabConflictError();
+          }
           if (comparePrevious && JSON.stringify(previous) !== expectedKey) {
             throw new TabConflictError();
           }
@@ -268,6 +276,13 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const existing = this.items.get(blob.id);
+    if (
+      (!options || !('expectedPrevious' in options)) &&
+      existing?.annotation &&
+      JSON.stringify(normalizeReplay(existing)) !== JSON.stringify(normalizeReplay(blob))
+    ) {
+      throw new TabConflictError();
+    }
     if (
       options &&
       'expectedPrevious' in options &&

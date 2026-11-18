@@ -42,6 +42,54 @@ function fixture(): ReplayBlob {
 afterEach(() => vi.restoreAllMocks());
 
 describe('RI-301 注釈の境界', () => {
+  it('共通バナーの再試行と退避JSONが失敗した注釈を保持し、復旧後に失敗を消す', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = fixture();
+    await storage.save(original);
+    const game = createGame();
+    await game.attachReplay(storage);
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    expect((await game.saveReplayAnnotation(original, 0, '退避して再試行')).ok).toBe(false);
+    expect(game.getPersistenceStatus()).toMatchObject({
+      state: 'failed',
+      showRetry: true,
+      showExport: true,
+    });
+    expect(JSON.parse(game.exportPendingReplayText()!).annotation.text).toBe('退避して再試行');
+    await game.retryPersistence();
+    expect((await storage.get(original.id))?.annotation?.text).toBe('退避して再試行');
+    expect(game.listReplays()[0].annotation?.text).toBe('退避して再試行');
+    expect(game.getPersistenceStatus().state).toBe('saved');
+    expect(game.exportPendingReplayText()).toBeNull();
+  });
+
+  it('注釈の共通再試行も別タブの新しい内容を上書きしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = fixture();
+    await storage.save(original);
+    const game = createGame();
+    await game.attachReplay(storage);
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    await game.saveReplayAnnotation(original, 0, '自分の下書き');
+    await storage.save(withReplayAnnotation(original, 1, '別タブの理由')!);
+    await game.retryPersistence();
+    expect(game.hasTabConflict()).toBe(true);
+    expect((await storage.get(original.id))?.annotation?.text).toBe('別タブの理由');
+    expect(JSON.parse(game.exportPendingReplayText()!).annotation.text).toBe('自分の下書き');
+  });
+
+  it('未保存注釈の退避JSONを取り込んでも復旧できる', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = fixture();
+    await storage.save(original);
+    const game = createGame();
+    await game.attachReplay(storage);
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    await game.saveReplayAnnotation(original, 0, 'ファイルで復旧');
+    expect((await game.importReplayText(game.exportPendingReplayText()!)).ok).toBe(true);
+    expect(game.exportPendingReplayText()).toBeNull();
+    expect(game.getPersistenceStatus().state).toBe('saved');
+  });
   it('未保存の実ランは再試行を案内し、別タブの競合として扱わない', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'annotation-pending' });
@@ -142,6 +190,8 @@ describe('RI-301 注釈の境界', () => {
         ]);
         expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected']);
         expect((await storage.get(original.id))?.annotation?.text).toBe('先のタブ');
+        await expect(storage.save(original)).rejects.toBeInstanceOf(TabConflictError);
+        expect((await storage.get(original.id))?.annotation?.text).toBe('先のタブ');
         await storage.clear();
         await expect(storage.save(b, { expectedPrevious: original })).rejects.toBeInstanceOf(
           TabConflictError,
@@ -183,7 +233,9 @@ describe('RI-301 注釈の境界', () => {
     expect((await game.saveReplayAnnotation(saved, 1, '読込み失敗')).ok).toBe(false);
     unreadable.mockRestore();
     expect((await storage.get(saved.id))?.annotation?.text).toBe('作者の理由');
-    await storage.save(withReplayAnnotation(saved, 1, '別タブの理由')!);
+    await storage.save(withReplayAnnotation(saved, 1, '別タブの理由')!, {
+      expectedPrevious: saved,
+    });
     expect((await game.saveReplayAnnotation(saved, 1, '古い編集')).ok).toBe(false);
     expect(game.hasTabConflict()).toBe(true);
     expect((await storage.get(saved.id))?.annotation?.text).toBe('別タブの理由');

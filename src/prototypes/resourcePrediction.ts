@@ -77,8 +77,8 @@ interface Decision {
 const object = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
 const keys = (v: Record<string, unknown>, names: string[]) =>
-  Object.keys(v).length === names.length &&
-  names.every((name) => Object.prototype.hasOwnProperty.call(v, name));
+  Reflect.ownKeys(v).length === names.length &&
+  names.every((name) => Object.prototype.propertyIsEnumerable.call(v, name));
 const seedValid = (v: unknown): v is string =>
   typeof v === 'string' && v.length > 0 && v.length <= RESOURCE_PREDICTION_LIMITS.seedCharacters;
 

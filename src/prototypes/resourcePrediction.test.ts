@@ -231,7 +231,17 @@ describe('RI-277 実sim資源予想API', () => {
       { type: 'exchange', index: NaN },
     ])
       reject(command);
+    const hiddenType = Object.defineProperty({ extra: true }, 'type', { value: 'step' });
+    reject(hiddenType);
+    reject(Object.defineProperty({ type: 'step' }, 'extra', { value: true }));
+    reject({ type: 'step', [Symbol('extra')]: true });
+    const hiddenRevision = Object.defineProperty(
+      { command: { type: 'step' }, extra: true },
+      'revision',
+      { value: session.view().revision },
+    );
     const before = session.save();
+    expect(session.apply(hiddenRevision)).toBe(false);
     expect(session.apply({ revision: 2, command: { type: 'step' }, extra: 1 })).toBe(false);
     expect(session.save()).toBe(before);
   });
@@ -294,10 +304,13 @@ describe('RI-277 実sim資源予想API', () => {
     expect(resourceSend(session, { type: 'skip' })).toBe(true);
     for (let n = 1; n < RESOURCE_PREDICTION_LIMITS.inputs; n++)
       expect(
-        resourceSend(session, {
-          type: 'change',
-          choice: n % 2 ? 'none' : 'seniorHp',
-          source: 'self',
+        session.apply({
+          revision: n,
+          command: {
+            type: 'change',
+            choice: n % 2 ? 'none' : 'seniorHp',
+            source: 'self',
+          },
         }),
       ).toBe(true);
     const before = session.save();

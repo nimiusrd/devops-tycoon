@@ -95,7 +95,10 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 
 function keys(value: Record<string, unknown>, expected: string[]): boolean {
-  return Object.keys(value).length === expected.length && expected.every((key) => key in value);
+  return (
+    Object.keys(value).length === expected.length &&
+    expected.every((key) => Object.prototype.hasOwnProperty.call(value, key))
+  );
 }
 
 function id(value: unknown, max: number = ROLE_HANDOFF_LIMITS.idCharacters): value is string {
@@ -263,6 +266,7 @@ export function createRoleHandoff(seed: string): RoleHandoff {
           if (member.assignment === action.lane) return fail('no-change');
           engine.assignMember(action.memberId, action.lane);
         } else {
+          if (action.on && member.assignment !== 'coding') return fail('invalid-ai-assignment');
           if (member.aiAssigned === action.on) return fail('no-change');
           engine.setMemberAi(action.memberId, action.on);
         }

@@ -23,12 +23,47 @@ describe('RI-274 一台交代制の単一所有API', () => {
     expect(session.save()).toBe(before);
     expect(session.dispatch(request).ok).toBe(true);
     expect(session.view().state.roster.members[0].assignment).toBe(lane);
+    if (lane !== 'coding') {
+      expect(
+        session.dispatch(
+          handoffRequest(session, { kind: 'assign', memberId: member.id, lane: 'coding' }),
+        ).ok,
+      ).toBe(true);
+    }
     expect(
       session.dispatch(
         handoffRequest(session, { kind: 'ai', memberId: member.id, on: !member.aiAssigned }),
       ).ok,
     ).toBe(true);
   });
+
+  it.each(['review', 'bench'] as const)(
+    '%s担当へのAI配布は実ルールに合わせて無消費拒否する',
+    (lane) => {
+      const session = createRoleHandoff('g1');
+      const member = session
+        .view()
+        .state.roster.members.find((member) => member.assignment === 'coding')!;
+      expect(
+        session.dispatch(handoffRequest(session, { kind: 'assign', memberId: member.id, lane })).ok,
+      ).toBe(true);
+      const request = handoffRequest(session, { kind: 'ai', memberId: member.id, on: true });
+      const before = session.save();
+      expect(session.dispatch(request)).toEqual({ ok: false, reason: 'invalid-ai-assignment' });
+      expect(session.dispatch({ ...request, requestId: 'retry' }).ok).toBe(false);
+      expect(session.save()).toBe(before);
+      // 拒否したIDも消費していないため、同じIDを有効な配置へ使える。
+      expect(
+        session.dispatch({
+          ...request,
+          action: { kind: 'assign', memberId: member.id, lane: 'coding' },
+        }).ok,
+      ).toBe(true);
+      expect(
+        session.view().state.roster.members.find((item) => item.id === member.id)?.assignment,
+      ).toBe('coding');
+    },
+  );
 
   it('予約は効果/現金を先取りせず、引渡しで一度だけ支払い、RNG付きJSONで保つ', () => {
     const session = createRoleHandoff('g1');
@@ -95,6 +130,13 @@ describe('RI-274 一台交代制の単一所有API', () => {
       { ...request, requestId: 'x'.repeat(65) },
       { ...request, phase: 'unknown' },
       { ...request, extra: true },
+      Object.assign(Object.create({ action: request.action }), {
+        requestId: 'inherited',
+        revision: 0,
+        role: 'investment',
+        phase: 'setup',
+        extra: true,
+      }),
       { ...request, action: { kind: 'handoff', cost: 0 } },
       { ...request, action: { kind: 'reserve', leverId: 'reorg' } },
       { ...request, action: { kind: 'assign', memberId: 'missing', lane: 'review' } },

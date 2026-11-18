@@ -83,6 +83,16 @@ const responsive = vi.hoisted(() => ({
 vi.mock('../../../src/ui/responsiveMode', () => ({
   useResponsiveMode: () => responsive.mode,
 }));
+const replayContent = vi.hoisted(() => ({
+  snapshot: null as import('../../../src/state/replay').ReplayContentSnapshot | null,
+}));
+vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
+  return {
+    ...actual,
+    useReplayContent: () => actual.createReplayContentResolver(replayContent.snapshot),
+  };
+});
 
 import { getBossPlayerDescription } from '../../../src/data/bossDisplay';
 import type { GameHandle } from '../../../src/game';
@@ -233,6 +243,7 @@ function mountSprint(overrides: Partial<SprintScreenProps> = {}) {
 }
 
 beforeEach(() => {
+  replayContent.snapshot = null;
   responsive.mode = { width: 'wide', height: 'normal' };
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   vi.spyOn(performance, 'now').mockReturnValue(3_000);
@@ -251,6 +262,25 @@ afterEach(() => {
 });
 
 describe('SprintScreen の表示と親子の連携', () => {
+  it('所持文化をBoardへ渡し、記録定義・旧記録・所持時点の切替に追従する', () => {
+    const state = makeState([], { relics: ['small-pr'] });
+    const screen = mountSprint({ state });
+    expect(screen.child(Board).culture?.name).toBe('小さく出す文化');
+    replayContent.snapshot = {
+      cards: [],
+      relics: [{ id: 'small-pr', name: '記録時の文化', description: '記録時の説明' }],
+    };
+    screen.update({ game: { isReplayMode: () => true } as GameHandle });
+    expect(screen.child(Board).culture).toMatchObject({
+      name: '記録時の文化',
+      description: '記録時の説明',
+    });
+    replayContent.snapshot = null;
+    screen.flush();
+    expect(screen.child(Board).culture?.name).toContain('不明なレリック');
+    screen.update({ state: { ...state, relics: [] } });
+    expect(screen.child(Board).culture).toBeNull();
+  });
   it('スプリントがない間は描画せず、再開時の既存障害では自動ポーズを発生させない', () => {
     const screen = mountSprint({ state: makeState([], { sprint: null }) });
     expect(screen.tree).toBeNull();
@@ -409,7 +439,7 @@ describe('SprintScreen の表示と親子の連携', () => {
   });
 
   it('チュートリアルは表示指定・ゲーム・閉じるcallbackが揃ったときだけ表示する', () => {
-    const game = {} as GameHandle;
+    const game = { isReplayMode: () => false } as GameHandle;
     const onTutorialDismiss = vi.fn();
     const screen = mountSprint({ game, onTutorialDismiss });
     expect(screen.has(TutorialGuide)).toBe(false);
@@ -639,7 +669,7 @@ describe('SprintScreen の速度・介入操作', () => {
     const getState = vi.fn().mockReturnValueOnce(before).mockReturnValueOnce(after);
     const screen = mountSprint({
       state: before,
-      game: { getState } as unknown as GameHandle,
+      game: { getState, isReplayMode: () => false } as unknown as GameHandle,
       onDispatch: vi.fn(() => success('interruptReview', { hpCost: 0.5, focusCost: 3 })),
     });
     screen.child(ActionBar).onAction('interruptReview');

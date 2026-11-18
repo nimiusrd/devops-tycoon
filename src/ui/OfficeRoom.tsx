@@ -1,14 +1,15 @@
 /**
  * 俯瞰オフィスの静的背景（床・壁・島スラブ・装飾）。SPEC 第4.1 準拠。
  *
- * アイソメの部屋そのものは状態に依存しない背景なので、ここは純粋な SVG。
+ * アイソメの部屋と所持文化の掲示は静的な SVG。動的盤面は Pixi に任せる。
  * viewBox は boardScene の設計空間（1404×573）と一致させ、`preserveAspectRatio="none"`
  * で盤面いっぱいに伸ばす。ステーション/粒は同じ設計座標の % で重ねる（Board.tsx）。
  */
 import { BOARD_VIEW } from '../render/boardScene';
 import { VISUAL_TOKENS } from '../render/visualTokens';
+import type { OfficeCultureView } from '../render/officeCultureView';
 
-export function OfficeRoom() {
+export function OfficeRoom({ culture = null }: { culture?: OfficeCultureView | null }) {
   return (
     <svg
       className="office-room"
@@ -63,6 +64,36 @@ export function OfficeRoom() {
         strokeWidth="2.5"
         opacity=".75"
       />
+
+      {/* 左壁内だけのイラスト座標。人物・粒・操作の設計座標には使わない。 */}
+      {culture && (
+        <g
+          data-testid="office-culture-marker"
+          data-culture-id={culture.id}
+          transform="matrix(1 -.5 0 1 175 295)"
+          pointerEvents="none"
+        >
+          <title>{`${culture.name}：${culture.description}`}</title>
+          <rect
+            width="130"
+            height="64"
+            rx="5"
+            fill={VISUAL_TOKENS.colors.officeCulture.surface}
+            stroke={VISUAL_TOKENS.colors.officeCulture.accent}
+            strokeWidth="3"
+          />
+          {[12, 52, 92].map((x) => (
+            <g key={x} transform={`translate(${x} 12)`}>
+              <rect width="26" height="40" rx="2" fill={VISUAL_TOKENS.colors.officeCulture.paper} />
+              <path
+                d="M6 10 H20 M6 17 H17 M6 24 H20 M6 31 H14"
+                stroke={VISUAL_TOKENS.colors.officeCulture.ink}
+                strokeWidth="2"
+              />
+            </g>
+          ))}
+        </g>
+      )}
 
       {/* 壁の窓（夕景） */}
       <polygon points="903.6,120.2 1138.8,237.8 1138.8,298.3 903.6,180.7" fill="#1d1640" />

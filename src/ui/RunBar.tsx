@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
+import { officeCultureView } from '../render/officeCultureView';
 import { runBarSprintView } from '../render/runBarView';
 import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import {
@@ -125,7 +126,8 @@ export function RunBar({
   onOrgLeverHintDismissed,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
-  const { resolveRelic, resolveTrial } = useReplayContent();
+  const { resolveRelic, resolveTrial, isReplaySnapshot } = useReplayContent();
+  const culture = officeCultureView(state.relics, resolveRelic, readOnly && !isReplaySnapshot);
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -238,6 +240,18 @@ export function RunBar({
           <span className="relic-empty">レリックなし</span>
         ) : (
           state.relics.map((id) => {
+            if (culture?.id === id) {
+              return (
+                <details
+                  key={id}
+                  className="relic-chip office-culture-details"
+                  data-testid="office-culture-details"
+                >
+                  <summary>🏛 {culture.name} · 壁の掲示</summary>
+                  <p data-testid="office-culture-description">{culture.description}</p>
+                </details>
+              );
+            }
             const relic = resolveRelic(id);
             return (
               <span key={id} className="relic-chip" title={formatRelicTooltip(relic)}>

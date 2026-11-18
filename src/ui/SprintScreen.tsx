@@ -16,6 +16,8 @@ import {
   type AttentionPausePlan,
 } from '../render/attentionPause';
 import { Board } from '../render/Board';
+import { officeCultureView } from '../render/officeCultureView';
+import { useReplayContent } from './replayContent';
 import { planActionPresentation } from '../render/actionBarView';
 import { getAction } from '../data/actions';
 import {
@@ -133,6 +135,12 @@ export function SprintScreen({
   eventTickerExpanded: eventTickerExpandedProp,
   onEventTickerExpandedChange,
 }: SprintScreenProps) {
+  const { resolveRelic, isReplaySnapshot } = useReplayContent();
+  const culture = officeCultureView(
+    state.relics,
+    resolveRelic,
+    (game?.isReplayMode() ?? false) && !isReplaySnapshot,
+  );
   const responsiveMode = useResponsiveMode();
   const [layoutViewportWidth, setLayoutViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
@@ -654,6 +662,7 @@ export function SprintScreen({
             data-testid="board-stage"
           >
             <Board
+              culture={culture}
               tasks={sprint.tasks}
               metrics={sprint.metrics}
               reviewAccumulator={sprint.reviewAccumulator}

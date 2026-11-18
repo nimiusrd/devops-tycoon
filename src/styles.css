@@ -5803,6 +5803,27 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   font-size: 11.5px;
   color: var(--text-dim);
 }
+.office-culture-details {
+  max-width: 100%;
+  color: var(--text);
+  background: var(--visual-color-office-culture-surface);
+  border-color: var(--visual-color-office-culture-accent);
+}
+.office-culture-details summary {
+  min-height: 24px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.office-culture-details summary:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.office-culture-details p {
+  max-width: 36rem;
+  margin: 6px 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .pill.diagnosis {
   flex-shrink: 0;
   color: var(--diagnosis-text);

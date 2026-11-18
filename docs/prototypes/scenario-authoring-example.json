@@ -1,0 +1,37 @@
+{
+  "kind": "scenario-authoring-prototype",
+  "schemaVersion": 1,
+  "ruleset": {
+    "prototype": "ri273-scenario-authoring-v1",
+    "balanceVersion": 8,
+    "balanceFingerprint": "32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f"
+  },
+  "base": { "seed": "RI-273:1", "difficulty": "normal", "scenario": "default" },
+  "initialOrg": { "testCoverage": 55, "documentation": 50 },
+  "taskKinds": [
+    "routine",
+    "routine",
+    "routine",
+    "routine",
+    "routine",
+    "routine",
+    "routine",
+    "routine",
+    "normal",
+    "normal",
+    "normal",
+    "normal",
+    "normal",
+    "normal",
+    "normal",
+    "normal",
+    "complex",
+    "complex",
+    "complex",
+    "complex",
+    "complex",
+    "complex",
+    "complex",
+    "complex"
+  ]
+}

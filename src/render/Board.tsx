@@ -44,6 +44,7 @@ import {
 } from './boardDragHit';
 import type { InterventionTrigger } from './interventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
+import type { OfficeCultureView } from './officeCultureView';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { useBoardEffects } from '../ui/useBoardEffects';
 import { deriveMemberMoodOverrides } from './memberMood';
@@ -186,6 +187,7 @@ function Bubble({ s }: { s: BoardStationPlan }) {
 }
 
 export interface BoardProps {
+  culture?: OfficeCultureView | null;
   tasks: Task[];
   /** 指定時は盤面内に延焼・鎮火演出を重ねる（RI-06）。 */
   metrics?: SprintMetrics;
@@ -325,6 +327,7 @@ function BoardOverflowPicker({
 }
 
 export function Board({
+  culture = null,
   tasks,
   metrics,
   reviewAccumulator = 0,
@@ -828,7 +831,7 @@ export function Board({
       }}
       style={{ '--review-heat': heat } as CSSProperties}
     >
-      <OfficeRoom />
+      <OfficeRoom culture={culture} />
       {usePixi && (
         <BoardPixiLayer
           scene={scene}

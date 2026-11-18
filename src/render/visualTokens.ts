@@ -56,6 +56,13 @@ export const VISUAL_TOKENS = {
     panel: '#2a2350',
     /** パネルの上に載せる入力面。再現情報 JSON と仮説の振り返りで共有する。 */
     fieldInset: '#080b1bcc',
+    /** 所持文化の壁掲示。HTMLのレリック説明と静的SVGで共有する。 */
+    officeCulture: {
+      surface: '#2a2350',
+      paper: '#ffefd6',
+      ink: '#33285c',
+      accent: '#b39dff',
+    },
     chart: {
       /** 結果グラフのホバー帯。暗い面で棒・ラベルより目立たせない（白約7%）。 */
       hoverBand: '#ffffff12',
@@ -682,6 +689,10 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-text-dim': colors.textDim,
     '--visual-color-panel': colors.panel,
     '--visual-color-field-inset': colors.fieldInset,
+    '--visual-color-office-culture-surface': colors.officeCulture.surface,
+    '--visual-color-office-culture-paper': colors.officeCulture.paper,
+    '--visual-color-office-culture-ink': colors.officeCulture.ink,
+    '--visual-color-office-culture-accent': colors.officeCulture.accent,
     '--visual-color-chart-hover-band': colors.chart.hoverBand,
     '--visual-color-chart-baseline': colors.chart.baseline,
     '--visual-color-line': colors.line,

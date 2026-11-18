@@ -18,6 +18,14 @@ import {
 } from '../../../src/render/visualTokens';
 
 describe('visual tokens', () => {
+  it('文化掲示のSVG色とHTMLのCSS変数を共有する', () => {
+    const css = visualTokenCssVariables();
+    for (const key of ['surface', 'paper', 'ink', 'accent'] as const) {
+      expect(css[`--visual-color-office-culture-${key}`]).toBe(
+        VISUAL_TOKENS.colors.officeCulture[key],
+      );
+    }
+  });
   it('主要画面の設計空間を一覧化する', () => {
     expect(DESIGN_SPACES).toEqual({
       sprint: { w: 1404, h: 573 },

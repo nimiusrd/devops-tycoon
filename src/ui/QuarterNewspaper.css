@@ -1,0 +1,16 @@
+.quarter-newspaper {
+  margin-bottom: 1rem;
+  overflow-wrap: anywhere;
+}
+.quarter-newspaper ol {
+  padding-left: 1.5rem;
+}
+.quarter-newspaper h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1rem;
+}
+.quarter-newspaper-note {
+  margin: 0.25rem 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}

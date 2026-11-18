@@ -4,7 +4,7 @@
  * sim の構造化 `SprintEvent` を読むだけの純関数。描画・状態は知らない（第22.2）。
  */
 import { getAction } from '../data/actions';
-import type { ActionId, InterventionOutcome, SprintEvent } from '../sim/types';
+import type { ActionId, InterventionEffect, InterventionOutcome, SprintEvent } from '../sim/types';
 import { formatInterventionFailure } from './actionBarView';
 import { resolveIconKey, type IconKey } from './visualIcons';
 
@@ -37,6 +37,17 @@ export interface SprintInterventionFeedback {
   resourceChanges?: { focus: number; seniorHp: number; morale: number; aiLiteracy: number };
 }
 
+/** 緊急対応が返した鎮火IDだけを使う。自然出荷やレビュー完了は成果に含めない（#682）。 */
+function formatFirefightResult(effect: InterventionEffect | undefined): string | null {
+  const taskId = effect?.containedTaskId;
+  return effect?.actionId === 'firefight' &&
+    taskId != null &&
+    Number.isInteger(taskId) &&
+    taskId >= 0
+    ? `PR #${taskId} を鎮火 → レビュー待ち`
+    : null;
+}
+
 /** 実際に返った介入結果だけを、短時間保持する出来事行へ変換する。 */
 export function formatInterventionFeedback(feedback: SprintInterventionFeedback): SprintEventView {
   const { id, outcome, nonce } = feedback;
@@ -52,12 +63,13 @@ export function formatInterventionFeedback(feedback: SprintInterventionFeedback)
   }
 
   const effect = outcome.effect;
+  const firefightResult = id === 'firefight' ? formatFirefightResult(effect) : null;
   const parts: string[] = [];
-  if (effect?.reviewedCount != null) {
+  if (id === 'firefight') {
+    parts.push(firefightResult ?? '鎮火結果を確認できません');
+  } else if (effect?.reviewedCount != null) {
     // レビュー処理は出荷成功を意味しない。0 件も実測として示す。
     parts.push(`PR${effect.reviewedCount}件処理`);
-  } else if (effect?.containedTaskId != null) {
-    parts.push('1件鎮火');
   } else if (effect?.affectedTaskIds && effect.affectedTaskIds.length > 0) {
     const count = effect.affectedTaskIds.length;
     parts.push(
@@ -111,13 +123,14 @@ export function formatInterventionFeedback(feedback: SprintInterventionFeedback)
   return {
     ...base,
     text: `${label}: ${parts.length > 0 ? parts.join(' / ') : '実行完了'}`,
-    tone: effect?.brokeCombo
-      ? 'warn'
-      : id === 'firefight'
-        ? 'good'
-        : spentOrgResources
-          ? 'warn'
-          : 'info',
+    tone:
+      effect?.brokeCombo || (id === 'firefight' && !firefightResult)
+        ? 'warn'
+        : id === 'firefight'
+          ? 'good'
+          : spentOrgResources
+            ? 'warn'
+            : 'info',
   };
 }
 
@@ -186,12 +199,13 @@ function formatIntervention(
   const def = getAction(effect.actionId);
   const icon = resolveIconKey(def?.icon, 'focus');
   const label = def?.label ?? effect.actionId;
+  const firefightResult = formatFirefightResult(effect);
   const parts: string[] = [];
 
-  if (effect.reviewedCount != null && effect.reviewedCount > 0) {
+  if (effect.actionId === 'firefight') {
+    parts.push(firefightResult ?? '鎮火結果を確認できません');
+  } else if (effect.reviewedCount != null && effect.reviewedCount > 0) {
     parts.push(`PR${effect.reviewedCount}件処理`);
-  } else if (effect.containedTaskId != null) {
-    // 鎮火の「コンボ継続」は contain イベント側。介入行はコスト等を出す。
   } else if (effect.affectedTaskIds && effect.affectedTaskIds.length > 0) {
     parts.push(`${effect.affectedTaskIds.length}件に適用`);
   }
@@ -211,13 +225,14 @@ function formatIntervention(
 
   const detail = parts.length > 0 ? `: ${parts.join(' / ')}` : '';
   // 緊急鎮火のみ成功トーン。余裕のある先消しは contain / combo-break と同列の警告（RI-73）。
-  const tone: SprintEventView['tone'] = effect.brokeCombo
-    ? 'warn'
-    : effect.actionId === 'firefight'
-      ? 'good'
-      : effect.hpCost || effect.moraleCost
-        ? 'warn'
-        : 'info';
+  const tone: SprintEventView['tone'] =
+    effect.brokeCombo || (effect.actionId === 'firefight' && !firefightResult)
+      ? 'warn'
+      : effect.actionId === 'firefight'
+        ? 'good'
+        : effect.hpCost || effect.moraleCost
+          ? 'warn'
+          : 'info';
 
   return {
     key: interventionKey(event),

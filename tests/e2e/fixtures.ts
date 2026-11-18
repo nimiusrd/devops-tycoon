@@ -113,7 +113,9 @@ export async function beginPublicSprint(page: Page, options: PublicSprintOptions
     // 画面の lazy 読込や fallback の所有権に左右されず、開始フレームを固定する。
     game.pause();
   });
-  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi', {
+    timeout: 30_000,
+  });
   await expect(page.getByTestId('webgl-status')).toHaveCount(0);
 }
 

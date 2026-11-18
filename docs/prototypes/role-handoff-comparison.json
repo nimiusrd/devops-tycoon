@@ -1,0 +1,1617 @@
+{
+  "generatedBy": "devcontainer exec --workspace-folder . node scripts/ri274-role-handoff-evaluation.mjs",
+  "policy": "tests/unit/helpers/roleHandoffFixture.ts:runRoleHandoffCase",
+  "conditions": {
+    "difficulty": "normal",
+    "trials": [],
+    "scenario": "default",
+    "initialDeck": [],
+    "initialBudget": 45,
+    "fieldStepMs": 1000,
+    "reservationTiming": "first setup handoff only",
+    "factors": "baseline vs teamAiThrottle / prSizeLimit reservation, baseline vs cards disabled; other rules and policies identical",
+    "journalExport": "RI274_JOURNALS=/tmp/ri274-journals node scripts/ri274-role-handoff-evaluation.mjs",
+    "humanPlay": false
+  },
+  "initialBySeed": {
+    "g1": {
+      "resources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "roster": {
+        "members": [
+          {
+            "id": "m0",
+            "name": "ナギ",
+            "rank": "middle",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 58, "review": 40, "aiMastery": 50 },
+            "stamina": 85,
+            "staminaMax": 85,
+            "traits": [],
+            "assignment": "coding",
+            "aiAssigned": false,
+            "onLeave": false
+          },
+          {
+            "id": "m1",
+            "name": "ハルキ",
+            "rank": "junior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 48, "review": 32, "aiMastery": 62 },
+            "stamina": 70,
+            "staminaMax": 70,
+            "traits": ["aiArtisan"],
+            "assignment": "coding",
+            "aiAssigned": true,
+            "onLeave": false
+          },
+          {
+            "id": "m2",
+            "name": "サキ",
+            "rank": "senior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 46, "review": 64, "aiMastery": 48 },
+            "stamina": 95,
+            "staminaMax": 95,
+            "traits": ["reviewDemon"],
+            "assignment": "review",
+            "aiAssigned": false,
+            "onLeave": false
+          }
+        ],
+        "nextId": 3
+      },
+      "org": {
+        "aiEnabled": true,
+        "aiDependency": 35,
+        "aiLiteracy": 45,
+        "testCoverage": 58,
+        "documentation": 52,
+        "quality": 62,
+        "securityLevel": 60,
+        "morale": 70,
+        "seniorHp": 100,
+        "techDebt": 0,
+        "deliveryScore": 0
+      }
+    },
+    "g2": {
+      "resources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "roster": {
+        "members": [
+          {
+            "id": "m0",
+            "name": "リン",
+            "rank": "middle",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 58, "review": 40, "aiMastery": 50 },
+            "stamina": 85,
+            "staminaMax": 85,
+            "traits": [],
+            "assignment": "coding",
+            "aiAssigned": false,
+            "onLeave": false
+          },
+          {
+            "id": "m1",
+            "name": "ヒナタ",
+            "rank": "junior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 48, "review": 32, "aiMastery": 62 },
+            "stamina": 70,
+            "staminaMax": 70,
+            "traits": ["aiArtisan"],
+            "assignment": "coding",
+            "aiAssigned": true,
+            "onLeave": false
+          },
+          {
+            "id": "m2",
+            "name": "サキ",
+            "rank": "senior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 46, "review": 64, "aiMastery": 48 },
+            "stamina": 95,
+            "staminaMax": 95,
+            "traits": ["reviewDemon"],
+            "assignment": "review",
+            "aiAssigned": false,
+            "onLeave": false
+          }
+        ],
+        "nextId": 3
+      },
+      "org": {
+        "aiEnabled": true,
+        "aiDependency": 35,
+        "aiLiteracy": 45,
+        "testCoverage": 58,
+        "documentation": 52,
+        "quality": 62,
+        "securityLevel": 60,
+        "morale": 70,
+        "seniorHp": 100,
+        "techDebt": 0,
+        "deliveryScore": 0
+      }
+    },
+    "g3": {
+      "resources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "roster": {
+        "members": [
+          {
+            "id": "m0",
+            "name": "ソウタ",
+            "rank": "middle",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 58, "review": 40, "aiMastery": 50 },
+            "stamina": 85,
+            "staminaMax": 85,
+            "traits": [],
+            "assignment": "coding",
+            "aiAssigned": false,
+            "onLeave": false
+          },
+          {
+            "id": "m1",
+            "name": "リン",
+            "rank": "junior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 48, "review": 32, "aiMastery": 62 },
+            "stamina": 70,
+            "staminaMax": 70,
+            "traits": ["aiArtisan"],
+            "assignment": "coding",
+            "aiAssigned": true,
+            "onLeave": false
+          },
+          {
+            "id": "m2",
+            "name": "ヒナタ",
+            "rank": "senior",
+            "level": 1,
+            "xp": 0,
+            "stats": { "implementation": 46, "review": 64, "aiMastery": 48 },
+            "stamina": 95,
+            "staminaMax": 95,
+            "traits": ["reviewDemon"],
+            "assignment": "review",
+            "aiAssigned": false,
+            "onLeave": false
+          }
+        ],
+        "nextId": 3
+      },
+      "org": {
+        "aiEnabled": true,
+        "aiDependency": 35,
+        "aiLiteracy": 45,
+        "testCoverage": 58,
+        "documentation": 52,
+        "quality": 62,
+        "securityLevel": 60,
+        "morale": 70,
+        "seniorHp": 100,
+        "techDebt": 0,
+        "deliveryScore": 0
+      }
+    }
+  },
+  "rows": [
+    {
+      "name": "g1-none-cards",
+      "seed": "g1",
+      "investment": null,
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": ["setup", "sprint", "result", "draft", "evolution", "beat", "quarterReview"],
+      "acceptedOperations": 181,
+      "rejectedOperations": { "cooldown": 100, "no-focus": 39, "complete": 3 },
+      "journalSha256": "31ea29625988d1aef37bb91ea7339fb443a6e64271afb8f5b3681c6624e40c36",
+      "checkpointSha256": "d06aa86b6e5e7004e1753467b6f123bf6f53bae5c506de6b3893b39bc923b0a2",
+      "checkpointCharacters": 42720,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "sprintsPlayed": 8,
+        "quarterNumber": 2,
+        "totals": {
+          "delivered": 6242,
+          "done": 408,
+          "rework": 8,
+          "incidents": 24,
+          "contained": 24,
+          "spread": 0,
+          "aiAssisted": 191,
+          "completed": 449,
+          "reviewQueuePeak": 29,
+          "maxCombo": 46,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 37,
+          "reservedBudget": 0,
+          "availableBudget": 37,
+          "focus": null,
+          "seniorHp": 0,
+          "morale": 85,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 58,
+          "documentation": 52,
+          "quality": 77,
+          "securityLevel": 77,
+          "morale": 85,
+          "seniorHp": 0,
+          "techDebt": 0,
+          "deliveryScore": 6017
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 16,
+      "investmentCost": 0,
+      "fieldFocusSpent": 90
+    },
+    {
+      "name": "g1-teamAiThrottle-cards",
+      "seed": "g1",
+      "investment": "teamAiThrottle",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 5,
+            "availableBudget": 40,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 40,
+            "reservedBudget": 0,
+            "availableBudget": 40,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 19
+          }
+        },
+        "activatedReservation": "teamAiThrottle"
+      },
+      "phases": ["setup", "sprint", "result", "draft", "evolution", "beat", "quarterReview"],
+      "acceptedOperations": 186,
+      "rejectedOperations": { "cooldown": 102, "no-focus": 38, "complete": 3 },
+      "journalSha256": "2e4f733bdfd20f99ee4cd66f296d523120f4c1516e028d1d75294aed5983b30d",
+      "checkpointSha256": "54fd68f346bb0bcfc8ac2b8780f6f17c775da9e41fb1b60cf85a88897d342959",
+      "checkpointCharacters": 43293,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "sprintsPlayed": 8,
+        "quarterNumber": 2,
+        "totals": {
+          "delivered": 6222,
+          "done": 408,
+          "rework": 6,
+          "incidents": 25,
+          "contained": 25,
+          "spread": 0,
+          "aiAssisted": 189,
+          "completed": 449,
+          "reviewQueuePeak": 28,
+          "maxCombo": 46,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 32,
+          "reservedBudget": 0,
+          "availableBudget": 32,
+          "focus": null,
+          "seniorHp": 0,
+          "morale": 85,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 58,
+          "documentation": 52,
+          "quality": 77,
+          "securityLevel": 77,
+          "morale": 85,
+          "seniorHp": 0,
+          "techDebt": 0,
+          "deliveryScore": 5997
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 16,
+      "investmentCost": 5,
+      "fieldFocusSpent": 93
+    },
+    {
+      "name": "g1-prSizeLimit-cards",
+      "seed": "g1",
+      "investment": "prSizeLimit",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 10,
+            "availableBudget": 35,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 35,
+            "reservedBudget": 0,
+            "availableBudget": 35,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": "prSizeLimit"
+      },
+      "phases": ["setup", "sprint", "result", "draft", "evolution", "beat", "quarterReview"],
+      "acceptedOperations": 182,
+      "rejectedOperations": { "cooldown": 100, "no-focus": 39, "complete": 3 },
+      "journalSha256": "9ecd5aa7e9d9f98a17c1ee7be6d70aeea8abf7c262ff80cbc73a21865f2b28ad",
+      "checkpointSha256": "9bd4b0844f998d9581f765e6268779699829e9bea6c7e563a57d01ca8a3635b6",
+      "checkpointCharacters": 42979,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "sprintsPlayed": 8,
+        "quarterNumber": 2,
+        "totals": {
+          "delivered": 6242,
+          "done": 408,
+          "rework": 8,
+          "incidents": 24,
+          "contained": 24,
+          "spread": 0,
+          "aiAssisted": 191,
+          "completed": 449,
+          "reviewQueuePeak": 29,
+          "maxCombo": 46,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 27,
+          "reservedBudget": 0,
+          "availableBudget": 27,
+          "focus": null,
+          "seniorHp": 0,
+          "morale": 85,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 58,
+          "documentation": 52,
+          "quality": 77,
+          "securityLevel": 77,
+          "morale": 85,
+          "seniorHp": 0,
+          "techDebt": 0,
+          "deliveryScore": 6017
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 16,
+      "investmentCost": 10,
+      "fieldFocusSpent": 90
+    },
+    {
+      "name": "g1-none-no-cards",
+      "seed": "g1",
+      "investment": null,
+      "cards": false,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "quarterReview",
+        "recruit",
+        "shop",
+        "rest"
+      ],
+      "acceptedOperations": 588,
+      "rejectedOperations": { "cooldown": 445, "complete": 2 },
+      "journalSha256": "b3897900fbf582d38ba03866586b261a5d58238d275163c35133d1ed9d0c922b",
+      "checkpointSha256": "894bcd51e2a34d94e597bd88db2c00eb9957fc6d719ce123fcc70ddbe6b6cab3",
+      "checkpointCharacters": 88828,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "kpiMissed",
+        "sprintsPlayed": 24,
+        "quarterNumber": 4,
+        "totals": {
+          "delivered": 20392,
+          "done": 1187,
+          "rework": 30,
+          "incidents": 76,
+          "contained": 76,
+          "spread": 0,
+          "aiAssisted": 774,
+          "completed": 1312,
+          "reviewQueuePeak": 43,
+          "maxCombo": 50,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 2,
+          "reservedBudget": 0,
+          "availableBudget": 2,
+          "focus": 4,
+          "seniorHp": 44.34749999999976,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 70,
+          "documentation": 52,
+          "quality": 51,
+          "securityLevel": 66,
+          "morale": 100,
+          "seniorHp": 44.34749999999976,
+          "techDebt": 0,
+          "deliveryScore": 19700
+        },
+        "quarterOutcome": "missed_crisis"
+      },
+      "handoffs": 48,
+      "investmentCost": 0,
+      "fieldFocusSpent": 227
+    },
+    {
+      "name": "g2-none-cards",
+      "seed": "g2",
+      "investment": null,
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "shop",
+        "recruit",
+        "quarterReview",
+        "rest"
+      ],
+      "acceptedOperations": 401,
+      "rejectedOperations": { "cooldown": 168, "complete": 2, "no-focus": 188 },
+      "journalSha256": "8be79024020c390eb7987d5d536505c28fbd5b2d669221d609f916975ce467ea",
+      "checkpointSha256": "8bb4093f1ad4b8302cfa72681ad02db82a7acec68d633b630b7b3c4cf304e159",
+      "checkpointCharacters": 64601,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 13371,
+          "done": 878,
+          "rework": 10,
+          "incidents": 40,
+          "contained": 40,
+          "spread": 0,
+          "aiAssisted": 378,
+          "completed": 961,
+          "reviewQueuePeak": 40,
+          "maxCombo": 50,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 83.05149414062492,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 78,
+          "documentation": 52,
+          "quality": 96,
+          "securityLevel": 59,
+          "morale": 100,
+          "seniorHp": 83.05149414062492,
+          "techDebt": 0,
+          "deliveryScore": 12911
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 35,
+      "investmentCost": 0,
+      "fieldFocusSpent": 198
+    },
+    {
+      "name": "g2-teamAiThrottle-cards",
+      "seed": "g2",
+      "investment": "teamAiThrottle",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 5,
+            "availableBudget": 40,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 40,
+            "reservedBudget": 0,
+            "availableBudget": 40,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 19
+          }
+        },
+        "activatedReservation": "teamAiThrottle"
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "shop",
+        "recruit",
+        "quarterReview"
+      ],
+      "acceptedOperations": 377,
+      "rejectedOperations": { "cooldown": 147, "complete": 97, "no-focus": 154 },
+      "journalSha256": "3f9712d2ca748c94913b62c6b704b16424d3e54edc0a0dd08a1f86add8b539ed",
+      "checkpointSha256": "e0c1d76115129a65633f7b76b6812037a838ea6295492bf507ed4b7d9b536b67",
+      "checkpointCharacters": 57512,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 11300,
+          "done": 722,
+          "rework": 8,
+          "incidents": 36,
+          "contained": 36,
+          "spread": 0,
+          "aiAssisted": 346,
+          "completed": 805,
+          "reviewQueuePeak": 40,
+          "maxCombo": 48,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 92.13732421875002,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 78,
+          "documentation": 52,
+          "quality": 96,
+          "securityLevel": 59,
+          "morale": 100,
+          "seniorHp": 92.13732421875002,
+          "techDebt": 0,
+          "deliveryScore": 10840
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 34,
+      "investmentCost": 5,
+      "fieldFocusSpent": 162
+    },
+    {
+      "name": "g2-prSizeLimit-cards",
+      "seed": "g2",
+      "investment": "prSizeLimit",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 10,
+            "availableBudget": 35,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 35,
+            "reservedBudget": 0,
+            "availableBudget": 35,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": "prSizeLimit"
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "shop",
+        "recruit",
+        "quarterReview"
+      ],
+      "acceptedOperations": 377,
+      "rejectedOperations": { "cooldown": 147, "complete": 97, "no-focus": 154 },
+      "journalSha256": "0683f38ea186f7c1655c85e62ee783c0f175e9c63f71b20a33087076b0d1a1be",
+      "checkpointSha256": "a4c1adbc6a25beca3e731a916dda9e5bce3b39316f461428afa36e9d1c1e257b",
+      "checkpointCharacters": 57642,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 11300,
+          "done": 722,
+          "rework": 8,
+          "incidents": 36,
+          "contained": 36,
+          "spread": 0,
+          "aiAssisted": 346,
+          "completed": 805,
+          "reviewQueuePeak": 40,
+          "maxCombo": 48,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 92.13732421875002,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 78,
+          "documentation": 52,
+          "quality": 96,
+          "securityLevel": 59,
+          "morale": 100,
+          "seniorHp": 92.13732421875002,
+          "techDebt": 0,
+          "deliveryScore": 10840
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 34,
+      "investmentCost": 10,
+      "fieldFocusSpent": 162
+    },
+    {
+      "name": "g2-none-no-cards",
+      "seed": "g2",
+      "investment": null,
+      "cards": false,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "shop",
+        "recruit",
+        "quarterReview",
+        "rest"
+      ],
+      "acceptedOperations": 408,
+      "rejectedOperations": { "cooldown": 300, "complete": 1 },
+      "journalSha256": "36faadfd6902b3405432ccc6b08faebb82095527286d76f16d8f0f0d46a72310",
+      "checkpointSha256": "8394011759178b69e91f7c33047d0f7d7ad258c133a8e225576ad17570194403",
+      "checkpointCharacters": 64545,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 13401,
+          "done": 878,
+          "rework": 20,
+          "incidents": 43,
+          "contained": 43,
+          "spread": 0,
+          "aiAssisted": 390,
+          "completed": 961,
+          "reviewQueuePeak": 39,
+          "maxCombo": 56,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 64.04343749999997,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 78,
+          "documentation": 52,
+          "quality": 68,
+          "securityLevel": 66,
+          "morale": 100,
+          "seniorHp": 64.04343749999997,
+          "techDebt": 0,
+          "deliveryScore": 12941
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 34,
+      "investmentCost": 0,
+      "fieldFocusSpent": 152
+    },
+    {
+      "name": "g3-none-cards",
+      "seed": "g3",
+      "investment": null,
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "rest",
+        "quarterReview",
+        "recruit",
+        "shop"
+      ],
+      "acceptedOperations": 565,
+      "rejectedOperations": { "cooldown": 226, "no-focus": 295, "complete": 1 },
+      "journalSha256": "5275615b37e79d3227bd517ed9608000a2c8532939b4405a411d35c5f4187a2c",
+      "checkpointSha256": "dc241538fe28c8b17e71f13d836fd55f8f7758f62f42d93211e41d37790d5070",
+      "checkpointCharacters": 84886,
+      "outcome": {
+        "phase": "won",
+        "status": "won",
+        "winType": "happiness",
+        "sprintsPlayed": 24,
+        "quarterNumber": 4,
+        "totals": {
+          "delivered": 19293,
+          "done": 1238,
+          "rework": 12,
+          "incidents": 46,
+          "contained": 46,
+          "spread": 0,
+          "aiAssisted": 670,
+          "completed": 1343,
+          "reviewQueuePeak": 47,
+          "maxCombo": 55,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 4,
+          "reservedBudget": 0,
+          "availableBudget": 4,
+          "focus": 0,
+          "seniorHp": 72.95999999999994,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 96,
+          "documentation": 52,
+          "quality": 100,
+          "securityLevel": 70,
+          "morale": 100,
+          "seniorHp": 72.95999999999994,
+          "techDebt": 0,
+          "deliveryScore": 18731
+        },
+        "quarterOutcome": "exceeded"
+      },
+      "handoffs": 48,
+      "investmentCost": 0,
+      "fieldFocusSpent": 289
+    },
+    {
+      "name": "g3-teamAiThrottle-cards",
+      "seed": "g3",
+      "investment": "teamAiThrottle",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 5,
+            "availableBudget": 40,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 40,
+            "reservedBudget": 0,
+            "availableBudget": 40,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 19
+          }
+        },
+        "activatedReservation": "teamAiThrottle"
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "rest",
+        "quarterReview",
+        "recruit",
+        "shop"
+      ],
+      "acceptedOperations": 406,
+      "rejectedOperations": { "cooldown": 158, "no-focus": 209 },
+      "journalSha256": "0f5acddedf91815b07f859d2d08201dc007b1ebf583a27279f52ffc42caec03c",
+      "checkpointSha256": "154d861f67ccd76ddf37838feea516904140243449f6a9df8eb079413721af71",
+      "checkpointCharacters": 64125,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 13639,
+          "done": 866,
+          "rework": 12,
+          "incidents": 36,
+          "contained": 36,
+          "spread": 0,
+          "aiAssisted": 384,
+          "completed": 942,
+          "reviewQueuePeak": 47,
+          "maxCombo": 50,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 81.67431640624991,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 84,
+          "documentation": 52,
+          "quality": 100,
+          "securityLevel": 67,
+          "morale": 100,
+          "seniorHp": 81.67431640624991,
+          "techDebt": 0,
+          "deliveryScore": 13205
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 35,
+      "investmentCost": 5,
+      "fieldFocusSpent": 196
+    },
+    {
+      "name": "g3-prSizeLimit-cards",
+      "seed": "g3",
+      "investment": "prSizeLimit",
+      "cards": true,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a1",
+          "revision": 1,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 10,
+            "availableBudget": 35,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 35,
+            "reservedBudget": 0,
+            "availableBudget": 35,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": "prSizeLimit"
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "rest",
+        "quarterReview",
+        "recruit",
+        "shop"
+      ],
+      "acceptedOperations": 406,
+      "rejectedOperations": { "cooldown": 158, "no-focus": 209 },
+      "journalSha256": "59bc4d9c4aab838b2527070177f22e014613293468b20d30f86277aecc95472f",
+      "checkpointSha256": "34e8159a6d89772988850ba6ccb9b42e117dcf86213cd341838811112f3d6263",
+      "checkpointCharacters": 64257,
+      "outcome": {
+        "phase": "lost",
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "sprintsPlayed": 17,
+        "quarterNumber": 3,
+        "totals": {
+          "delivered": 13639,
+          "done": 866,
+          "rework": 12,
+          "incidents": 36,
+          "contained": 36,
+          "spread": 0,
+          "aiAssisted": 384,
+          "completed": 942,
+          "reviewQueuePeak": 47,
+          "maxCombo": 50,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 0,
+          "reservedBudget": 0,
+          "availableBudget": 0,
+          "focus": null,
+          "seniorHp": 81.67431640624991,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 84,
+          "documentation": 52,
+          "quality": 100,
+          "securityLevel": 67,
+          "morale": 100,
+          "seniorHp": 81.67431640624991,
+          "techDebt": 0,
+          "deliveryScore": 13205
+        },
+        "quarterOutcome": null
+      },
+      "handoffs": 35,
+      "investmentCost": 10,
+      "fieldFocusSpent": 196
+    },
+    {
+      "name": "g3-none-no-cards",
+      "seed": "g3",
+      "investment": null,
+      "cards": false,
+      "initialResources": {
+        "budget": 45,
+        "reservedBudget": 0,
+        "availableBudget": 45,
+        "focus": null,
+        "seniorHp": 100,
+        "morale": 70,
+        "techDebt": 0,
+        "aiDependency": 35
+      },
+      "firstHandoff": {
+        "request": {
+          "requestId": "a0",
+          "revision": 0,
+          "role": "investment",
+          "phase": "setup",
+          "action": { "kind": "handoff" }
+        },
+        "before": {
+          "role": "investment",
+          "phase": "setup",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": null,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "after": {
+          "role": "field",
+          "phase": "sprint",
+          "resources": {
+            "budget": 45,
+            "reservedBudget": 0,
+            "availableBudget": 45,
+            "focus": 13,
+            "seniorHp": 100,
+            "morale": 70,
+            "techDebt": 0,
+            "aiDependency": 35
+          }
+        },
+        "activatedReservation": null
+      },
+      "phases": [
+        "setup",
+        "sprint",
+        "result",
+        "draft",
+        "evolution",
+        "beat",
+        "rest",
+        "quarterReview",
+        "recruit",
+        "shop"
+      ],
+      "acceptedOperations": 575,
+      "rejectedOperations": { "cooldown": 432 },
+      "journalSha256": "3f4f42b0b268c20c3d12548819c3f2d5f96a4201e4f25b363f1a1616d9e0c760",
+      "checkpointSha256": "fc66487fb3f259594b18b48a7a4df219e9276ec5b03dc4b5b793dbf4e54bbf36",
+      "checkpointCharacters": 86944,
+      "outcome": {
+        "phase": "won",
+        "status": "won",
+        "winType": "happiness",
+        "sprintsPlayed": 24,
+        "quarterNumber": 4,
+        "totals": {
+          "delivered": 18878,
+          "done": 1238,
+          "rework": 32,
+          "incidents": 50,
+          "contained": 50,
+          "spread": 0,
+          "aiAssisted": 644,
+          "completed": 1343,
+          "reviewQueuePeak": 43,
+          "maxCombo": 58,
+          "consecutiveIncidentSprints": 0
+        },
+        "resources": {
+          "budget": 4,
+          "reservedBudget": 0,
+          "availableBudget": 4,
+          "focus": 5,
+          "seniorHp": 81.38999999999989,
+          "morale": 100,
+          "techDebt": 0,
+          "aiDependency": 100
+        },
+        "org": {
+          "aiEnabled": true,
+          "aiDependency": 100,
+          "aiLiteracy": 100,
+          "testCoverage": 88,
+          "documentation": 52,
+          "quality": 96,
+          "securityLevel": 66,
+          "morale": 100,
+          "seniorHp": 81.38999999999989,
+          "techDebt": 0,
+          "deliveryScore": 18317
+        },
+        "quarterOutcome": "exceeded"
+      },
+      "handoffs": 48,
+      "investmentCost": 0,
+      "fieldFocusSpent": 223
+    }
+  ]
+}

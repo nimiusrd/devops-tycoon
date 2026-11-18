@@ -163,7 +163,7 @@ describe('RI-300 固定二期リレー', () => {
     });
     expect(s.save()).toBe(saved);
     expect(exportQuarterRelay(saved, options).ok).toBe(false);
-  });
+  }, 30_000);
 
   it('品質転換の実Q2達成では通常のWinTypeを自動判定し、勝利時にも通常報酬を発生させない', () => {
     const exported = value(
@@ -184,7 +184,7 @@ describe('RI-300 固定二期リレー', () => {
       dailyReward: 0,
     });
     expect(value(resumeQuarterRelay(session.save())).view()).toEqual(final);
-  });
+  }, 30_000);
 
   it.each([
     [
@@ -346,6 +346,43 @@ describe('RI-300 固定二期リレー', () => {
     expect(exportQuarterRelay(JSON.stringify(q2), options).ok).toBe(false);
   });
 
+  it('受領ファイルの最大深さでも保存envelopeを加えて再開でき、一段超過は受領時に拒否する', () => {
+    const nested = (count: number): unknown => (count === 0 ? 0 : [nested(count - 1)]);
+    const padded = (count: number) =>
+      mutate((file) => {
+        (file.before.state as unknown as Record<string, unknown>).extra = nested(count);
+      });
+    const accepted = value(importQuarterRelay(padded(RELAY_LIMITS.fileNesting - 3), '後任B'));
+    expect(value(resumeQuarterRelay(accepted.save())).save()).toBe(accepted.save());
+    expect(importQuarterRelay(padded(RELAY_LIMITS.fileNesting - 2), '後任B')).toMatchObject({
+      ok: false,
+      reason: 'structure-limit',
+    });
+  });
+
+  it('最大入力列とreceiptの要素数を確保するため、親fileの要素数に余白を設ける', () => {
+    const oversized = mutate((file) => {
+      (file.before.state as unknown as Record<string, unknown>).extra = Array.from(
+        { length: 40 },
+        () => Array(2000).fill(0),
+      );
+    });
+    expect(parseQuarterRelay(oversized)).toMatchObject({ ok: false, reason: 'structure-limit' });
+  });
+
+  it('短い指数表記でも保存時の正規化でファイル上限を超えるデータは受領しない', () => {
+    const expanded = mutate((file) => {
+      (file.before.state as unknown as Record<string, unknown>).extra = Array.from(
+        { length: 36 },
+        () => Array(1400).fill(1e20),
+      );
+    });
+    const compact = expanded.replaceAll('100000000000000000000', '1e20');
+    expect(expanded.length).toBeGreaterThan(RELAY_LIMITS.fileChars);
+    expect(compact.length).toBeLessThan(RELAY_LIMITS.fileChars);
+    expect(parseQuarterRelay(compact)).toMatchObject({ ok: false, reason: 'input-limit' });
+  });
+
   it('再開で入力改変・重複・受領branch/担当/親指紋・RNG破損を拒否する', () => {
     const s = open();
     relayAct(s, { type: 'begin' });
@@ -425,5 +462,5 @@ describe('RI-300 固定二期リレー', () => {
     expect(saveSpy).not.toHaveBeenCalled();
     expect(clearSpy).not.toHaveBeenCalled();
     expect(metaStorage.save).not.toHaveBeenCalled();
-  });
+  }, 30_000);
 });

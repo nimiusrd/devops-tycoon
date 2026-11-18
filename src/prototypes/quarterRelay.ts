@@ -26,6 +26,9 @@ export const RELAY_LIMITS = Object.freeze({
   arrayItems: 2048,
   nodes: 100_000,
   nesting: 24,
+  // 親fileに保存envelope・receipt・最大入力列を加えても再開上限へ収まる余白。
+  fileNodes: 80_000,
+  fileNesting: 23,
   inputs: 2048,
   tasks: 512,
   teams: 16,
@@ -129,7 +132,12 @@ export function relayRuleset(): RelayRuleset {
   };
 }
 
-function json(raw: string, max: number): Result<unknown> {
+function json(
+  raw: string,
+  max: number,
+  maxNodes: number = RELAY_LIMITS.nodes,
+  maxDepth: number = RELAY_LIMITS.nesting,
+): Result<unknown> {
   if (typeof raw !== 'string' || raw.length > max) return fail('input-limit');
   try {
     const value: unknown = JSON.parse(raw);
@@ -137,8 +145,7 @@ function json(raw: string, max: number): Result<unknown> {
     let nodes = 0;
     while (pending.length) {
       const item = pending.pop()!;
-      if (++nodes > RELAY_LIMITS.nodes || item.depth > RELAY_LIMITS.nesting)
-        return fail('structure-limit');
+      if (++nodes > maxNodes || item.depth > maxDepth) return fail('structure-limit');
       if (typeof item.value === 'string' && item.value.length > RELAY_LIMITS.stringChars)
         return fail('string-limit');
       if (typeof item.value === 'number' && !Number.isFinite(item.value))
@@ -315,9 +322,16 @@ export function exportQuarterRelay(
 
 /** 境界は実際の修正前から再実行して全永続状態と照合。指紋は署名ではない。 */
 export function parseQuarterRelay(raw: string): Result<QuarterRelayFile> {
-  const parsed = json(raw, RELAY_LIMITS.fileChars);
+  const parsed = json(
+    raw,
+    RELAY_LIMITS.fileChars,
+    RELAY_LIMITS.fileNodes,
+    RELAY_LIMITS.fileNesting,
+  );
   if (!parsed.ok) return parsed;
   const v = parsed.value;
+  // 1e20等の短い入力も保存時には長い十進表記になる。再直列化後の大きさも制限する。
+  if (JSON.stringify(v).length > RELAY_LIMITS.fileChars) return fail('input-limit');
   if (
     !object(v) ||
     !keys(v, [

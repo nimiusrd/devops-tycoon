@@ -1,0 +1,5095 @@
+{
+  "version": 1,
+  "results": [
+    {
+      "strategy": "none",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 30,
+        "implementation": 0,
+        "verification": 0,
+        "reconnect": 0,
+        "responseWork": 0,
+        "unrelatedWork": 8,
+        "normalWork": 24,
+        "features": [
+          {
+            "id": "notifications",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 5,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 5,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 94,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 30,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 94,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 30,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 94,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "alternative",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "alternative"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "alternative"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 62,
+        "implementation": 10,
+        "verification": 2,
+        "reconnect": 0,
+        "responseWork": 12,
+        "unrelatedWork": 8,
+        "normalWork": 12,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": null,
+            "fullRestoredAt": 3,
+            "stoppedTicks": 1,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          },
+          {
+            "id": "reports",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 5,
+            "resumedAt": null,
+            "fullRestoredAt": 5,
+            "stoppedTicks": 3,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 6,
+        "carryoverWork": 6,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 90,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 62,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 102,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 62,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 66,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "reduced",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "reduced"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "reduced"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "resume",
+          "feature": "notifications"
+        },
+        {
+          "type": "resume",
+          "feature": "reports"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 3,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 1,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 51,
+        "implementation": 2,
+        "verification": 2,
+        "reconnect": 4,
+        "responseWork": 8,
+        "unrelatedWork": 8,
+        "normalWork": 16,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 2,
+            "resumedAt": 7,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 0,
+            "reducedTicks": 5,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": 8,
+            "fullRestoredAt": 8,
+            "stoppedTicks": 1,
+            "reducedTicks": 5,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 99,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 51,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": 7,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 0,
+              "reducedTicks": 5,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": 8,
+              "fullRestoredAt": 8,
+              "stoppedTicks": 1,
+              "reducedTicks": 5,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 99,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 51,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": 7,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 0,
+              "reducedTicks": 5,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": 8,
+              "fullRestoredAt": 8,
+              "stoppedTicks": 1,
+              "reducedTicks": 5,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 99,
+          "continued": true
+        }
+      ]
+    }
+  ],
+  "shortOutage": [
+    {
+      "strategy": "none",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 4,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 60,
+        "implementation": 0,
+        "verification": 0,
+        "reconnect": 0,
+        "responseWork": 0,
+        "unrelatedWork": 8,
+        "normalWork": 24,
+        "features": [
+          {
+            "id": "notifications",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 4,
+            "stoppedTicks": 2,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 4,
+            "stoppedTicks": 2,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 124,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 60,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 124,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 60,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 124,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "alternative",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 4,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "alternative"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "alternative"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 66,
+        "implementation": 10,
+        "verification": 2,
+        "reconnect": 0,
+        "responseWork": 12,
+        "unrelatedWork": 8,
+        "normalWork": 12,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": null,
+            "fullRestoredAt": 3,
+            "stoppedTicks": 1,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          },
+          {
+            "id": "reports",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 5,
+            "resumedAt": null,
+            "fullRestoredAt": 4,
+            "stoppedTicks": 2,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 6,
+        "carryoverWork": 6,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 94,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 66,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 106,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 66,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 2,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 70,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "reduced",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 4,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "reduced"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "reduced"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "resume",
+          "feature": "notifications"
+        },
+        {
+          "type": "resume",
+          "feature": "reports"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 3,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 1,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 66,
+        "implementation": 2,
+        "verification": 2,
+        "reconnect": 4,
+        "responseWork": 8,
+        "unrelatedWork": 8,
+        "normalWork": 16,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 2,
+            "resumedAt": 4,
+            "fullRestoredAt": 4,
+            "stoppedTicks": 0,
+            "reducedTicks": 2,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": 5,
+            "fullRestoredAt": 5,
+            "stoppedTicks": 1,
+            "reducedTicks": 2,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 114,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 66,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": 4,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 0,
+              "reducedTicks": 2,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": 5,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 1,
+              "reducedTicks": 2,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 114,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 66,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": 4,
+              "fullRestoredAt": 4,
+              "stoppedTicks": 0,
+              "reducedTicks": 2,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": 5,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 1,
+              "reducedTicks": 2,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 114,
+          "continued": true
+        }
+      ]
+    }
+  ],
+  "longOutage": [
+    {
+      "strategy": "none",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 9,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 10,
+        "implementation": 0,
+        "verification": 0,
+        "reconnect": 0,
+        "responseWork": 0,
+        "unrelatedWork": 8,
+        "normalWork": 24,
+        "features": [
+          {
+            "id": "notifications",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": null,
+            "stoppedTicks": 7,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": null,
+            "stoppedTicks": 7,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": true,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 74,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 10,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 7,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 7,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": true,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 74,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 10,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 7,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 7,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": true,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 74,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "alternative",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 9,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "alternative"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "alternative"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 62,
+        "implementation": 10,
+        "verification": 2,
+        "reconnect": 0,
+        "responseWork": 12,
+        "unrelatedWork": 8,
+        "normalWork": 12,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": null,
+            "fullRestoredAt": 3,
+            "stoppedTicks": 1,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          },
+          {
+            "id": "reports",
+            "route": "alternative",
+            "respondedAt": 2,
+            "readyAt": 5,
+            "resumedAt": null,
+            "fullRestoredAt": 5,
+            "stoppedTicks": 3,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 6,
+        "carryoverWork": 6,
+        "providerRecoveryPending": true,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 90,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 62,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": true,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 102,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 62,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": 3,
+              "stoppedTicks": 1,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 2,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": true,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 66,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "reduced",
+      "responseAt": 2,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 9,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "reduced"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "reduced"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 43,
+        "implementation": 2,
+        "verification": 2,
+        "reconnect": 0,
+        "responseWork": 4,
+        "unrelatedWork": 8,
+        "normalWork": 20,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 2,
+            "resumedAt": null,
+            "fullRestoredAt": null,
+            "stoppedTicks": 0,
+            "reducedTicks": 7,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 2,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": "reduced",
+            "respondedAt": 2,
+            "readyAt": 3,
+            "resumedAt": null,
+            "fullRestoredAt": null,
+            "stoppedTicks": 1,
+            "reducedTicks": 6,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 2,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 4,
+        "maintenanceWork": 0,
+        "carryoverWork": 4,
+        "providerRecoveryPending": true,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 91,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 43,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 4,
+          "unrelatedWork": 8,
+          "normalWork": 20,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 0,
+              "reducedTicks": 7,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 2,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 1,
+              "reducedTicks": 6,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 2,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 4,
+          "maintenanceWork": 0,
+          "carryoverWork": 4,
+          "providerRecoveryPending": true,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 99,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 43,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 4,
+          "unrelatedWork": 8,
+          "normalWork": 20,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 2,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 0,
+              "reducedTicks": 7,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 2,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 2,
+              "readyAt": 3,
+              "resumedAt": null,
+              "fullRestoredAt": null,
+              "stoppedTicks": 1,
+              "reducedTicks": 6,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 2,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 4,
+          "maintenanceWork": 0,
+          "carryoverWork": 4,
+          "providerRecoveryPending": true,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 75,
+          "continued": true
+        }
+      ]
+    }
+  ],
+  "lateResponse": [
+    {
+      "strategy": "none",
+      "responseAt": 4,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 30,
+        "implementation": 0,
+        "verification": 0,
+        "reconnect": 0,
+        "responseWork": 0,
+        "unrelatedWork": 8,
+        "normalWork": 24,
+        "features": [
+          {
+            "id": "notifications",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 5,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": null,
+            "respondedAt": null,
+            "readyAt": null,
+            "resumedAt": null,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 5,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 94,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 30,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 94,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 30,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "responseWork": 0,
+          "unrelatedWork": 8,
+          "normalWork": 24,
+          "features": [
+            {
+              "id": "notifications",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": null,
+              "respondedAt": null,
+              "readyAt": null,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 94,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "alternative",
+      "responseAt": 4,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "alternative"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "alternative"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 3,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "alternative",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "alternative",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 42,
+        "implementation": 10,
+        "verification": 2,
+        "reconnect": 0,
+        "responseWork": 12,
+        "unrelatedWork": 8,
+        "normalWork": 12,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "alternative",
+            "respondedAt": 4,
+            "readyAt": 5,
+            "resumedAt": null,
+            "fullRestoredAt": 5,
+            "stoppedTicks": 3,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          },
+          {
+            "id": "reports",
+            "route": "alternative",
+            "respondedAt": 4,
+            "readyAt": 7,
+            "resumedAt": null,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 5,
+            "reducedTicks": 0,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 3
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 6,
+        "carryoverWork": 6,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 70,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 42,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 4,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 4,
+              "readyAt": 7,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 82,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 42,
+          "implementation": 10,
+          "verification": 2,
+          "reconnect": 0,
+          "responseWork": 12,
+          "unrelatedWork": 8,
+          "normalWork": 12,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "alternative",
+              "respondedAt": 4,
+              "readyAt": 5,
+              "resumedAt": null,
+              "fullRestoredAt": 5,
+              "stoppedTicks": 3,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            },
+            {
+              "id": "reports",
+              "route": "alternative",
+              "respondedAt": 4,
+              "readyAt": 7,
+              "resumedAt": null,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 5,
+              "reducedTicks": 0,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 3
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 6,
+          "carryoverWork": 6,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 46,
+          "continued": true
+        }
+      ]
+    },
+    {
+      "strategy": "reduced",
+      "responseAt": 4,
+      "initial": {
+        "version": 1,
+        "seed": "RI-259",
+        "tick": 0,
+        "activeTicks": 8,
+        "capacity": 4,
+        "outageAt": 2,
+        "recoveryAt": 7,
+        "unrelatedJob": {
+          "id": "catalog",
+          "dependency": null,
+          "workPerTick": 1
+        },
+        "features": [
+          {
+            "id": "notifications",
+            "dependency": "relay-cloud",
+            "job": "delivery",
+            "fullValue": 6,
+            "reducedValue": 3,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          },
+          {
+            "id": "reports",
+            "dependency": "relay-cloud",
+            "job": "aggregation",
+            "fullValue": 4,
+            "reducedValue": 2,
+            "alternativeWork": 5,
+            "reductionWork": 1,
+            "verificationWork": 1,
+            "reconnectWork": 2,
+            "maintenanceWork": 3,
+            "route": null,
+            "respondedAt": null,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "readyAt": null,
+            "resumeRequested": false,
+            "reconnectLeft": 0,
+            "resumedAt": null
+          }
+        ],
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "respond",
+          "feature": "notifications",
+          "route": "reduced"
+        },
+        {
+          "type": "respond",
+          "feature": "reports",
+          "route": "reduced"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "resume",
+          "feature": "notifications"
+        },
+        {
+          "type": "resume",
+          "feature": "reports"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "periods": [
+        {
+          "tick": 1,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "tick": 2,
+          "provider": "down",
+          "providerEvent": "stopped",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 3,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "stopped",
+              "value": 0
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 4,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 2,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "stopped",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "tick": 5,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 1,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "provider": "down",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 0,
+          "unrelatedWork": 1,
+          "normalWork": 3,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "reduced",
+              "value": 3
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 7,
+          "provider": "up",
+          "providerEvent": "recovered",
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 3,
+          "unrelatedWork": 1,
+          "normalWork": 0,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "reduced",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "tick": 8,
+          "provider": "up",
+          "providerEvent": null,
+          "implementation": 0,
+          "verification": 0,
+          "reconnect": 1,
+          "unrelatedWork": 1,
+          "normalWork": 2,
+          "features": [
+            {
+              "id": "notifications",
+              "mode": "native",
+              "value": 6
+            },
+            {
+              "id": "reports",
+              "mode": "native",
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "result": {
+        "completed": true,
+        "featureValue": 41,
+        "implementation": 2,
+        "verification": 2,
+        "reconnect": 4,
+        "responseWork": 8,
+        "unrelatedWork": 8,
+        "normalWork": 16,
+        "features": [
+          {
+            "id": "notifications",
+            "route": "reduced",
+            "respondedAt": 4,
+            "readyAt": 4,
+            "resumedAt": 7,
+            "fullRestoredAt": 7,
+            "stoppedTicks": 2,
+            "reducedTicks": 3,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          },
+          {
+            "id": "reports",
+            "route": "reduced",
+            "respondedAt": 4,
+            "readyAt": 5,
+            "resumedAt": 8,
+            "fullRestoredAt": 8,
+            "stoppedTicks": 3,
+            "reducedTicks": 3,
+            "implementationLeft": 0,
+            "verificationLeft": 0,
+            "reconnectLeft": 0,
+            "maintenanceWork": 0
+          }
+        ],
+        "remainingResponseWork": 0,
+        "maintenanceWork": 0,
+        "carryoverWork": 0,
+        "providerRecoveryPending": false,
+        "carryCost": 2,
+        "developmentValuePerWork": 2,
+        "comparisonValue": 89,
+        "continued": true
+      },
+      "sensitivity": [
+        {
+          "completed": true,
+          "featureValue": 41,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 4,
+              "readyAt": 4,
+              "resumedAt": 7,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 2,
+              "reducedTicks": 3,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 4,
+              "readyAt": 5,
+              "resumedAt": 8,
+              "fullRestoredAt": 8,
+              "stoppedTicks": 3,
+              "reducedTicks": 3,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 0,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 89,
+          "continued": true
+        },
+        {
+          "completed": true,
+          "featureValue": 41,
+          "implementation": 2,
+          "verification": 2,
+          "reconnect": 4,
+          "responseWork": 8,
+          "unrelatedWork": 8,
+          "normalWork": 16,
+          "features": [
+            {
+              "id": "notifications",
+              "route": "reduced",
+              "respondedAt": 4,
+              "readyAt": 4,
+              "resumedAt": 7,
+              "fullRestoredAt": 7,
+              "stoppedTicks": 2,
+              "reducedTicks": 3,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            },
+            {
+              "id": "reports",
+              "route": "reduced",
+              "respondedAt": 4,
+              "readyAt": 5,
+              "resumedAt": 8,
+              "fullRestoredAt": 8,
+              "stoppedTicks": 3,
+              "reducedTicks": 3,
+              "implementationLeft": 0,
+              "verificationLeft": 0,
+              "reconnectLeft": 0,
+              "maintenanceWork": 0
+            }
+          ],
+          "remainingResponseWork": 0,
+          "maintenanceWork": 0,
+          "carryoverWork": 0,
+          "providerRecoveryPending": false,
+          "carryCost": 6,
+          "developmentValuePerWork": 2,
+          "comparisonValue": 89,
+          "continued": true
+        }
+      ]
+    }
+  ]
+}

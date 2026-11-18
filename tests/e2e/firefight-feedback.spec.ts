@@ -1,5 +1,4 @@
 /** 緊急対応の実鎮火IDと、HTMLティッカー・実WebGL盤面の整合（#682）。 */
-import type { SprintState } from '../../src/sim/types';
 import {
   FIREFIGHT_STABILITY_BURN_TICKS,
   FIREFIGHT_STABILITY_MIN_BURNING,
@@ -20,10 +19,6 @@ const VIEWPORTS = [
   { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1440, height: 900 },
 ] as const;
-
-type InjectedGameWindow = PublicGameWindow & {
-  game: NonNullable<PublicGameWindow['game']> & { engine: { sprint: SprintState } };
-};
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   for (const viewport of VIEWPORTS) {
@@ -110,21 +105,26 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   }
 }
 
-test('実行直前に対象が消えた緊急対応は成功を表示しない（#682）', async ({ page }) => {
+test('先行する緊急対応と競合した操作は成功を表示しない（#682）', async ({ page }) => {
   test.setTimeout(120_000);
   await beginPublicSprint(page, { seed: 'ri34-burn', difficulty: 'hard' });
   await advanceCurrentSprintToBurning(page);
   await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
   await expect(page.getByTestId('action-firefight')).toBeEnabled();
-  // Ready描画後・dispatch前の競合だけを合成し、実際の失敗判定と表示を通す。
-  await page.evaluate(() => {
-    for (const task of (window as InjectedGameWindow).game.engine.sprint.tasks) {
-      task.incident = false;
+  // 公開dispatchで先に鎮火し、同じ同期タスク内で再描画前のボタンを押す。
+  const first = await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game!;
+    const button = document.querySelector<HTMLButtonElement>('[data-testid="action-firefight"]')!;
+    const outcome = game.dispatch('firefight');
+    if (!outcome.ok || game.getState().sprint!.tasks.some((task) => task.incident)) {
+      throw new Error('先行する公開dispatchで炎上を解消できない');
     }
+    button.click();
+    return outcome;
   });
-  await page.getByTestId('action-firefight').click();
+  expect(first.ok).toBe(true);
   const summary = page.getByTestId('event-ticker-summary');
-  await expect(summary).toContainText('緊急対応: 炎上なし');
+  await expect(summary).toContainText('緊急対応: クールダウン中');
   await expect(summary).not.toContainText(/PR #|鎮火 →|レビュー待ち|実行完了/);
 });

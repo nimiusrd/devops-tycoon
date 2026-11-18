@@ -24,13 +24,14 @@
 
 2026-11-18 JST の検証結果（Dev Container、Node v24.16.0）:
 
-- 対象 Vitest: `officeCultureView` / `visualTokens` / `replayContent` の3ファイル23件成功、終了コード0。
+- 対象 Vitest: `officeCultureView` / `visualTokens` / `replayContent` / `sprintScreenInteractions` の4ファイル49件成功、終了コード0。
 - 対象 E2E: `office-culture.spec.ts` の追加6件と `sprint-layout.spec.ts` / `sprint-pixi-visual.spec.ts` の既存7件、計13件成功、終了コード0。専用port 5241、workers=2。通常・6レリック・最長診断警告・Review Hell・最低寸法・既存Pixi回帰を含む。
 - 新規画像12枚（5 viewport × 通常/reduced motion、未所持、所持+Review Hell）を1枚ずつ確認。壁の局所差分のみで、人物・タスク・警告・既存のヒット座標を保持。既存回帰画像は更新不要。
 - `npm run build`: 型チェックを含め成功、終了コード0。
 - `npm run lint` / 最終 `npm run format:check`: ともに成功、終了コード0。HTML確認画像の保存を加えた後の対象ESLintも成功。
 - `npm run gallery`: 1440×900の16画面を生成・確認、終了コード0。このseedで未到達の休息・四半期レビューは未撮影。出力はコミット対象外。
 - 初回の追加警告テストはresize直後の未確定寸法を読み失敗。AspectStageの反映待ちへ直して再実行成功。途中の追加編集で `format:check` が1回失敗し、対象Prettierで修正。
+- 初回CIの全体unitは既存 `sprintScreenInteractions` 25件で失敗（ほか4963件成功）。SprintScreenを直接呼ぶHookハーネスに、追加した `useReplayContent` のモックと `GameHandle.isReplayMode` のfixtureが欠けていたため。依存を補い、所持/記録定義/旧記録をBoardへ渡す連携テストを追加。対象4ファイル49件の再実行で成功した。
 
 固定入力の表示一致は、人間の判断・楽しさ・継続意欲の証明とは扱わない。
 

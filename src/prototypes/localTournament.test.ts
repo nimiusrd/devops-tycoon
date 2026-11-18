@@ -181,6 +181,19 @@ describe('RI-299 ローカル大会の読み取り専用比較', () => {
       field: 'goalCarryoverId',
       reason: 'missing',
     });
+    const conflicting = JSON.parse(serializeReplay(replays[1]));
+    conflicting.keyframes[0].frame.goalCarryoverQuarter = 1;
+    conflicting.keyframes[0].frame.goalCarryoverId = 'cut_scope';
+    conflicting.keyframes[0].frame.extras.goalCarryoverQuarter = 2;
+    conflicting.keyframes[0].frame.extras.goalCarryoverId = 'cut_scope';
+    const conflict = compareLocalTournament([
+      input(replays[0]),
+      { json: JSON.stringify(conflicting) },
+    ]);
+    expect(conflict.ok && conflict.entries[1].issues).toContainEqual({
+      field: 'goalCarryoverQuarter',
+      reason: 'inconsistent',
+    });
     const extension = JSON.parse(serializeReplay(replays[1]));
     extension.challengeConditions = { anything: true };
     const unknown = compareLocalTournament([
@@ -222,6 +235,35 @@ describe('RI-299 ローカル大会の読み取り専用比較', () => {
       const result = compare(replays[0], changed);
       expect(result.pairs[0].status).toBe('incomparable');
       expect(result.entries[1].issues).toContainEqual({ field, reason: 'unknown' });
+    }
+  });
+
+  it('正規化で消える不完全・未知・矛盾の持越し条件を重複で隠さない', () => {
+    for (const [quarter, id, reason] of [
+      [1, null, 'inconsistent'],
+      [null, 'cut_scope', 'inconsistent'],
+      [1, 'unknown-goal', 'unknown'],
+      [1.5, 'cut_scope', 'unknown'],
+    ] as const) {
+      const raw = JSON.parse(serializeReplay(replays[0]));
+      raw.id = 'altered-condition';
+      // 本体とextrasが同じ不正値でも、一方の採用・null補完で一致にしない。
+      for (const source of [raw.keyframes[0].frame, raw.keyframes[0].frame.extras]) {
+        source.goalCarryoverQuarter = quarter;
+        source.goalCarryoverId = id;
+      }
+      const result = compareLocalTournament([input(replays[0]), { json: JSON.stringify(raw) }]);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.imports[1].status).toBe('accepted');
+      expect(result.entries).toHaveLength(2);
+      expect(result.entries[1].issues).toContainEqual({ field: 'goalCarryover', reason });
+      expect(result.pairs[0].status).toBe('incomparable');
+      // IDを変えずに不完全条件を再取込すれば、黙って重複にせず衝突を返す。
+      raw.id = replays[0].id;
+      expect(
+        compareLocalTournament([input(replays[0]), { json: JSON.stringify(raw) }]),
+      ).toMatchObject({ ok: false, reason: 'id_collision' });
     }
   });
 

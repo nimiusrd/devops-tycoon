@@ -1,5 +1,6 @@
 /** RI-299: リプレイJSONだけを読む、通常ランから隔離した比較試作。 */
 import { getCard } from '../data/cards';
+import { allGoalAdjustmentIds } from '../data/goalAdjustments';
 import { getRelic } from '../data/relics';
 import { getTrial } from '../data/difficulties';
 import { SCENARIOS } from '../sim/scenarios';
@@ -135,8 +136,31 @@ function inspect(replay: ReplayBlob, raw: unknown) {
       isObject(raw) && Array.isArray(raw.keyframes) ? raw.keyframes[startIndex] : null;
     const rawStart = isObject(rawEntry) && isObject(rawEntry.frame) ? rawEntry.frame : {};
     const rawExtras = isObject(rawStart.extras) ? rawStart.extras : {};
+    for (const source of [rawStart, rawExtras]) {
+      const quarter = source.goalCarryoverQuarter;
+      const id = source.goalCarryoverId;
+      if (quarter === undefined && id === undefined) continue;
+      if (quarter === undefined || id === undefined || (quarter === null) !== (id === null)) {
+        add('goalCarryover', 'inconsistent');
+      } else if (
+        quarter !== null &&
+        (typeof quarter !== 'number' ||
+          !Number.isSafeInteger(quarter) ||
+          quarter < 1 ||
+          typeof id !== 'string' ||
+          !allGoalAdjustmentIds().some((known) => known === id))
+      ) {
+        add('goalCarryover', 'unknown');
+      }
+    }
     for (const key of ['goalCarryoverQuarter', 'goalCarryoverId']) {
       if (!(key in rawStart) && !(key in rawExtras)) add(key, 'missing');
+      else if (
+        key in rawStart &&
+        key in rawExtras &&
+        canonical(rawStart[key]) !== canonical(rawExtras[key])
+      )
+        add(key, 'inconsistent');
     }
     if (start.scenario === undefined) add('scenario', 'missing');
     else if (!Object.prototype.hasOwnProperty.call(SCENARIOS, start.scenario))

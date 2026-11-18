@@ -14,7 +14,7 @@
 
 `pastRunCompare.checkIdentity` を変更せず読み取り再利用し、seed・難易度・試練・シナリオ・ラン種別・ruleset・解放プール・研修方針の8項目をペアごとに返す。追加の `recordedStart` は、スプリント0のsetupフレーム全体のキー順正規化による保守的な一致。予算・組織・初期資源・プール・daily日付・baseConfig等の差も別組にする。開始時setupが1枚でない場合は比較不能。後のsetupでは代用しない。記録された初期条件の一致であり、記録されなかった制約や外部の挑戦コード条件まで一致したという保証ではない。
 
-既存比較の研修方針欠落→空配列という互換補完は、この試作の参加判定に使わない。エントリ単位の `issues`（`missing` / `unknown` / `inconsistent`）を追加し、欠落した研修方針、シナリオ、本体とextrasのシナリオ矛盾、ラン種別、daily日付、未知の試練/プールID等を明示する。`pairs.identity` は既存照合の結果、最終的な参加可否は `entries.issues` と `pairs.status` を読む。旧照合が `match` を返しても欠落のある組は `incomparable` になる。parserが補完する目標持越し条件も、元JSONの本体/extrasの両方で欠けていればmissingにする。
+既存比較の研修方針欠落→空配列という互換補完は、この試作の参加判定に使わない。エントリ単位の `issues`（`missing` / `unknown` / `inconsistent`）を追加し、欠落した研修方針、シナリオ、本体とextrasのシナリオ矛盾、ラン種別、daily日付、未知の試練/プールID等を明示する。`pairs.identity` は既存照合の結果、最終的な参加可否は `entries.issues` と `pairs.status` を読む。旧照合が `match` を返しても欠落のある組は `incomparable` になる。parserが補完する目標持越し条件も、元JSONの本体/extrasの両方で欠けていればmissing、両方に記録され値が矛盾すればinconsistentにする。正規化前の四半期とIDの組についても、片方のみ/片方だけnullをinconsistent、未知IDや不正な四半期をunknownとする。診断を重複キーに含め、補完後に同内容へ潰れて欠落が隠れないようにする。
 
 本試作が内容を解釈できるrulesetは `CURRENT_RUN_RULESET` のみ。旧v1のruleset欠損は `missing`、異なる記録済みrulesetは（同じ旧fingerprint同士でも）`unknown` として比較不能にする。将来の履歴ruleset対応には既知版の検証根拠が必要で、現行へ補完しない。難易度や版等をparserが拒否する場合は `imports` に理由を残す。
 

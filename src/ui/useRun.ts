@@ -132,6 +132,7 @@ export interface UseRun {
   exportReplayText: (id: string) => string | null;
   importReplayText: (raw: string) => Promise<ReplayShareResult>;
   saveReplayAnnotation: GameHandle['saveReplayAnnotation'];
+  getReplayAnnotationRecovery: GameHandle['getReplayAnnotationRecovery'];
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -395,6 +396,10 @@ export function useRun(game: GameHandle): UseRun {
     (...args) => game.saveReplayAnnotation(...args),
     [game],
   );
+  const getReplayAnnotationRecovery = useCallback(
+    (id: string) => game.getReplayAnnotationRecovery(id),
+    [game],
+  );
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => {
       const opened = game.openReplay(id, keyframeIndex);
@@ -522,6 +527,7 @@ export function useRun(game: GameHandle): UseRun {
     exportReplayText,
     importReplayText,
     saveReplayAnnotation,
+    getReplayAnnotationRecovery,
     purchaseMetaUnlock,
     setSoundMuted,
     setPreferredCardIds,

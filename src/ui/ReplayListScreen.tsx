@@ -31,7 +31,8 @@ export interface ReplayListScreenProps {
     expected: ReplayBlob,
     index: number,
     text: string,
-  ) => Promise<{ ok: boolean; message: string; replay?: ReplayBlob; pendingReplay?: ReplayBlob }>;
+  ) => Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
+  onGetAnnotationRecovery?: (id: string) => { previous: ReplayBlob; replay: ReplayBlob } | null;
 }
 
 function ReplayAnnotationEditor({
@@ -39,37 +40,39 @@ function ReplayAnnotationEditor({
   onSave,
   disabled,
   onBusy,
+  recovery,
 }: {
   replay: ReplayBlob;
   onSave: NonNullable<ReplayListScreenProps['onSaveAnnotation']>;
   disabled: boolean;
   onBusy: (busy: boolean) => void;
+  recovery: { previous: ReplayBlob; replay: ReplayBlob } | null;
 }) {
   // 編集中の基準を固定する。一覧更新で別タブの変更を承認したことにしない。
   const [baseline, setBaseline] = useState(replay);
+  const initialDraft = recovery?.replay ?? replay;
   const [index, setIndex] = useState(() =>
     Math.max(
       0,
-      replay.keyframes.findIndex((frame) => frame.id === replay.annotation?.keyframeId),
+      initialDraft.keyframes.findIndex((frame) => frame.id === initialDraft.annotation?.keyframeId),
     ),
   );
-  const [text, setText] = useState(replay.annotation?.text ?? '');
+  const [text, setText] = useState(initialDraft.annotation?.text ?? '');
   const [status, setStatus] = useState('');
   const [failed, setFailed] = useState(false);
-  const [pendingReplay, setPendingReplay] = useState<ReplayBlob | null>(null);
   // 共通バナーが自分の失敗した書込みを完了したときだけ基準を進める。
   // 再試行中に入力した新しい下書きは消さず、別タブの別内容は承認しない。
   if (
-    pendingReplay &&
-    JSON.stringify(replay) === JSON.stringify(pendingReplay) &&
+    recovery &&
+    JSON.stringify(baseline) === JSON.stringify(recovery.previous) &&
+    JSON.stringify(replay) === JSON.stringify(recovery.replay) &&
     JSON.stringify(replay) !== JSON.stringify(baseline)
   ) {
     const matchesDraft =
-      text === (pendingReplay.annotation?.text ?? '') &&
-      (!pendingReplay.annotation ||
-        pendingReplay.keyframes[index]?.id === pendingReplay.annotation.keyframeId);
+      text === (recovery.replay.annotation?.text ?? '') &&
+      (!recovery.replay.annotation ||
+        recovery.replay.keyframes[index]?.id === recovery.replay.annotation.keyframeId);
     setBaseline(replay);
-    setPendingReplay(null);
     setFailed(false);
     setStatus(matchesDraft ? '注釈を保存しました。' : '未保存の変更があります。');
   }
@@ -88,8 +91,7 @@ function ReplayAnnotationEditor({
             setFailed(!result.ok);
             if (result.ok && result.replay) {
               setBaseline(result.replay);
-              setPendingReplay(null);
-            } else if (result.pendingReplay) setPendingReplay(result.pendingReplay);
+            }
           })
           .catch(() => {
             setFailed(true);
@@ -185,6 +187,7 @@ export function ReplayListScreen({
   onExportReplay,
   onImportReplay,
   onSaveAnnotation,
+  onGetAnnotationRecovery,
 }: ReplayListScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
@@ -390,6 +393,7 @@ export function ReplayListScreen({
                         onSave={onSaveAnnotation}
                         disabled={busy}
                         onBusy={setAnnotationSaving}
+                        recovery={onGetAnnotationRecovery?.(selected.id) ?? null}
                       />
                     ) : null}
                   </>

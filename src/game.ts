@@ -297,6 +297,8 @@ export interface GameHandle {
   ): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
   listReplays(): ReplayBlob[];
+  /** このセッション自身の注釈書込み。再マウント後も復旧の比較基準を確認できる。 */
+  getReplayAnnotationRecovery(id: string): { previous: ReplayBlob; replay: ReplayBlob } | null;
   /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
   exportReplayText(id: string): string | null;
   /** 一覧で編集を始めた記録と一致するときだけ、作者の理由を保存する。 */
@@ -304,7 +306,7 @@ export interface GameHandle {
     expected: ReplayBlob,
     keyframeIndex: number,
     text: string,
-  ): Promise<{ ok: boolean; message: string; replay?: ReplayBlob; pendingReplay?: ReplayBlob }>;
+  ): Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
   /**
    * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
    * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
@@ -472,6 +474,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayMigrationOpen = false;
   /** 空だった永続先へ、このセッションが書けたリプレイ。それ以外は別タブの記録として扱う。 */
   const replayMigrationWrittenIds = new Set<string>();
+  const replayMigrationWrittenSnapshots = new Map<string, ReplayBlob>();
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
   /** 進行中の保存。移行側は完了を待ってからセッションを外す。 */
@@ -487,6 +490,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     error?: unknown;
   };
   const pendingAnnotations = new Map<string, PendingAnnotation>();
+  const annotationRecoveries = new Map<string, PendingAnnotation>();
   const hasPendingReplayWrites = () => pendingReplays.length > 0 || pendingAnnotations.size > 0;
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
@@ -600,6 +604,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const listed = await replayStorage.list();
       storedReplaySnapshots = new Map(listed.map((row) => [row.id, structuredClone(row)]));
       cachedReplays = replayListWithPending(listed);
+      for (const id of annotationRecoveries.keys()) {
+        if (!pendingAnnotations.has(id) && !cachedReplays.some((row) => row.id === id))
+          annotationRecoveries.delete(id);
+      }
       bump();
       return listed;
     } catch {
@@ -1155,7 +1163,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (!saved || replayContentKey(saved) !== replayContentKey(next))
             throw new TabConflictError();
         } catch (error) {
-          if (!isTabConflict(error)) await storage.revertBatch?.([previous], [next]);
+          if (!isTabConflict(error)) await storage.revertBatch?.([previous], [next], new Set());
           throw error;
         }
         if (pendingAnnotations.get(next.id) === entry) pendingAnnotations.delete(next.id);
@@ -1451,6 +1459,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               const written: ReplayBlob[] = [];
               const evictedIds = new Set<string>();
               const evictedRecords = new Map<string, ReplayBlob>();
+              const ownSnapshotsBefore = new Map(replayMigrationWrittenSnapshots);
               try {
                 const foreign = replayMigrationOpen ? foreignDurableIds(snapshot) : [];
                 const protectedIds = [
@@ -1458,11 +1467,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 ];
                 for (const blob of newcomers) {
                   await target.save(structuredClone(blob), {
+                    ...(replayMigrationWrittenSnapshots.has(blob.id)
+                      ? { expectedPrevious: replayMigrationWrittenSnapshots.get(blob.id) }
+                      : {}),
                     pin: true,
                     protectIds: protectedIds,
                     evictedIds,
                     evictedRecords,
                   });
+                  replayMigrationWrittenSnapshots.set(blob.id, structuredClone(blob));
                   written.push(structuredClone(blob));
                 }
                 durableList = await target.list();
@@ -1481,6 +1494,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                     } else {
                       await target.clear();
                       for (const blob of snapshot) await target.save(structuredClone(blob));
+                    }
+                    for (const blob of written) {
+                      const prior = ownSnapshotsBefore.get(blob.id);
+                      if (prior) replayMigrationWrittenSnapshots.set(blob.id, prior);
+                      else replayMigrationWrittenSnapshots.delete(blob.id);
                     }
                   } catch {
                     /* 戻せなくても、セッション限りのまま返す */
@@ -1547,10 +1565,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (foreignDurableIds(snapshot).length > 0) return;
           for (const blob of toSave) {
             await target.save(structuredClone(blob), {
+              ...(replayMigrationWrittenSnapshots.has(blob.id)
+                ? { expectedPrevious: replayMigrationWrittenSnapshots.get(blob.id) }
+                : {}),
               pin: true,
               protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
               evictedIds: undefined,
             });
+            replayMigrationWrittenSnapshots.set(blob.id, structuredClone(blob));
             replayMigrationWrittenIds.add(blob.id);
           }
           const kept = await target.list();
@@ -2535,6 +2557,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     listReplays() {
       return cachedReplays.map((r) => structuredClone(r));
     },
+    getReplayAnnotationRecovery(id) {
+      const entry = annotationRecoveries.get(id);
+      const current = cachedReplays.find((row) => row.id === id);
+      if (
+        !entry ||
+        !current ||
+        (replayContentKey(current) !== replayContentKey(entry.previous) &&
+          replayContentKey(current) !== replayContentKey(entry.next))
+      )
+        return null;
+      return { previous: structuredClone(entry.previous), replay: structuredClone(entry.next) };
+    },
     exportReplayText(id) {
       const replay = cachedReplays.find((item) => item.id === id);
       return replay ? serializeReplay(replay) : null;
@@ -2561,6 +2595,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (!next) return { ok: false, message: '場面と注釈の長さを確認してください。' };
       const entry: PendingAnnotation = { previous, next, inFlight: false };
       pendingAnnotations.set(next.id, entry);
+      annotationRecoveries.set(next.id, entry);
       const work = writeReplayAnnotation(entry);
       trackWrite('replay', work, hasPendingReplayWrites);
       try {
@@ -2580,7 +2615,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return {
           ok: false,
           message: '注釈を保存できませんでした。内容を残したまま再試行できます。',
-          pendingReplay: structuredClone(next),
         };
       }
     },

@@ -42,6 +42,59 @@ function fixture(): ReplayBlob {
 afterEach(() => vi.restoreAllMocks());
 
 describe('RI-301 注釈の境界', () => {
+  for (const foreignUpdate of [false, true]) {
+    it(`途中移行した自分の注釈を更新し、別タブの変更は保護する（foreign=${foreignUpdate}）`, async () => {
+      const memory = new MemoryReplayStorage();
+      const durable = new MemoryReplayStorage();
+      const original = withReplayAnnotation(fixture(), 0, '最初の注釈')!;
+      await memory.save(original);
+      const game = createGame();
+      await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+      const save = durable.save.bind(durable);
+      vi.spyOn(durable, 'save').mockImplementationOnce(async (blob, options) => {
+        await save(blob, options);
+        vi.spyOn(durable, 'list').mockRejectedValueOnce(new Error('read after migration failed'));
+      });
+      await game.retryPersistence();
+      expect(game.getPersistenceStatus().state).toBe('session');
+      expect((await durable.get(original.id))?.annotation?.text).toBe('最初の注釈');
+      expect((await game.saveReplayAnnotation(game.listReplays()[0], 0, '移行後の編集')).ok).toBe(
+        true,
+      );
+      if (foreignUpdate)
+        await durable.save(withReplayAnnotation(original, 0, '別タブの変更')!, {
+          expectedPrevious: original,
+        });
+      await game.retryPersistence();
+      expect((await durable.get(original.id))?.annotation?.text).toBe(
+        foreignUpdate ? '別タブの変更' : '移行後の編集',
+      );
+      expect(game.getPersistenceStatus().state).toBe(foreignUpdate ? 'session' : 'saved');
+    });
+  }
+
+  for (const indexed of [false, true]) {
+    it(`注釈保存後の読込み失敗で別タブの削除を巻き戻さない（indexed=${indexed}）`, async () => {
+      const name = 'annotation-rollback-deletion';
+      const storage = indexed ? new IndexedDbReplayStorage(name) : new MemoryReplayStorage();
+      const other = indexed ? new IndexedDbReplayStorage(name) : storage;
+      try {
+        const original = fixture();
+        await storage.save(original);
+        const game = createGame();
+        await game.attachReplay(storage);
+        vi.spyOn(storage, 'list').mockImplementationOnce(async () => {
+          await other.clear();
+          throw new Error('read failed after another tab deleted');
+        });
+        expect((await game.saveReplayAnnotation(original, 0, '復活させない')).ok).toBe(false);
+        expect(await storage.get(original.id)).toBeNull();
+      } finally {
+        if (indexed) await deleteDB(name);
+      }
+    });
+  }
+
   it('共通バナーの再試行と退避JSONが失敗した注釈を保持し、復旧後に失敗を消す', async () => {
     const storage = new MemoryReplayStorage();
     const original = fixture();
@@ -56,11 +109,15 @@ describe('RI-301 注釈の境界', () => {
       showExport: true,
     });
     expect(JSON.parse(game.exportPendingReplayText()!).annotation.text).toBe('退避して再試行');
+    const remounted = game.getReplayAnnotationRecovery(original.id)!;
+    expect(remounted.previous).toEqual(normalizeReplay(original));
+    expect(remounted.replay.annotation?.text).toBe('退避して再試行');
     await game.retryPersistence();
     expect((await storage.get(original.id))?.annotation?.text).toBe('退避して再試行');
     expect(game.listReplays()[0].annotation?.text).toBe('退避して再試行');
     expect(game.getPersistenceStatus().state).toBe('saved');
     expect(game.exportPendingReplayText()).toBeNull();
+    expect(game.getReplayAnnotationRecovery(original.id)?.replay).toEqual(game.listReplays()[0]);
   });
 
   it('注釈の共通再試行も別タブの新しい内容を上書きしない', async () => {

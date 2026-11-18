@@ -800,6 +800,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onClose={() => setReplayListOpen(false)}
               onExportReplay={run.exportReplayText}
               onSaveAnnotation={run.saveReplayAnnotation}
+              onGetAnnotationRecovery={run.getReplayAnnotationRecovery}
               onImportReplay={async (raw) => {
                 const result = await run.importReplayText(raw);
                 return {

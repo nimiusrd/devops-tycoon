@@ -120,6 +120,17 @@ afterEach(() => {
 });
 
 describe('QuarterReviewScreen のレビュー結果', () => {
+  it('新聞を閉じた詳細として追加し、欠損理由と主要操作を残す', () => {
+    const screen = mountReview();
+    const newspaper = screen.find('quarter-newspaper');
+    expect(newspaper.type).toBe('details');
+    expect(newspaper.props.open).toBeUndefined();
+    expect(content(newspaper)).toContain('社内新聞 · Q2');
+    expect(content(newspaper)).toContain('Q2 の四半期履歴がない');
+    expect(screen.has('quarter-voices')).toBe(true);
+    expect(screen.negotiation()).toBeDefined();
+  });
+
   it('レビューがない状態では画面もアクションも表示しない', () => {
     const screen = mountReview({ state: makeState({ quarterReview: null }) });
     expect(screen.tree).toBeNull();

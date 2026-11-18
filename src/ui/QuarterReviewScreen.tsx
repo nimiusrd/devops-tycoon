@@ -10,6 +10,7 @@ import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import { QuarterOkr } from './QuarterOkr';
 import { QuarterRoadmap } from './QuarterRoadmap';
 import { QuarterReviewVoices } from './QuarterReviewVoices';
+import { QuarterNewspaper } from './QuarterNewspaper';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { StakeholderNegotiationList } from './StakeholderNegotiationList';
@@ -122,6 +123,8 @@ export function QuarterReviewScreen({
             </ul>
           </div>
         )}
+
+        <QuarterNewspaper quarterNumber={state.quarterNumber} trendHistory={state.trendHistory} />
 
         <QuarterReviewVoices state={state} />
 

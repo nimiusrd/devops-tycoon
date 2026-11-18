@@ -688,14 +688,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const releaseMatchedReplayProtection = (
     matched: readonly ReplayBlob[],
     listedById: ReadonlyMap<string, ReplayBlob>,
+    importedIds: ReadonlySet<string>,
   ): { complete: boolean; changed: boolean } => {
     let annotationMatched = false;
     for (const [id, entry] of pendingAnnotations) {
       const stored = listedById.get(id);
-      if (stored && replayContentKey(stored) === replayContentKey(entry.next)) {
+      if (
+        stored &&
+        (importedIds.has(id) || replayContentKey(stored) === replayContentKey(entry.next))
+      ) {
         pendingAnnotations.delete(id);
         annotationMatched = true;
       }
+    }
+    for (const id of importedIds) {
+      if (listedById.has(id)) annotationRecoveries.delete(id);
     }
     for (const blob of matched) completePendingReplay(blob);
     for (const blob of [...replayRetryKept.values()]) {
@@ -1150,11 +1157,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const work = replayImportWrites.then(async () => {
       try {
         if (tabConflict) throw new TabConflictError();
-        await storage.save(next, {
-          expectedPrevious: previous,
-          pin: true,
-          protectIds: [...pinnedReplayIds, ...replayRetryKept.keys(), ...pendingAnnotations.keys()],
-        });
+        // 書込み後の読込みとロールバックが共に失敗しても、自分の完全一致だけを照合する。
+        const current = await storage.get(next.id);
+        if (!current || replayContentKey(current) !== replayContentKey(next)) {
+          await storage.save(next, {
+            expectedPrevious: previous,
+            pin: true,
+            protectIds: [
+              ...pinnedReplayIds,
+              ...replayRetryKept.keys(),
+              ...pendingAnnotations.keys(),
+            ],
+          });
+        }
         try {
           const listed = await refreshReplayCache();
           if (!listed) throw new Error('replay list failed');
@@ -2783,7 +2798,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             const row = listedById.get(item.id);
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
-          const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
+          const pendingCleared = releaseMatchedReplayProtection(
+            matched,
+            listedById,
+            new Set(cohort),
+          );
           if (!tracker.isSession('replay')) {
             tracker.noteDurableAt('replay', Date.now());
             if (pendingCleared.changed && pendingCleared.complete) {
@@ -2907,7 +2926,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
             const listedById = new Map(cachedReplays.map((row) => [row.id, row]));
-            const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
+            const pendingCleared = releaseMatchedReplayProtection(
+              matched,
+              listedById,
+              new Set([loaded.replay.id]),
+            );
             if (!tracker.isSession('replay')) {
               tracker.noteDurableAt('replay', Date.now());
               if (pendingCleared.changed && pendingCleared.complete) {

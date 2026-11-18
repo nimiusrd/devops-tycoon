@@ -98,6 +98,10 @@ for (const viewport of viewports) {
     });
     await recordReplay(page);
     await openList(page);
+    const originalText = await page.evaluate(() =>
+      window.game!.exportReplayText(window.game!.listReplays()[0].id),
+    );
+    expect(originalText).toBeTruthy();
     const recorded = await page.evaluate(async () => {
       const replay = window.game!.listReplays()[0];
       const first = replay.keyframes[0].frame;
@@ -162,6 +166,16 @@ for (const viewport of viewports) {
       ),
       contentType: 'application/json',
     });
+    await page.getByTestId('replay-file').setInputFiles({
+      name: 'original-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(originalText!),
+    });
+    await expect(page.getByTestId('replay-share-status')).toHaveText('リプレイを読み込みました。');
+    await expect(page.getByTestId('replay-annotation-text')).toHaveValue('');
+    await page.getByTestId('replay-file').setInputFiles(path!);
+    await expect(page.getByTestId('replay-share-status')).toHaveText('リプレイを読み込みました。');
+    await expect(page.getByTestId('replay-annotation-text')).toHaveValue(note);
     await page.getByTestId('replay-keyframe-0').click();
     await expect(page.getByTestId('replay-annotation-view')).toHaveCount(0);
     await page.getByTestId('exit-replay').click();

@@ -42,6 +42,53 @@ function fixture(): ReplayBlob {
 afterEach(() => vi.restoreAllMocks());
 
 describe('RI-301 注釈の境界', () => {
+  for (const foreignChange of [false, true]) {
+    it(`読込みとロールバックが失敗しても自分の書込みだけを再試行で照合する（foreign=${foreignChange}）`, async () => {
+      const storage = new MemoryReplayStorage();
+      const original = fixture();
+      await storage.save(original);
+      const game = createGame();
+      await game.attachReplay(storage);
+      vi.spyOn(storage, 'list').mockRejectedValueOnce(new Error('read failed'));
+      vi.spyOn(storage, 'revertBatch').mockRejectedValueOnce(new Error('rollback failed'));
+      expect((await game.saveReplayAnnotation(original, 0, '書込み済みの理由')).ok).toBe(false);
+      const committed = (await storage.get(original.id))!;
+      expect(committed.annotation?.text).toBe('書込み済みの理由');
+      if (foreignChange)
+        await storage.save(withReplayAnnotation(committed, 0, '別タブの更新')!, {
+          expectedPrevious: committed,
+        });
+      const saves = vi.spyOn(storage, 'save');
+      await game.retryPersistence();
+      expect((await storage.get(original.id))?.annotation?.text).toBe(
+        foreignChange ? '別タブの更新' : '書込み済みの理由',
+      );
+      expect(game.hasTabConflict()).toBe(foreignChange);
+      if (!foreignChange) {
+        expect(saves).not.toHaveBeenCalled();
+        expect(game.getPersistenceStatus().state).toBe('saved');
+        expect(game.exportPendingReplayText()).toBeNull();
+      }
+    });
+  }
+
+  for (const failed of [false, true]) {
+    it(`明示的なJSON取込みで過去の注釈復旧情報を破棄する（failed=${failed}）`, async () => {
+      const storage = new MemoryReplayStorage();
+      const original = fixture();
+      await storage.save(original);
+      const game = createGame();
+      await game.attachReplay(storage);
+      if (failed) vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+      await game.saveReplayAnnotation(original, 0, '巻き戻す注釈');
+      expect(game.getReplayAnnotationRecovery(original.id)).not.toBeNull();
+      expect((await game.importReplayText(serializeReplay(original))).ok).toBe(true);
+      expect(game.getReplayAnnotationRecovery(original.id)).toBeNull();
+      expect(game.listReplays()[0].annotation).toBeUndefined();
+      expect(game.exportPendingReplayText()).toBeNull();
+      expect(game.getPersistenceStatus().state).toBe('saved');
+    });
+  }
   for (const foreignUpdate of [false, true]) {
     it(`途中移行した自分の注釈を更新し、別タブの変更は保護する（foreign=${foreignUpdate}）`, async () => {
       const memory = new MemoryReplayStorage();

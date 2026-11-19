@@ -7,12 +7,14 @@ import {
   normalizeReplay,
   normalizeReplayKeyframes,
   REPLAY_ANNOTATION_MAX_LENGTH,
+  REPLAY_MAX_COUNT,
   snapshotReplayContent,
   withReplayAnnotation,
   type ReplayBlob,
 } from '../../../src/state/replay';
 import { IndexedDbReplayStorage, MemoryReplayStorage } from '../../../src/state/replayPersistence';
 import { parseReplayShare, serializeReplay } from '../../../src/state/replayShare';
+import { serializePersistenceBackup } from '../../../src/state/persistenceBackup';
 import { TabConflictError } from '../../../src/state/tabConflict';
 import { CURRENT_RUN_RULESET } from '../../../src/state/runPersistence';
 import { advance } from '../helpers/runFlow';
@@ -42,6 +44,114 @@ function fixture(): ReplayBlob {
 afterEach(() => vi.restoreAllMocks());
 
 describe('RI-301 注釈の境界', () => {
+  for (const indexed of [false, true]) {
+    for (const stored of ['own', 'rolled-back', 'foreign', 'deleted', 'unavailable'] as const) {
+      it(`未確定の書込みを編集欄から再保存する前にも照合する（indexed=${indexed}, stored=${stored}）`, async () => {
+        const name = `annotation-resave-${stored}`;
+        const storage = indexed ? new IndexedDbReplayStorage(name) : new MemoryReplayStorage();
+        try {
+          const original = fixture();
+          await storage.save(original);
+          const game = createGame();
+          await game.attachReplay(storage);
+          vi.spyOn(storage, 'list').mockRejectedValueOnce(new Error('read failed'));
+          vi.spyOn(storage, 'revertBatch').mockRejectedValueOnce(new Error('rollback failed'));
+          expect((await game.saveReplayAnnotation(original, 0, '未確定の下書き')).ok).toBe(false);
+          const committed = (await storage.get(original.id))!;
+          expect(committed.annotation?.text).toBe('未確定の下書き');
+          if (stored === 'rolled-back')
+            await storage.revertBatch([original], [committed], new Set());
+          if (stored === 'foreign')
+            await storage.save(withReplayAnnotation(committed, 0, '別タブの更新')!, {
+              expectedPrevious: committed,
+            });
+          if (stored === 'deleted') await storage.clear();
+          if (stored === 'unavailable')
+            vi.spyOn(storage, 'get').mockRejectedValueOnce(new Error('still unavailable'));
+          const saves = vi.spyOn(storage, 'save');
+          const result = await game.saveReplayAnnotation(original, 0, '編集後の新しい下書き');
+          const succeeds = stored === 'own' || stored === 'rolled-back';
+          expect(result.ok).toBe(succeeds);
+          expect(game.hasTabConflict()).toBe(stored === 'foreign' || stored === 'deleted');
+          expect((await storage.get(original.id))?.annotation?.text).toBe(
+            succeeds
+              ? '編集後の新しい下書き'
+              : stored === 'foreign'
+                ? '別タブの更新'
+                : stored === 'deleted'
+                  ? undefined
+                  : '未確定の下書き',
+          );
+          if (succeeds) {
+            expect(saves).toHaveBeenCalledTimes(stored === 'own' ? 1 : 2);
+            expect(game.getPersistenceStatus().state).toBe('saved');
+            expect(game.exportPendingReplayText()).toBeNull();
+          } else {
+            expect(JSON.parse(game.exportPendingReplayText()!).annotation.text).toBe(
+              '未確定の下書き',
+            );
+          }
+        } finally {
+          if (indexed) await deleteDB(name);
+        }
+      });
+    }
+
+    for (const route of ['finish', 'single-import', 'batch-import'] as const) {
+      it(`未保存注釈の対象を別の保存の上限削除から保護する（indexed=${indexed}, route=${route}）`, async () => {
+        const name = `annotation-retention-${route}`;
+        const storage = indexed ? new IndexedDbReplayStorage(name) : new MemoryReplayStorage();
+        try {
+          const original = fixture();
+          await storage.save(original);
+          for (let i = 1; i < REPLAY_MAX_COUNT; i++) {
+            await storage.save({ ...fixture(), id: `stored-${i}`, finishedAt: i + 1 });
+          }
+          const game = createGame({ seed: 'annotation-retention' });
+          await game.attachReplay(storage);
+          vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+          expect(
+            (await game.saveReplayAnnotation(original, 0, '上限からも保護する下書き')).ok,
+          ).toBe(false);
+          if (route === 'finish') {
+            game.startRun('easy', [], 'annotation-retention');
+            for (let i = 0; i < 40000 && game.getState().status === 'playing'; i++)
+              advance(game.engine);
+            expect(game.getState().status).not.toBe('playing');
+            game.step(0);
+            await vi.waitFor(async () => {
+              expect(
+                (await storage.list()).some((row) => row.seed === 'annotation-retention'),
+              ).toBe(true);
+            });
+          } else {
+            const raw = serializeReplay({ ...fixture(), id: 'new-import', finishedAt: 100 });
+            expect(
+              (
+                await game.importReplayText(
+                  route === 'single-import'
+                    ? raw
+                    : serializePersistenceBackup({ runSave: null, replays: [raw] }),
+                )
+              ).ok,
+            ).toBe(true);
+          }
+          expect(await storage.get(original.id)).toEqual(normalizeReplay(original));
+          expect(await storage.list()).toHaveLength(REPLAY_MAX_COUNT);
+          await game.retryPersistence();
+          expect(game.hasTabConflict()).toBe(false);
+          expect((await storage.get(original.id))?.annotation?.text).toBe(
+            '上限からも保護する下書き',
+          );
+          expect(game.getPersistenceStatus().state).toBe('saved');
+          expect(game.exportPendingReplayText()).toBeNull();
+        } finally {
+          if (indexed) await deleteDB(name);
+        }
+      });
+    }
+  }
+
   for (const outcome of ['success', 'failed', 'foreign'] as const) {
     it(`共通再試行中の再保存は先行結果を待ち、自分の成功だけを引き継ぐ（${outcome}）`, async () => {
       const storage = new MemoryReplayStorage();

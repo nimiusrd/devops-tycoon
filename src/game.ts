@@ -634,14 +634,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     bump();
   };
 
+  const replayProtectIds = (extraIds: readonly string[] = []): string[] => [
+    ...new Set([
+      ...pinnedReplayIds,
+      ...replayRetryKept.keys(),
+      ...pendingAnnotations.keys(),
+      ...extraIds,
+    ]),
+  ];
+
   const saveReplayBlob = (blob: ReplayBlob, extraProtectIds?: readonly string[]): Promise<void> => {
     const storage = replayStorage;
     if (!storage) return Promise.resolve();
     // 古い finishedAt でも、この完走自体は上限削除から残す。明示取り込みも同時に守る。
     // 再試行の一括では、まだ保存していない他の未保存も同じ上限から守る。
-    const protectIds = [
-      ...new Set([...pinnedReplayIds, ...replayRetryKept.keys(), ...(extraProtectIds ?? [])]),
-    ];
+    const protectIds = replayProtectIds(extraProtectIds);
     return storage
       .save(blob, { pin: true, protectIds })
       .then(async () => {
@@ -1164,11 +1171,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           await storage.save(next, {
             expectedPrevious: previous,
             pin: true,
-            protectIds: [
-              ...pinnedReplayIds,
-              ...replayRetryKept.keys(),
-              ...pendingAnnotations.keys(),
-            ],
+            protectIds: replayProtectIds(),
           });
         }
         try {
@@ -1479,9 +1482,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               const ownSnapshotsBefore = new Map(replayMigrationWrittenSnapshots);
               try {
                 const foreign = replayMigrationOpen ? foreignDurableIds(snapshot) : [];
-                const protectedIds = [
-                  ...new Set([...pinnedReplayIds, ...(foreign.length > 0 ? foreign : cohort)]),
-                ];
+                const protectedIds = replayProtectIds(foreign.length > 0 ? foreign : cohort);
                 for (const blob of newcomers) {
                   await target.save(structuredClone(blob), {
                     ...(replayMigrationWrittenSnapshots.has(blob.id)
@@ -1586,7 +1587,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 ? { expectedPrevious: replayMigrationWrittenSnapshots.get(blob.id) }
                 : {}),
               pin: true,
-              protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+              protectIds: replayProtectIds(cohort),
               evictedIds: undefined,
             });
             replayMigrationWrittenSnapshots.set(blob.id, structuredClone(blob));
@@ -2602,9 +2603,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       // 同じ記録への先行書込みを待ち、自分の成功した更新だけを基準へ反映する。
       // 待機中に次の保存が始まった場合も、その完了順に追従する。
       let preceding = pendingAnnotations.get(previous.id);
-      while (preceding?.inFlight) {
+      while (preceding) {
         try {
-          await (preceding.write ?? replayImportWrites);
+          const wasInFlight = preceding.inFlight;
+          const work = wasInFlight
+            ? (preceding.write ?? replayImportWrites)
+            : writeReplayAnnotation(preceding);
+          if (!wasInFlight) trackWrite('replay', work, hasPendingReplayWrites);
+          await work;
         } catch (error) {
           return {
             ok: false,
@@ -2887,9 +2893,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               return failedImport();
             }
           }
-          const protectIds = [
-            ...new Set([...(batch?.protectIds ?? []), ...replayRetryKept.keys()]),
-          ];
+          const protectIds = replayProtectIds(batch?.protectIds);
           if (tabConflict) {
             if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
             return {

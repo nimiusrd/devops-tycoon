@@ -483,6 +483,10 @@ test('全社マップは Escape で閉じて現場へ戻る（#437）', async ({
   const opener = page.getByTestId('open-org');
   await opener.click();
   await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(page.getByTestId('org-pixi-mount').locator('canvas')).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
   const overlayControl = page.getByTestId('crumb-industry');
   await overlayControl.focus();
   await expect(overlayControl).toBeFocused();

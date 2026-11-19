@@ -1,0 +1,320 @@
+{
+  "preview": {
+    "scenarioId": "ri272-billing-team",
+    "defaultSeed": "RI-272:1",
+    "currentState": {
+      "quarter": { "number": 2, "completedSprints": 4, "totalSprints": 6, "remainingSprints": 2 },
+      "org": {
+        "aiEnabled": true,
+        "aiDependency": 48,
+        "aiLiteracy": 44,
+        "testCoverage": 43,
+        "documentation": 42,
+        "quality": 58,
+        "securityLevel": 60,
+        "morale": 65,
+        "seniorHp": 68,
+        "techDebt": 32,
+        "deliveryScore": 560
+      },
+      "budget": 26,
+      "sprintConfig": { "taskCount": 34, "codingSlots": 5, "focusMax": 12, "maxTicks": 95 },
+      "aiAdoptionShare": 0.7,
+      "aiMasteryNorm": 0.4,
+      "baseEffects": { "seniorHpCostMul": 0.8 },
+      "activePolicies": {
+        "reviewAutomation": { "reviewEfficiencyMul": 1.2 },
+        "autonomousCoding": { "codingSpeedMul": 1.25, "reworkRateAdd": 0.06 }
+      }
+    },
+    "fictionalHistory": "請求チームは納期に間に合わせるため、自律実装の範囲を広げた。レビュー待ちが積み上がり、自動レビューを導入した。",
+    "decisions": {
+      "maintain": { "budget": 0, "firstSprintCodingSlots": 0 },
+      "remove": { "budget": 10, "firstSprintCodingSlots": 1 }
+    }
+  },
+  "trials": [
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:1",
+        "decision": "maintain",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 0, "firstSprintCodingSlots": 0 },
+      "budgetRemaining": 26,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:1:q2:s5",
+          "ticks": 79,
+          "timedOut": false,
+          "codingSlots": 5,
+          "delivered": 407,
+          "done": 34,
+          "rework": 8,
+          "incidents": 2,
+          "spread": 0,
+          "reviewQueuePeak": 21,
+          "endSeniorHp": 35.18000000000005,
+          "endTechDebt": 32,
+          "rngState": 1883206702
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:1:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 236,
+          "done": 26,
+          "rework": 13,
+          "incidents": 3,
+          "spread": 0,
+          "reviewQueuePeak": 25,
+          "endSeniorHp": 23.970000000000045,
+          "endTechDebt": 32,
+          "rngState": 3761936093
+        }
+      ]
+    },
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:1",
+        "decision": "remove",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 10, "firstSprintCodingSlots": 1 },
+      "budgetRemaining": 16,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:1:q2:s5",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 4,
+          "delivered": 326,
+          "done": 33,
+          "rework": 9,
+          "incidents": 2,
+          "spread": 0,
+          "reviewQueuePeak": 16,
+          "endSeniorHp": 47.230000000000054,
+          "endTechDebt": 32,
+          "rngState": 1883206702
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:1:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 286,
+          "done": 29,
+          "rework": 5,
+          "incidents": 4,
+          "spread": 0,
+          "reviewQueuePeak": 20,
+          "endSeniorHp": 10.040000000000125,
+          "endTechDebt": 32,
+          "rngState": 1994311477
+        }
+      ]
+    },
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:2",
+        "decision": "maintain",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 0, "firstSprintCodingSlots": 0 },
+      "budgetRemaining": 26,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:2:q2:s5",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 245,
+          "done": 32,
+          "rework": 16,
+          "incidents": 3,
+          "spread": 0,
+          "reviewQueuePeak": 21,
+          "endSeniorHp": 37.57000000000012,
+          "endTechDebt": 32,
+          "rngState": 2027849168
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:2:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 254,
+          "done": 24,
+          "rework": 8,
+          "incidents": 3,
+          "spread": 0,
+          "reviewQueuePeak": 20,
+          "endSeniorHp": 9.47000000000018,
+          "endTechDebt": 32,
+          "rngState": 1732497102
+        }
+      ]
+    },
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:2",
+        "decision": "remove",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 10, "firstSprintCodingSlots": 1 },
+      "budgetRemaining": 16,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:2:q2:s5",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 4,
+          "delivered": 268,
+          "done": 31,
+          "rework": 9,
+          "incidents": 5,
+          "spread": 0,
+          "reviewQueuePeak": 12,
+          "endSeniorHp": 23.250000000000053,
+          "endTechDebt": 32,
+          "rngState": 324165749
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:2:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 183,
+          "done": 20,
+          "rework": 5,
+          "incidents": 4,
+          "spread": 1,
+          "reviewQueuePeak": 22,
+          "endSeniorHp": 4.26000000000006,
+          "endTechDebt": 38,
+          "rngState": 3691945309
+        }
+      ]
+    },
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:3",
+        "decision": "maintain",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 0, "firstSprintCodingSlots": 0 },
+      "budgetRemaining": 26,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:3:q2:s5",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 406,
+          "done": 33,
+          "rework": 9,
+          "incidents": 3,
+          "spread": 0,
+          "reviewQueuePeak": 19,
+          "endSeniorHp": 38.100000000000044,
+          "endTechDebt": 32,
+          "rngState": 346476172
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:3:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 164,
+          "done": 18,
+          "rework": 11,
+          "incidents": 7,
+          "spread": 1,
+          "reviewQueuePeak": 24,
+          "endSeniorHp": 3.0000000000001252,
+          "endTechDebt": 38,
+          "rngState": 3052034103
+        }
+      ]
+    },
+    {
+      "checkpoint": {
+        "kind": "inherited-company-checkpoint",
+        "version": 1,
+        "ruleset": "ri272-v1:8:32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f",
+        "scenarioId": "ri272-billing-team",
+        "seed": "RI-272:3",
+        "decision": "remove",
+        "completedSprints": 1
+      },
+      "migrationCost": { "budget": 10, "firstSprintCodingSlots": 1 },
+      "budgetRemaining": 16,
+      "sprints": [
+        {
+          "number": 5,
+          "seed": "RI-272:3:q2:s5",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 4,
+          "delivered": 331,
+          "done": 28,
+          "rework": 11,
+          "incidents": 4,
+          "spread": 0,
+          "reviewQueuePeak": 19,
+          "endSeniorHp": 18.65999999999992,
+          "endTechDebt": 32,
+          "rngState": 4073548995
+        },
+        {
+          "number": 6,
+          "seed": "RI-272:3:q2:s6",
+          "ticks": 96,
+          "timedOut": true,
+          "codingSlots": 5,
+          "delivered": 133,
+          "done": 15,
+          "rework": 8,
+          "incidents": 6,
+          "spread": 0,
+          "reviewQueuePeak": 25,
+          "endSeniorHp": 2.9399999999999133,
+          "endTechDebt": 32,
+          "rngState": 2548080827
+        }
+      ]
+    }
+  ]
+}

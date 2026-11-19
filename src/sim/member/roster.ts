@@ -455,6 +455,8 @@ function levelUpOnce(m: Member): Member {
 export interface GrowthContext {
   delivered: number;
   done: number;
+  /** 通常の離脱判定より前に適用する、指定メンバーだけの消耗倍率。 */
+  staminaDrainMultipliers?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -514,8 +516,9 @@ export function applySprintGrowth(
     // スタミナ消費（人数分散を掛ける。ベンチ放置は対象外のまま）。
     const laneMul = LANE_DRAIN_MUL[m.assignment as 'coding' | 'review'];
     const aiRelief = m.aiAssigned && m.assignment === 'coding' ? AI_DRAIN_RELIEF : 1;
+    const drainMultiplier = ctx.staminaDrainMultipliers?.get(m.id) ?? 1;
     const drain = Math.round(
-      BASE_DRAIN * laneMul * traitMods.staminaDrainMul * aiRelief * drainShareMul,
+      BASE_DRAIN * laneMul * traitMods.staminaDrainMul * aiRelief * drainShareMul * drainMultiplier,
     );
     const stamina = Math.max(0, m.stamina - drain);
     m = { ...m, stamina };

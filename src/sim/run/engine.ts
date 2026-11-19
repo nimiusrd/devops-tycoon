@@ -1137,13 +1137,17 @@ export class RunEngine {
     };
   }
 
-  /** 次四半期を開始する（トラックを初期化・組織状態は引き継ぎ。phase=setup）。 */
-  private startNextQuarter(): void {
+  /** 次四半期を開始する。通常の目標修正では、修正後の目標と組織状態を引き継ぐ。 */
+  protected startNextQuarter(keepPriorGoal = true): void {
     this.quarterNumber += 1;
     this.bossId = this.pickBoss(this.quarterNumber);
     const boss = getBoss(this.bossId);
     if (boss) {
-      this.quarterGoal = buildQuarterGoal(boss, this.difficulty, this.quarterGoal);
+      this.quarterGoal = buildQuarterGoal(
+        boss,
+        this.difficulty,
+        keepPriorGoal ? this.quarterGoal : undefined,
+      );
     }
     if (this.nextBudgetCap !== null) {
       this.budget = Math.min(this.budget, this.nextBudgetCap);
@@ -1700,7 +1704,7 @@ export class RunEngine {
   }
 
   /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
-  private grantBossRelic(): string | undefined {
+  protected grantBossRelic(): string | undefined {
     const relicId = this.pickBossRelic(createRng(`${this.seed}:boss-relic:q${this.quarterNumber}`));
     if (!relicId) return undefined;
     this.grantRelic(relicId);

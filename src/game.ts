@@ -487,6 +487,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     previous: ReplayBlob;
     next: ReplayBlob;
     inFlight: boolean;
+    write?: Promise<void>;
     error?: unknown;
   };
   const pendingAnnotations = new Map<string, PendingAnnotation>();
@@ -1193,6 +1194,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         replayImportDepth -= 1;
       }
     });
+    entry.write = work;
     replayImportWrites = work.catch(() => undefined);
     return work;
   };
@@ -2591,11 +2593,30 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     async saveReplayAnnotation(expected, keyframeIndex, text) {
       const conflictMessage =
         '別のタブが記録を更新したため保存できません。再読込して引き継いでください。';
+      const failureMessage = '注釈を保存できませんでした。内容を残したまま再試行できます。';
       if (tabConflict) return { ok: false, message: conflictMessage };
       const storage = replayStorage;
       if (!storage) return { ok: false, message: 'リプレイの保存先を利用できません。' };
-      const previous = normalizeReplay(expected);
+      let previous = normalizeReplay(expected);
       if (!previous) return { ok: false, message: 'リプレイを読み取れません。' };
+      // 同じ記録への先行書込みを待ち、自分の成功した更新だけを基準へ反映する。
+      // 待機中に次の保存が始まった場合も、その完了順に追従する。
+      let preceding = pendingAnnotations.get(previous.id);
+      while (preceding?.inFlight) {
+        try {
+          await (preceding.write ?? replayImportWrites);
+        } catch (error) {
+          return {
+            ok: false,
+            message: isTabConflict(error) || tabConflict ? conflictMessage : failureMessage,
+          };
+        }
+        if (tabConflict) return { ok: false, message: conflictMessage };
+        if (replayContentKey(previous) === replayContentKey(preceding.previous)) {
+          previous = structuredClone(preceding.next);
+        }
+        preceding = pendingAnnotations.get(previous.id);
+      }
       if (
         pendingReplays.some((row) => row.id === previous.id) ||
         pendingFinishReplays.some((row) => row.id === previous.id)
@@ -2629,7 +2650,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         return {
           ok: false,
-          message: '注釈を保存できませんでした。内容を残したまま再試行できます。',
+          message: failureMessage,
         };
       }
     },

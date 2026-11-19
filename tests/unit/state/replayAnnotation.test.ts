@@ -42,6 +42,80 @@ function fixture(): ReplayBlob {
 afterEach(() => vi.restoreAllMocks());
 
 describe('RI-301 注釈の境界', () => {
+  for (const outcome of ['success', 'failed', 'foreign'] as const) {
+    it(`共通再試行中の再保存は先行結果を待ち、自分の成功だけを引き継ぐ（${outcome}）`, async () => {
+      const storage = new MemoryReplayStorage();
+      const original = fixture();
+      await storage.save(original);
+      const save = storage.save.bind(storage);
+      const game = createGame();
+      await game.attachReplay(storage);
+      const saves = vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+      expect((await game.saveReplayAnnotation(original, 0, '最初の下書き')).ok).toBe(false);
+      let release!: () => void;
+      let entered!: () => void;
+      const blocked = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const started = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      saves.mockImplementationOnce(async (blob, options) => {
+        entered();
+        await blocked;
+        if (outcome === 'failed') throw new Error('still unavailable');
+        await save(blob, options);
+      });
+      const retry = game.retryPersistence();
+      await started;
+      const newer = game.saveReplayAnnotation(original, 0, '再試行中の新しい下書き');
+      let settled = false;
+      void newer.then(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(saves).toHaveBeenCalledTimes(2);
+      if (outcome === 'foreign') {
+        await save(withReplayAnnotation(original, 1, '別タブの理由')!, {
+          expectedPrevious: original,
+        });
+      }
+      release();
+      const [result] = await Promise.all([newer, retry]);
+      expect(result.ok).toBe(outcome === 'success');
+      expect(game.hasTabConflict()).toBe(outcome === 'foreign');
+      expect((await storage.get(original.id))?.annotation?.text).toBe(
+        outcome === 'success'
+          ? '再試行中の新しい下書き'
+          : outcome === 'foreign'
+            ? '別タブの理由'
+            : undefined,
+      );
+      if (outcome === 'success') {
+        expect(game.getPersistenceStatus().state).toBe('saved');
+        expect(game.exportPendingReplayText()).toBeNull();
+      } else {
+        expect(JSON.parse(game.exportPendingReplayText()!).annotation.text).toBe('最初の下書き');
+        expect(saves).toHaveBeenCalledTimes(2);
+      }
+    });
+  }
+
+  it('同じ基準から重なった保存も成功順に直列化する', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = fixture();
+    await storage.save(original);
+    const game = createGame();
+    await game.attachReplay(storage);
+    const results = await Promise.all(
+      ['一手目', '二手目', '三手目'].map((text) => game.saveReplayAnnotation(original, 0, text)),
+    );
+    expect(results.every((result) => result.ok)).toBe(true);
+    expect(game.hasTabConflict()).toBe(false);
+    expect((await storage.get(original.id))?.annotation?.text).toBe('三手目');
+  });
+
   for (const foreignChange of [false, true]) {
     it(`読込みとロールバックが失敗しても自分の書込みだけを再試行で照合する（foreign=${foreignChange}）`, async () => {
       const storage = new MemoryReplayStorage();

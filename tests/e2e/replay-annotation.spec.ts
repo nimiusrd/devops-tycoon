@@ -239,16 +239,24 @@ test('保存失敗で下書きを維持し、別タブの新しい注釈を上�
   await openList(page);
   await expect(page.getByTestId('replay-annotation-text')).toHaveValue('未保存の理由');
   await page.getByTestId('replay-annotation-text').fill('再試行中も残す新しい下書き');
-  await page.getByTestId('persistence-retry').click();
+  // 同じJSターンで操作し、IndexedDBの再試行が完了する前に保存を送る。
+  await page.evaluate(() => {
+    const retry = document.querySelector<HTMLButtonElement>('[data-testid="persistence-retry"]');
+    const save = document.querySelector<HTMLButtonElement>(
+      '[data-testid="replay-annotation-save"]',
+    );
+    if (!retry || !save || save.disabled) throw new Error('annotation controls unavailable');
+    retry.click();
+    save.click();
+  });
   await expect
     .poll(() => page.evaluate(() => window.game?.listReplays()[0].annotation?.text))
-    .toBe('未保存の理由');
+    .toBe('再試行中も残す新しい下書き');
   await expect(page.getByTestId('replay-annotation-text')).toHaveValue(
     '再試行中も残す新しい下書き',
   );
-  await expect(page.getByTestId('replay-annotation-status')).toHaveText('未保存の変更があります。');
-  await page.getByTestId('replay-annotation-save').click();
   await expect(page.getByTestId('replay-annotation-status')).toHaveText('注釈を保存しました。');
+  await expect(page.getByTestId('tab-conflict-overlay')).toBeHidden();
   await page.reload();
   await expect(page.getByTestId('title')).toBeVisible();
   await openList(page);

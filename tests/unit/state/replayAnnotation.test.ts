@@ -97,6 +97,60 @@ describe('RI-301 注釈の境界', () => {
       });
     }
 
+    for (const source of ['single', 'backup'] as const) {
+      for (const stored of ['own', 'rolled-back', 'foreign', 'deleted'] as const) {
+        it(`退避JSONの取込み前に未確定の書込みを照合する（indexed=${indexed}, source=${source}, stored=${stored}）`, async () => {
+          const name = `annotation-import-${source}-${stored}`;
+          const storage = indexed ? new IndexedDbReplayStorage(name) : new MemoryReplayStorage();
+          try {
+            const original = fixture();
+            await storage.save(original);
+            const game = createGame();
+            await game.attachReplay(storage);
+            vi.spyOn(storage, 'list').mockRejectedValueOnce(new Error('read failed'));
+            vi.spyOn(storage, 'revertBatch').mockRejectedValueOnce(new Error('rollback failed'));
+            expect((await game.saveReplayAnnotation(original, 0, '退避する理由')).ok).toBe(false);
+            const recovery = game.exportPendingReplayText()!;
+            const committed = (await storage.get(original.id))!;
+            expect(committed.annotation?.text).toBe('退避する理由');
+            if (stored === 'rolled-back')
+              await storage.revertBatch([original], [committed], new Set());
+            if (stored === 'foreign')
+              await storage.save(withReplayAnnotation(committed, 0, '別タブの理由')!, {
+                expectedPrevious: committed,
+              });
+            if (stored === 'deleted') await storage.clear();
+
+            const result = await game.importReplayText(
+              source === 'single'
+                ? recovery
+                : serializePersistenceBackup({ runSave: null, replays: [recovery] }),
+            );
+            const succeeds = stored === 'own' || stored === 'rolled-back';
+            expect(result.ok).toBe(succeeds);
+            expect(game.hasTabConflict()).toBe(!succeeds);
+            expect((await storage.get(original.id))?.annotation?.text).toBe(
+              stored === 'foreign'
+                ? '別タブの理由'
+                : stored === 'deleted'
+                  ? undefined
+                  : '退避する理由',
+            );
+            if (succeeds) {
+              expect(game.listReplays()[0].annotation?.text).toBe('退避する理由');
+              expect(game.getPersistenceStatus().state).toBe('saved');
+              expect(game.getReplayAnnotationRecovery(original.id)).toBeNull();
+              expect(game.exportPendingReplayText()).toBeNull();
+            } else {
+              expect(game.exportPendingReplayText()).toBe(recovery);
+            }
+          } finally {
+            if (indexed) await deleteDB(name);
+          }
+        });
+      }
+    }
+
     for (const route of ['finish', 'single-import', 'batch-import'] as const) {
       it(`未保存注釈の対象を別の保存の上限削除から保護する（indexed=${indexed}, route=${route}）`, async () => {
         const name = `annotation-retention-${route}`;

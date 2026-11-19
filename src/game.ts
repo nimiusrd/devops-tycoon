@@ -2857,7 +2857,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       const storage = replayStorage;
       pinnedReplayIds.add(loaded.replay.id);
-      const expectedPrevious = structuredClone(storedReplaySnapshots.get(loaded.replay.id) ?? null);
+      const previousAtRequest = structuredClone(
+        storedReplaySnapshots.get(loaded.replay.id) ?? null,
+      );
+      const pendingAnnotation = pendingAnnotations.get(loaded.replay.id);
       replayImportDepth += 1;
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
@@ -2891,6 +2894,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             } catch {
               pinnedReplayIds.delete(loaded.replay.id);
               return failedImport();
+            }
+          }
+          let expectedPrevious = previousAtRequest;
+          if (
+            pendingAnnotation &&
+            expectedPrevious &&
+            replayContentKey(expectedPrevious) === replayContentKey(pendingAnnotation.previous)
+          ) {
+            // 先行した自分の注釈書込みが残っている場合だけ、取り込みの比較基準を進める。
+            const stored = priorList
+              ? priorList.find((row) => row.id === loaded.replay.id)
+              : await storage.get(loaded.replay.id);
+            if (stored && replayContentKey(stored) === replayContentKey(pendingAnnotation.next)) {
+              expectedPrevious = pendingAnnotation.next;
             }
           }
           const protectIds = replayProtectIds(batch?.protectIds);

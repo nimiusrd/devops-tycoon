@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { RunEngine } from '../sim/run/engine';
 import type { ReplayBlob } from '../state/replay';
+import { withReplayAnnotation } from '../state/replay';
 import { parseReplayShare, serializeReplay } from '../state/replayShare';
 import { recordTournamentReplay } from '../../tests/unit/helpers/localTournamentFixture';
 import {
@@ -27,6 +28,14 @@ beforeAll(() => {
 });
 
 describe('RI-299 ローカル大会の読み取り専用比較', () => {
+  it('作者の理由と補助IDだけの違いで条件・同IDの衝突・重複排除を変えない', () => {
+    const annotated = withReplayAnnotation(replays[0], 0, '費用を譲った理由')!;
+    const result = compare(replays[0], annotated, replays[1]);
+    expect(result.entries).toHaveLength(2);
+    expect(result.imports[1]).toEqual({ index: 1, status: 'duplicate', duplicateOf: 0 });
+    expect(result.entries[0].issues).toEqual([]);
+    expect(compare(annotated, replays[1])).toEqual(compare(replays[0], replays[1]));
+  });
   it('2〜4件の実エンジン終端を実parser経由で比較し、seedごとに分ける', () => {
     for (const replay of replays) expect(parseReplayShare(serializeReplay(replay)).ok).toBe(true);
     for (const count of [2, 3, 4]) {

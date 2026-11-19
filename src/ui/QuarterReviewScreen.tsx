@@ -3,6 +3,7 @@
  *
  * 勝敗画面ではなくレビュー会議として、OKR・目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
+import { ReplayAnnotationView } from './ReplayAnnotationView';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getGoalAdjustment } from '../data/goalAdjustments';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
@@ -92,6 +93,7 @@ export function QuarterReviewScreen({
         ) : null}
 
         <QuarterOkr variant="review" bossId={state.bossId} goal={review.goal} progress={progress} />
+        <ReplayAnnotationView />
 
         <div className="quarter-trust" data-testid="quarter-trust">
           <p className="result-section-label">ステークホルダー信頼</p>

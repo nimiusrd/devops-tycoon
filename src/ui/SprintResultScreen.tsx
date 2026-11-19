@@ -3,6 +3,7 @@
  *
  * 評定・称号・診断と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、数値内訳は折りたたむ。
  */
+import { ReplayAnnotationView } from './ReplayAnnotationView';
 import { useRef, useState } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
@@ -214,6 +215,7 @@ export function SprintResultScreen({
                 </div>
               ))}
             </dl>
+            <ReplayAnnotationView />
             <div className="result-title">
               <p className="result-section-label">称号</p>
               <RewardCeremony

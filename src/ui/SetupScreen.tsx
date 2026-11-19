@@ -7,6 +7,7 @@
  * 今四半期の OKR はコンパクト表示する（RI-129）。詳細な目標値は四半期レビューが正。
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
+import { ReplayAnnotationView } from './ReplayAnnotationView';
 import { getBoss, getBossPlayerDescription } from '../data/bossDisplay';
 import { planReviewFreezeRiskLine } from '../render/reviewFreezeCopy';
 import { Fragment, useEffect, useRef, useState } from 'react';
@@ -227,6 +228,7 @@ export function SetupScreen({
         <span className="boss-desc">{bossDescription}</span>
       </div>
       <QuarterOkr variant="setup" bossId={state.bossId} goal={state.quarterGoal} />
+      <ReplayAnnotationView />
       <div className="formation-panel">
         <div className="formation-head">
           <div>

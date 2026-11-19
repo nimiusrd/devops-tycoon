@@ -71,6 +71,8 @@ export interface ReplayOutcome {
 }
 
 export interface ReplayKeyframe {
+  /** 初回注釈保存で一度だけ付与する。配列の位置とは独立。 */
+  id?: string;
   phase: ReplayFramePhase;
   label?: string;
   frame: RunReplayFrame;
@@ -117,6 +119,45 @@ export interface ReplayBlob {
   ruleset: ReplayRulesetIdentity | null;
   /** 旧 v1 リプレイでは null。 */
   contentSnapshot: ReplayContentSnapshot | null;
+  /** ゲーム内容・rulesetに影響しない作者の説明。現行フェーズ境界の一場面のみ。 */
+  annotation?: ReplayAnnotation;
+}
+
+export const REPLAY_ANNOTATION_MAX_LENGTH = 1000;
+
+export interface ReplayAnnotation {
+  version: 1;
+  replayId: string;
+  keyframeId: string;
+  text: string;
+}
+
+function isSceneId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value);
+}
+
+/** 注釈・補助IDだけを編集する。乱数生成は明示的な初回編集に限定する。 */
+export function withReplayAnnotation(
+  replay: ReplayBlob,
+  index: number,
+  text: string,
+  newId: () => string = () => crypto.randomUUID(),
+): ReplayBlob | null {
+  if (!Number.isInteger(index) || !replay.keyframes[index]) return null;
+  if (typeof text !== 'string' || text.length > REPLAY_ANNOTATION_MAX_LENGTH) return null;
+  const next = structuredClone(replay);
+  if (!text.trim()) {
+    delete next.annotation;
+  } else {
+    for (const frame of next.keyframes) frame.id ??= newId();
+    next.annotation = {
+      version: 1,
+      replayId: next.id,
+      keyframeId: next.keyframes[index]!.id!,
+      text,
+    };
+  }
+  return normalizeReplay(next);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -367,12 +408,16 @@ export function replayContentSnapshotCovers(
 export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
   if (!Array.isArray(value)) return [];
   const keyframes: ReplayKeyframe[] = [];
+  const sceneIds = new Set<string>();
   for (const raw of value) {
     if (!isObject(raw) || typeof raw.phase !== 'string') continue;
     if (!isReplayFramePhase(raw.phase as RunPhase)) continue;
     if (!isReplayFrame(raw.frame)) continue;
     if (raw.phase !== raw.frame.phase) continue;
+    if (raw.id !== undefined && (!isSceneId(raw.id) || sceneIds.has(raw.id))) continue;
+    if (typeof raw.id === 'string') sceneIds.add(raw.id);
     keyframes.push({
+      ...(typeof raw.id === 'string' ? { id: raw.id } : {}),
       phase: raw.phase as ReplayFramePhase,
       label: typeof raw.label === 'string' ? raw.label : undefined,
       frame: normalizePersistGoalCarryover(structuredClone(raw.frame)),
@@ -408,6 +453,28 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
 
   const keyframes = normalizeReplayKeyframes(value.keyframes);
   if (keyframes.length !== value.keyframes.length || keyframes.length === 0) return null;
+
+  const sceneIds = keyframes.flatMap((frame) => (frame.id === undefined ? [] : [frame.id]));
+  if (sceneIds.some((id) => !isSceneId(id)) || new Set(sceneIds).size !== sceneIds.length) {
+    return null;
+  }
+  let annotation: ReplayAnnotation | undefined;
+  if (value.annotation !== undefined) {
+    const note = value.annotation;
+    if (
+      !isObject(note) ||
+      note.version !== 1 ||
+      note.replayId !== value.id ||
+      !isSceneId(note.keyframeId) ||
+      sceneIds.length !== keyframes.length ||
+      !sceneIds.includes(note.keyframeId) ||
+      typeof note.text !== 'string' ||
+      !note.text.trim() ||
+      note.text.length > REPLAY_ANNOTATION_MAX_LENGTH
+    )
+      return null;
+    annotation = { version: 1, replayId: value.id, keyframeId: note.keyframeId, text: note.text };
+  }
 
   const isLegacyShape = isLegacy || isNormalizedLegacy;
   const parsedRuleset = isLegacyShape ? null : parseReplayRuleset(value.ruleset);
@@ -455,6 +522,7 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
     keyframes,
     ruleset,
     contentSnapshot,
+    ...(annotation ? { annotation } : {}),
   };
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../sim/run/engine';
-import { REPLAY_SCHEMA_VERSION, type ReplayBlob } from '../state/replay';
+import { REPLAY_SCHEMA_VERSION, withReplayAnnotation, type ReplayBlob } from '../state/replay';
 import {
   boundaryMetrics,
   checkIdentity,
@@ -34,6 +34,12 @@ function setupBlob(seed: string, id: string): ReplayBlob {
 }
 
 describe('RI-291 前回の自分との並走', () => {
+  it('作者の理由と補助IDはゲーム内容の同一性・並走結果を変えない', () => {
+    const original = setupBlob('ghost', 'a');
+    const annotated = withReplayAnnotation(original, 0, '資源を残す')!;
+    expect(toComparableReplay(annotated)).toEqual(toComparableReplay(original));
+    expect(comparePastRuns(annotated, original)).toEqual(comparePastRuns(original, original));
+  });
   it('実際のReplayBlobをそのまま照合でき、同じ開始条件なら全項目が一致する', () => {
     const identity = checkIdentity(setupBlob('ghost', 'a'), setupBlob('ghost', 'b'));
     expect(identity.map((item) => item.field)).toEqual([

@@ -6,6 +6,8 @@ import type { CardDef } from '../sim/types';
 import type { ReplayContentSnapshot } from '../state/replay';
 
 export interface ReplayContentContextValue {
+  /** 現在の境界に結び付いた作者の説明。記録値・表示定義とは分けて扱う。 */
+  annotationText?: string;
   /** リプレイ中は保存済み定義を優先し、見つからなければプレースホルダーを返す。 */
   resolveCard: (id: string) => CardDef;
   /** リプレイ中は保存済み定義を優先し、見つからなければプレースホルダーを返す。 */

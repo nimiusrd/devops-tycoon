@@ -6413,7 +6413,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 
 /* メタショップ（第17章） */
-.replay-list-panel {
+.meta-shop-panel.replay-list-panel {
+  width: 100%;
   max-width: 720px;
 }
 .replay-list-empty {
@@ -6436,23 +6437,26 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   gap: 8px;
 }
 .replay-list-items button,
-.replay-list-keyframes button {
+.replay-list-keyframes > ul button,
+.replay-review-hell-panel button {
   width: 100%;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
-  border: 1px solid var(--line, #334);
+  border: 1px solid var(--line);
   background: transparent;
   color: inherit;
   cursor: pointer;
 }
 .replay-list-items button.selected,
-.replay-list-keyframes button:hover:not(:disabled) {
-  border-color: var(--tc-accent, #3d8bfd);
+.replay-list-keyframes > ul button:hover:not(:disabled),
+.replay-review-hell-panel button:hover:not(:disabled) {
+  border-color: var(--visual-color-interaction-drag);
 }
-.replay-list-keyframes button:disabled {
+.replay-list-keyframes > ul button:disabled,
+.replay-review-hell-panel button:disabled {
   opacity: 0.45;
   cursor: default;
 }
@@ -6460,12 +6464,14 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   margin: 0 0 8px;
   font-size: 13px;
 }
-.replay-list-keyframes button {
+.replay-list-keyframes > ul button,
+.replay-review-hell-panel button {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
-.replay-list-keyframes button i {
+.replay-list-keyframes > ul button i {
   font-style: normal;
   opacity: 0.75;
 }
@@ -6482,11 +6488,54 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 .replay-share-status {
   margin: 0;
-  color: #9fb0ca;
+  color: var(--text);
   font-size: 12px;
 }
 .replay-share-status.error {
-  color: #f3b27a;
+  color: var(--sun);
+}
+.replay-list-body > *,
+.replay-annotation-editor {
+  min-width: 0;
+}
+.replay-annotation-editor > .btn {
+  width: 100%;
+  min-height: 44px;
+}
+.replay-annotation-editor {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.replay-annotation-scene {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--visual-color-field-inset);
+  color: var(--text);
+  font: inherit;
+}
+.replay-annotation-scene:focus-visible,
+.replay-annotation-view summary:focus-visible,
+.replay-annotation-view p:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.replay-annotation-view {
+  min-width: 0;
+  margin: 12px 0;
+  font-weight: 400;
+}
+.replay-annotation-view summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+.replay-annotation-view p {
+  max-height: 20vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+  line-height: 1.5;
 }
 /* 平常時の読み上げは body 直下でも、タイトルの 100dvh を伸ばさない。 */
 .persistence-live {

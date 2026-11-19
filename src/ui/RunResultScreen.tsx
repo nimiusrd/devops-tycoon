@@ -3,6 +3,7 @@
  *
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
+import { ReplayAnnotationView } from './ReplayAnnotationView';
 import { useRef, useState } from 'react';
 import { getBoss } from '../data/bossDisplay';
 import { diagnosisTheme } from '../render/diagnosisTheme';
@@ -178,6 +179,7 @@ export function RunResultScreen({
           )}
         </div>
         <p className="run-end-desc">{won ? win?.description : loseDescription}</p>
+        <ReplayAnnotationView />
         {ending && (
           <section
             className="result-title run-ending"

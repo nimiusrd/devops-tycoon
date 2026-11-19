@@ -15,7 +15,7 @@ import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
 import { ResultOverlay } from './ResultOverlay';
 import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
-import type { ReplayBlob } from '../state/replay';
+import { REPLAY_ANNOTATION_MAX_LENGTH, type ReplayBlob } from '../state/replay';
 import { downloadTextFile } from './downloadTextFile';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
@@ -27,6 +27,142 @@ export interface ReplayListScreenProps {
   onExportReplay?: (id: string) => string | null;
   /** JSON からリプレイを読み込む。 */
   onImportReplay?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
+  onSaveAnnotation?: (
+    expected: ReplayBlob,
+    index: number,
+    text: string,
+  ) => Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
+  onGetAnnotationRecovery?: (id: string) => { previous: ReplayBlob; replay: ReplayBlob } | null;
+}
+
+function ReplayAnnotationEditor({
+  replay,
+  onSave,
+  disabled,
+  onBusy,
+  recovery,
+}: {
+  replay: ReplayBlob;
+  onSave: NonNullable<ReplayListScreenProps['onSaveAnnotation']>;
+  disabled: boolean;
+  onBusy: (busy: boolean) => void;
+  recovery: { previous: ReplayBlob; replay: ReplayBlob } | null;
+}) {
+  // 編集中の基準を固定する。一覧更新で別タブの変更を承認したことにしない。
+  const [baseline, setBaseline] = useState(replay);
+  const initialDraft = recovery?.replay ?? replay;
+  const [index, setIndex] = useState(() =>
+    Math.max(
+      0,
+      initialDraft.keyframes.findIndex((frame) => frame.id === initialDraft.annotation?.keyframeId),
+    ),
+  );
+  const [text, setText] = useState(initialDraft.annotation?.text ?? '');
+  const [status, setStatus] = useState('');
+  const [failed, setFailed] = useState(false);
+  // 共通バナーが自分の失敗した書込みを完了したときだけ基準を進める。
+  // 再試行中に入力した新しい下書きは消さず、別タブの別内容は承認しない。
+  if (
+    recovery &&
+    JSON.stringify(baseline) === JSON.stringify(recovery.previous) &&
+    JSON.stringify(replay) === JSON.stringify(recovery.replay) &&
+    JSON.stringify(replay) !== JSON.stringify(baseline)
+  ) {
+    const matchesDraft =
+      text === (recovery.replay.annotation?.text ?? '') &&
+      (!recovery.replay.annotation ||
+        recovery.replay.keyframes[index]?.id === recovery.replay.annotation.keyframeId);
+    setBaseline(replay);
+    setFailed(false);
+    setStatus(matchesDraft ? '注釈を保存しました。' : '未保存の変更があります。');
+  }
+  return (
+    <form
+      className="replay-annotation-editor"
+      data-testid="replay-annotation-editor"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (disabled) return;
+        onBusy(true);
+        setStatus('保存中…');
+        void onSave(baseline, index, text)
+          .then((result) => {
+            setStatus(result.message);
+            setFailed(!result.ok);
+            if (result.ok && result.replay) {
+              setBaseline(result.replay);
+            }
+          })
+          .catch(() => {
+            setFailed(true);
+            setStatus('注釈を保存できませんでした。再試行できます。');
+          })
+          .finally(() => onBusy(false));
+      }}
+    >
+      <h3>作者の理由</h3>
+      <p id="replay-annotation-help">
+        注釈は1リプレイにつき1場面です。記録済みのフェーズ境界だけを選べます。任意の時刻や連続ハイライトには対応していません。作者の説明は、実測結果や因果を保証するものではありません。
+      </p>
+      <label className="result-hypothesis-label" htmlFor="replay-annotation-scene">
+        注釈を付ける場面
+      </label>
+      <select
+        id="replay-annotation-scene"
+        className="replay-annotation-scene"
+        data-testid="replay-annotation-scene"
+        value={index}
+        disabled={disabled}
+        onChange={(event) => {
+          setIndex(Number(event.target.value));
+          setStatus('未保存の変更があります。');
+          setFailed(false);
+        }}
+      >
+        {baseline.keyframes.map((frame, i) => (
+          <option key={frame.id ?? i} value={i}>
+            {i + 1}. {formatReplayKeyframeLabel(frame.label ?? frame.phase)}
+          </option>
+        ))}
+      </select>
+      <label className="result-hypothesis-label" htmlFor="replay-annotation-text">
+        この判断を選んだ理由（{REPLAY_ANNOTATION_MAX_LENGTH}文字まで）
+      </label>
+      <textarea
+        id="replay-annotation-text"
+        className="result-hypothesis-input"
+        data-testid="replay-annotation-text"
+        aria-describedby="replay-annotation-help"
+        maxLength={REPLAY_ANNOTATION_MAX_LENGTH}
+        value={text}
+        disabled={disabled}
+        onChange={(event) => {
+          setText(event.target.value);
+          setStatus('未保存の変更があります。');
+          setFailed(false);
+        }}
+      />
+      <p>
+        空欄で保存すると注釈を削除します。{text.length}/{REPLAY_ANNOTATION_MAX_LENGTH}
+      </p>
+      <button
+        className="btn btn-primary"
+        type="submit"
+        data-testid="replay-annotation-save"
+        disabled={disabled}
+      >
+        注釈を保存
+      </button>
+      <p
+        role="status"
+        aria-live="polite"
+        className={`replay-share-status${failed ? ' error' : ''}`}
+        data-testid="replay-annotation-status"
+      >
+        {status}
+      </p>
+    </form>
+  );
 }
 
 function formatFinishedAt(ms: number): string {
@@ -50,6 +186,8 @@ export function ReplayListScreen({
   onClose,
   onExportReplay,
   onImportReplay,
+  onSaveAnnotation,
+  onGetAnnotationRecovery,
 }: ReplayListScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
@@ -59,9 +197,12 @@ export function ReplayListScreen({
   const replayFileRef = useRef<HTMLInputElement>(null);
   const replayImportGen = useRef(0);
   const [replayImporting, setReplayImporting] = useState(false);
+  const [annotationSaving, setAnnotationSaving] = useState(false);
+  const [editorGeneration, setEditorGeneration] = useState(0);
+  const busy = replayImporting || annotationSaving;
   useDialogOverlayLock(overlayRef, {
     restoreFocus: true,
-    onDismiss: replayImporting ? undefined : onClose,
+    onDismiss: busy ? undefined : onClose,
   });
   const [shareStatus, setShareStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
@@ -100,6 +241,7 @@ export function ReplayListScreen({
         if (requestId !== replayImportGen.current) return;
         const result = await onImportReplay(raw);
         if (requestId !== replayImportGen.current) return;
+        if (result.ok) setEditorGeneration((generation) => generation + 1);
         setShareStatus({
           kind: result.ok ? 'ok' : 'error',
           message: result.ok
@@ -155,6 +297,7 @@ export function ReplayListScreen({
                         className={`${replay.id === resolvedSelectedId ? 'selected' : ''}${isHell ? ' replay-item-review-hell' : ''}`}
                         data-testid={`replay-item-${replay.id}`}
                         data-diagnosis={replay.outcome.diagnosis}
+                        disabled={busy}
                         onClick={() => setSelectedId(replay.id)}
                       >
                         <b>{replay.seed}</b>
@@ -215,7 +358,7 @@ export function ReplayListScreen({
                           type="button"
                           className="btn"
                           data-testid="replay-review-hell-open"
-                          disabled={replayImporting}
+                          disabled={busy}
                           onClick={() => onOpen(selected.id, hellView.preferredKeyframeIndex)}
                         >
                           レビュー地獄を開く →
@@ -224,11 +367,11 @@ export function ReplayListScreen({
                     ) : null}
                     <ul>
                       {selected.keyframes.map((frame, index) => (
-                        <li key={`${selected.id}-${index}`}>
+                        <li key={`${selected.id}-${frame.id ?? index}`}>
                           <button
                             type="button"
                             data-testid={`replay-keyframe-${index}`}
-                            disabled={replayImporting}
+                            disabled={busy}
                             onClick={() => onOpen(selected.id, index)}
                           >
                             <b>{frame.phase}</b>
@@ -236,10 +379,23 @@ export function ReplayListScreen({
                               <span>{formatReplayKeyframeLabel(frame.label)}</span>
                             ) : null}
                             <i>開く →</i>
+                            {selected.annotation?.keyframeId === frame.id && selected.annotation ? (
+                              <span className="pill">作者の理由あり</span>
+                            ) : null}
                           </button>
                         </li>
                       ))}
                     </ul>
+                    {onSaveAnnotation ? (
+                      <ReplayAnnotationEditor
+                        key={`${selected.id}-${editorGeneration}`}
+                        replay={selected}
+                        onSave={onSaveAnnotation}
+                        disabled={busy}
+                        onBusy={setAnnotationSaving}
+                        recovery={onGetAnnotationRecovery?.(selected.id) ?? null}
+                      />
+                    ) : null}
                   </>
                 ) : (
                   <p>リプレイを選択してください。</p>
@@ -256,7 +412,7 @@ export function ReplayListScreen({
                     type="button"
                     className="btn"
                     data-testid="replay-download"
-                    disabled={!selected}
+                    disabled={!selected || busy}
                     onClick={downloadSelected}
                   >
                     ファイルで保存
@@ -268,7 +424,7 @@ export function ReplayListScreen({
                       type="button"
                       className="btn"
                       data-testid="replay-file-button"
-                      disabled={replayImporting}
+                      disabled={busy}
                       onClick={() => replayFileRef.current?.click()}
                     >
                       ファイルを開く
@@ -279,7 +435,7 @@ export function ReplayListScreen({
                       accept="application/json,.json"
                       hidden
                       data-testid="replay-file"
-                      disabled={replayImporting}
+                      disabled={busy}
                       onChange={onReplayFile}
                     />
                   </>
@@ -305,8 +461,8 @@ export function ReplayListScreen({
           type="button"
           className="btn result-overlay-close"
           data-testid="replay-list-close"
-          disabled={replayImporting}
-          title={replayImporting ? '読み込み中は閉じられません' : undefined}
+          disabled={busy}
+          title={busy ? '保存・読み込み中は閉じられません' : undefined}
           onClick={onClose}
         >
           閉じる

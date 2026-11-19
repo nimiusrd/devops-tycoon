@@ -57,6 +57,7 @@ import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
   normalizeReplay,
+  withReplayAnnotation,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
@@ -104,6 +105,7 @@ import {
 export interface ActiveReplayInfo {
   ruleset: ReplayRulesetIdentity | null;
   contentSnapshot: ReplayContentSnapshot | null;
+  annotationText?: string;
 }
 
 export interface PersistenceAttachOptions<T> {
@@ -295,8 +297,16 @@ export interface GameHandle {
   ): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
   listReplays(): ReplayBlob[];
+  /** このセッション自身の注釈書込み。再マウント後も復旧の比較基準を確認できる。 */
+  getReplayAnnotationRecovery(id: string): { previous: ReplayBlob; replay: ReplayBlob } | null;
   /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
   exportReplayText(id: string): string | null;
+  /** 一覧で編集を始めた記録と一致するときだけ、作者の理由を保存する。 */
+  saveReplayAnnotation(
+    expected: ReplayBlob,
+    keyframeIndex: number,
+    text: string,
+  ): Promise<{ ok: boolean; message: string; replay?: ReplayBlob }>;
   /**
    * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
    * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
@@ -464,12 +474,25 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayMigrationOpen = false;
   /** 空だった永続先へ、このセッションが書けたリプレイ。それ以外は別タブの記録として扱う。 */
   const replayMigrationWrittenIds = new Set<string>();
+  const replayMigrationWrittenSnapshots = new Map<string, ReplayBlob>();
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
   /** 進行中の保存。移行側は完了を待ってからセッションを外す。 */
   const replaySavePromises = new Map<ReplayBlob, Promise<void>>();
   if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
   let cachedReplays: ReplayBlob[] = [];
+  /** 表示用の未保存分を混ぜる前に、保存先から実際に読めた記録。 */
+  let storedReplaySnapshots = new Map<string, ReplayBlob>();
+  type PendingAnnotation = {
+    previous: ReplayBlob;
+    next: ReplayBlob;
+    inFlight: boolean;
+    write?: Promise<void>;
+    error?: unknown;
+  };
+  const pendingAnnotations = new Map<string, PendingAnnotation>();
+  const annotationRecoveries = new Map<string, PendingAnnotation>();
+  const hasPendingReplayWrites = () => pendingReplays.length > 0 || pendingAnnotations.size > 0;
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
   /** 閲覧中リプレイの id。非リプレイ時は null。 */
@@ -574,12 +597,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const refreshReplayCache = async (): Promise<readonly ReplayBlob[] | null> => {
     if (!replayStorage) {
       cachedReplays = [];
+      storedReplaySnapshots.clear();
       bump();
       return [];
     }
     try {
       const listed = await replayStorage.list();
+      storedReplaySnapshots = new Map(listed.map((row) => [row.id, structuredClone(row)]));
       cachedReplays = replayListWithPending(listed);
+      for (const id of annotationRecoveries.keys()) {
+        if (!pendingAnnotations.has(id) && !cachedReplays.some((row) => row.id === id))
+          annotationRecoveries.delete(id);
+      }
       bump();
       return listed;
     } catch {
@@ -605,14 +634,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     bump();
   };
 
+  const replayProtectIds = (extraIds: readonly string[] = []): string[] => [
+    ...new Set([
+      ...pinnedReplayIds,
+      ...replayRetryKept.keys(),
+      ...pendingAnnotations.keys(),
+      ...extraIds,
+    ]),
+  ];
+
   const saveReplayBlob = (blob: ReplayBlob, extraProtectIds?: readonly string[]): Promise<void> => {
     const storage = replayStorage;
     if (!storage) return Promise.resolve();
     // 古い finishedAt でも、この完走自体は上限削除から残す。明示取り込みも同時に守る。
     // 再試行の一括では、まだ保存していない他の未保存も同じ上限から守る。
-    const protectIds = [
-      ...new Set([...pinnedReplayIds, ...replayRetryKept.keys(), ...(extraProtectIds ?? [])]),
-    ];
+    const protectIds = replayProtectIds(extraProtectIds);
     return storage
       .save(blob, { pin: true, protectIds })
       .then(async () => {
@@ -631,16 +667,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .catch((error: unknown) => {
         pendingReplayErrors.set(blob, error);
         publishUnsavedReplay(blob);
+        if (isTabConflict(error)) signalTabConflict();
         throw error;
       });
   };
 
   /** 未保存に残った失敗のうち、容量不足を優先して案内する。 */
   const pendingReplayFailure = (): unknown => {
-    for (const error of pendingReplayErrors.values()) {
+    const errors = [
+      ...pendingReplayErrors.values(),
+      ...[...pendingAnnotations.values()].map((entry) => entry.error),
+    ];
+    for (const error of errors) {
       if (persistenceFailureKind(error) === 'quota') return error;
     }
-    return pendingReplayErrors.values().next().value ?? new Error('unsaved replay');
+    return errors.find((error) => error !== undefined) ?? new Error('unsaved replay');
   };
 
   /** 保存完了した blob を外す。未保存が残っていれば true。 */
@@ -648,14 +689,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     pendingReplayErrors.delete(blob);
     const index = pendingReplays.indexOf(blob);
     if (index >= 0) pendingReplays.splice(index, 1);
-    return pendingReplays.length > 0;
+    return hasPendingReplayWrites();
   };
 
-  /** 一致した未保存を外し、保護中の完走が別内容なら未保存へ戻す。残件が無いとき true。 */
+  /** 一致した未保存を外し、保護中の完走が別内容なら戻す。残件と今回の解消有無を返す。 */
   const releaseMatchedReplayProtection = (
     matched: readonly ReplayBlob[],
     listedById: ReadonlyMap<string, ReplayBlob>,
-  ): boolean => {
+    importedIds: ReadonlySet<string>,
+  ): { complete: boolean; changed: boolean } => {
+    let annotationMatched = false;
+    for (const [id, entry] of pendingAnnotations) {
+      const stored = listedById.get(id);
+      if (
+        stored &&
+        (importedIds.has(id) || replayContentKey(stored) === replayContentKey(entry.next))
+      ) {
+        pendingAnnotations.delete(id);
+        annotationMatched = true;
+      }
+    }
+    for (const id of importedIds) {
+      if (listedById.has(id)) annotationRecoveries.delete(id);
+    }
     for (const blob of matched) completePendingReplay(blob);
     for (const blob of [...replayRetryKept.values()]) {
       const row = listedById.get(blob.id);
@@ -670,9 +726,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (pendingReplays.length === 0) {
       replayRetryKept.clear();
-      return true;
+      return {
+        complete: pendingAnnotations.size === 0,
+        changed: matched.length > 0 || annotationMatched,
+      };
     }
-    return false;
+    return { complete: false, changed: matched.length > 0 || annotationMatched };
   };
 
   /** セッション開始後にメモリへ残った完走。開始時点の一覧は端末側にある。 */
@@ -686,7 +745,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const seen = new Set<string>();
     const blobs: ReplayBlob[] = [];
     // 完了トランザクション失敗中のリプレイは再試行用に残したまま、書き出しだけ見えるようにする。
-    for (const blob of [...pendingFinishReplays, ...pendingReplays, ...sessionOnlyReplayBlobs()]) {
+    for (const blob of [
+      ...[...pendingAnnotations.values()].map((entry) => entry.next),
+      ...pendingFinishReplays,
+      ...pendingReplays,
+      ...sessionOnlyReplayBlobs(),
+    ]) {
       if (seen.has(blob.id)) continue;
       seen.add(blob.id);
       blobs.push(blob);
@@ -1004,7 +1068,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         if (
           channel === 'replay' &&
-          pendingReplays.length === 0 &&
+          !hasPendingReplayWrites() &&
           tracker.settleCurrent(channel, Date.now())
         ) {
           bump();
@@ -1017,12 +1081,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           return;
         }
         const preserveQuota =
-          channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
+          channel === 'replay' && hasPendingReplayWrites() && tracker.keepsQuota(channel);
         const applied = tracker.fail(channel, generation, error, preserveQuota);
         if (
           !applied &&
           channel === 'replay' &&
-          pendingReplays.length > 0 &&
+          hasPendingReplayWrites() &&
           persistenceFailureKind(error) === 'quota'
         ) {
           tracker.noteQuota(channel);
@@ -1074,12 +1138,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           return;
         }
         const preserveQuota =
-          channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
+          channel === 'replay' && hasPendingReplayWrites() && tracker.keepsQuota(channel);
         const applied = tracker.fail(channel, generation, error, preserveQuota);
         if (
           !applied &&
           channel === 'replay' &&
-          pendingReplays.length > 0 &&
+          hasPendingReplayWrites() &&
           persistenceFailureKind(error) === 'quota'
         ) {
           tracker.noteQuota(channel);
@@ -1089,6 +1153,53 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .finally(() => {
         bump();
       });
+  };
+
+  const writeReplayAnnotation = (entry: PendingAnnotation): Promise<void> => {
+    const storage = replayStorage;
+    if (!storage) return Promise.reject(new Error('replay storage unavailable'));
+    entry.inFlight = true;
+    replayImportDepth += 1;
+    replayRevision += 1;
+    const { previous, next } = entry;
+    const work = replayImportWrites.then(async () => {
+      try {
+        if (tabConflict) throw new TabConflictError();
+        // 書込み後の読込みとロールバックが共に失敗しても、自分の完全一致だけを照合する。
+        const current = await storage.get(next.id);
+        if (!current || replayContentKey(current) !== replayContentKey(next)) {
+          await storage.save(next, {
+            expectedPrevious: previous,
+            pin: true,
+            protectIds: replayProtectIds(),
+          });
+        }
+        try {
+          const listed = await refreshReplayCache();
+          if (!listed) throw new Error('replay list failed');
+          if (tabConflict) throw new TabConflictError();
+          const saved = listed.find((row) => row.id === next.id);
+          if (!saved || replayContentKey(saved) !== replayContentKey(next))
+            throw new TabConflictError();
+        } catch (error) {
+          if (!isTabConflict(error)) await storage.revertBatch?.([previous], [next], new Set());
+          throw error;
+        }
+        if (pendingAnnotations.get(next.id) === entry) pendingAnnotations.delete(next.id);
+        replayRevision += 1;
+        bump();
+      } catch (error) {
+        entry.error = error;
+        if (isTabConflict(error)) signalTabConflict();
+        throw error;
+      } finally {
+        entry.inFlight = false;
+        replayImportDepth -= 1;
+      }
+    });
+    entry.write = work;
+    replayImportWrites = work.catch(() => undefined);
+    return work;
   };
 
   /** このセッションが書いたスナップショットと、後から現れた永続記録を区別する。 */
@@ -1368,18 +1479,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               const written: ReplayBlob[] = [];
               const evictedIds = new Set<string>();
               const evictedRecords = new Map<string, ReplayBlob>();
+              const ownSnapshotsBefore = new Map(replayMigrationWrittenSnapshots);
               try {
                 const foreign = replayMigrationOpen ? foreignDurableIds(snapshot) : [];
-                const protectedIds = [
-                  ...new Set([...pinnedReplayIds, ...(foreign.length > 0 ? foreign : cohort)]),
-                ];
+                const protectedIds = replayProtectIds(foreign.length > 0 ? foreign : cohort);
                 for (const blob of newcomers) {
                   await target.save(structuredClone(blob), {
+                    ...(replayMigrationWrittenSnapshots.has(blob.id)
+                      ? { expectedPrevious: replayMigrationWrittenSnapshots.get(blob.id) }
+                      : {}),
                     pin: true,
                     protectIds: protectedIds,
                     evictedIds,
                     evictedRecords,
                   });
+                  replayMigrationWrittenSnapshots.set(blob.id, structuredClone(blob));
                   written.push(structuredClone(blob));
                 }
                 durableList = await target.list();
@@ -1398,6 +1512,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                     } else {
                       await target.clear();
                       for (const blob of snapshot) await target.save(structuredClone(blob));
+                    }
+                    for (const blob of written) {
+                      const prior = ownSnapshotsBefore.get(blob.id);
+                      if (prior) replayMigrationWrittenSnapshots.set(blob.id, prior);
+                      else replayMigrationWrittenSnapshots.delete(blob.id);
                     }
                   } catch {
                     /* 戻せなくても、セッション限りのまま返す */
@@ -1431,6 +1550,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             replayStorage = target;
             cachedReplays = listed;
+            storedReplaySnapshots = new Map(listed.map((row) => [row.id, structuredClone(row)]));
             bump();
             tracker.noteDurableAt('replay', Date.now());
             tracker.clearSession('replay');
@@ -1463,10 +1583,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (foreignDurableIds(snapshot).length > 0) return;
           for (const blob of toSave) {
             await target.save(structuredClone(blob), {
+              ...(replayMigrationWrittenSnapshots.has(blob.id)
+                ? { expectedPrevious: replayMigrationWrittenSnapshots.get(blob.id) }
+                : {}),
               pin: true,
-              protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+              protectIds: replayProtectIds(cohort),
               evictedIds: undefined,
             });
+            replayMigrationWrittenSnapshots.set(blob.id, structuredClone(blob));
             replayMigrationWrittenIds.add(blob.id);
           }
           const kept = await target.list();
@@ -1506,6 +1630,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           }
           replayStorage = target;
           cachedReplays = listed;
+          storedReplaySnapshots = new Map(listed.map((row) => [row.id, structuredClone(row)]));
           replayMigrationOpen = false;
           tracker.noteDurableAt('replay', Date.now());
           tracker.clearSession('replay');
@@ -1625,6 +1750,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     activeReplayInfo = {
       ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
       contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
+      ...(replay.annotation && replay.annotation.keyframeId === frame.id
+        ? { annotationText: replay.annotation?.text }
+        : {}),
     };
     activeDailyDate = frame.frame.dailyDate ?? null;
     activeDailyRuleset = null;
@@ -2105,7 +2233,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                         if (saved.includes(blob) || replayStillStored(blob, listedById)) continue;
                         restoreDroppedReplay(blob);
                       }
-                      if (pendingReplays.length === 0) {
+                      if (!hasPendingReplayWrites()) {
                         replayRetryKept.clear();
                         tracker.settleCurrent('replay', Date.now());
                       }
@@ -2117,6 +2245,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               })(),
             );
           }
+        }
+        if (!tracker.isSession('replay') && tracker.hasVisibleFailure('replay') && replayStorage) {
+          const annotations = [...pendingAnnotations.values()].filter((entry) => !entry.inFlight);
+          if (annotations.length > 0)
+            tasks.push(
+              (async () => {
+                for (const entry of annotations) {
+                  if (pendingAnnotations.get(entry.next.id) !== entry || entry.inFlight) continue;
+                  await retryWrite('replay', writeReplayAnnotation(entry), hasPendingReplayWrites);
+                }
+              })(),
+            );
         }
         try {
           await Promise.all(tasks);
@@ -2435,9 +2575,90 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     listReplays() {
       return cachedReplays.map((r) => structuredClone(r));
     },
+    getReplayAnnotationRecovery(id) {
+      const entry = annotationRecoveries.get(id);
+      const current = cachedReplays.find((row) => row.id === id);
+      if (
+        !entry ||
+        !current ||
+        (replayContentKey(current) !== replayContentKey(entry.previous) &&
+          replayContentKey(current) !== replayContentKey(entry.next))
+      )
+        return null;
+      return { previous: structuredClone(entry.previous), replay: structuredClone(entry.next) };
+    },
     exportReplayText(id) {
       const replay = cachedReplays.find((item) => item.id === id);
       return replay ? serializeReplay(replay) : null;
+    },
+    async saveReplayAnnotation(expected, keyframeIndex, text) {
+      const conflictMessage =
+        '別のタブが記録を更新したため保存できません。再読込して引き継いでください。';
+      const failureMessage = '注釈を保存できませんでした。内容を残したまま再試行できます。';
+      if (tabConflict) return { ok: false, message: conflictMessage };
+      const storage = replayStorage;
+      if (!storage) return { ok: false, message: 'リプレイの保存先を利用できません。' };
+      let previous = normalizeReplay(expected);
+      if (!previous) return { ok: false, message: 'リプレイを読み取れません。' };
+      // 同じ記録への先行書込みを待ち、自分の成功した更新だけを基準へ反映する。
+      // 待機中に次の保存が始まった場合も、その完了順に追従する。
+      let preceding = pendingAnnotations.get(previous.id);
+      while (preceding) {
+        try {
+          const wasInFlight = preceding.inFlight;
+          const work = wasInFlight
+            ? (preceding.write ?? replayImportWrites)
+            : writeReplayAnnotation(preceding);
+          if (!wasInFlight) trackWrite('replay', work, hasPendingReplayWrites);
+          await work;
+        } catch (error) {
+          return {
+            ok: false,
+            message: isTabConflict(error) || tabConflict ? conflictMessage : failureMessage,
+          };
+        }
+        if (tabConflict) return { ok: false, message: conflictMessage };
+        if (replayContentKey(previous) === replayContentKey(preceding.previous)) {
+          previous = structuredClone(preceding.next);
+        }
+        preceding = pendingAnnotations.get(previous.id);
+      }
+      if (
+        pendingReplays.some((row) => row.id === previous.id) ||
+        pendingFinishReplays.some((row) => row.id === previous.id)
+      ) {
+        return {
+          ok: false,
+          message:
+            'このリプレイはまだ保存できていません。保存を再試行してから注釈を保存してください。',
+        };
+      }
+      const next = withReplayAnnotation(previous, keyframeIndex, text);
+      if (!next) return { ok: false, message: '場面と注釈の長さを確認してください。' };
+      const entry: PendingAnnotation = { previous, next, inFlight: false };
+      pendingAnnotations.set(next.id, entry);
+      annotationRecoveries.set(next.id, entry);
+      const work = writeReplayAnnotation(entry);
+      trackWrite('replay', work, hasPendingReplayWrites);
+      try {
+        await work;
+        return {
+          ok: true,
+          replay: structuredClone(next),
+          message: tracker.isSession('replay')
+            ? '注釈をこのセッション内に保存しました。端末への保存はできていません。'
+            : '注釈を保存しました。',
+        };
+      } catch (error) {
+        if (isTabConflict(error)) {
+          signalTabConflict();
+          return { ok: false, message: conflictMessage };
+        }
+        return {
+          ok: false,
+          message: failureMessage,
+        };
+      }
     },
     async importReplayText(
       raw: string,
@@ -2604,10 +2825,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             const row = listedById.get(item.id);
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
-          const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
+          const pendingCleared = releaseMatchedReplayProtection(
+            matched,
+            listedById,
+            new Set(cohort),
+          );
           if (!tracker.isSession('replay')) {
             tracker.noteDurableAt('replay', Date.now());
-            if (matched.length > 0 && pendingCleared) {
+            if (pendingCleared.changed && pendingCleared.complete) {
               tracker.settleCurrent('replay', Date.now());
             }
           }
@@ -2632,6 +2857,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       const storage = replayStorage;
       pinnedReplayIds.add(loaded.replay.id);
+      const previousAtRequest = structuredClone(
+        storedReplaySnapshots.get(loaded.replay.id) ?? null,
+      );
+      const pendingAnnotation = pendingAnnotations.get(loaded.replay.id);
       replayImportDepth += 1;
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
@@ -2667,9 +2896,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               return failedImport();
             }
           }
-          const protectIds = [
-            ...new Set([...(batch?.protectIds ?? []), ...replayRetryKept.keys()]),
-          ];
+          let expectedPrevious = previousAtRequest;
+          if (
+            pendingAnnotation &&
+            expectedPrevious &&
+            replayContentKey(expectedPrevious) === replayContentKey(pendingAnnotation.previous)
+          ) {
+            // 先行した自分の注釈書込みが残っている場合だけ、取り込みの比較基準を進める。
+            const stored = priorList
+              ? priorList.find((row) => row.id === loaded.replay.id)
+              : await storage.get(loaded.replay.id);
+            if (stored && replayContentKey(stored) === replayContentKey(pendingAnnotation.next)) {
+              expectedPrevious = pendingAnnotation.next;
+            }
+          }
+          const protectIds = replayProtectIds(batch?.protectIds);
           if (tabConflict) {
             if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
             return {
@@ -2680,6 +2921,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             };
           }
           await storage.save(loaded.replay, {
+            expectedPrevious,
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,
             evictedIds,
@@ -2726,10 +2968,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
             const listedById = new Map(cachedReplays.map((row) => [row.id, row]));
-            const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
+            const pendingCleared = releaseMatchedReplayProtection(
+              matched,
+              listedById,
+              new Set([loaded.replay.id]),
+            );
             if (!tracker.isSession('replay')) {
               tracker.noteDurableAt('replay', Date.now());
-              if (matched.length > 0 && pendingCleared) {
+              if (pendingCleared.changed && pendingCleared.complete) {
                 tracker.settleCurrent('replay', Date.now());
               }
             }
@@ -2737,9 +2983,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           replayRevision += 1;
           bump();
           return loaded;
-        } catch {
+        } catch (error) {
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           await rollbackSingle(false);
+          if (isTabConflict(error)) signalTabConflict();
           return failedImport();
         } finally {
           replayImportDepth -= 1;

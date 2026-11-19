@@ -2,6 +2,7 @@
  * リプレイの IndexedDB 永続化（RI-61）。
  */
 import { GAME_DB_NAME, openGameDb, REPLAYS_STORE_NAME } from './gameDb';
+import { TabConflictError } from './tabConflict';
 import {
   normalizeReplay,
   REPLAY_MAX_COUNT,
@@ -11,6 +12,8 @@ import {
 
 /** リプレイ保存時の上限処理オプション。 */
 export interface ReplaySaveOptions {
+  /** 編集開始時の記録。同一トランザクションで比較し、別タブの変更・削除を守る。 */
+  expectedPrevious?: ReplayBlob | null;
   /** ファイル取り込みで明示した件を、古い finishedAt でも上限削除から残す。 */
   pin?: boolean;
   /** この保存でも上限削除から残す、ほかの明示取り込み。 */
@@ -98,6 +101,14 @@ export class IndexedDbReplayStorage implements ReplayStorage {
 
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const snapshot = structuredClone(blob);
+    const comparePrevious = options !== undefined && 'expectedPrevious' in options;
+    const expectedKey = comparePrevious
+      ? JSON.stringify(
+          options?.expectedPrevious
+            ? normalizeReplay(structuredClone(options.expectedPrevious))
+            : null,
+        )
+      : undefined;
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
@@ -110,6 +121,17 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         try {
           const previousRaw = await tx.store.get(snapshot.id);
           const previous = previousRaw === undefined ? null : normalizeReplay(previousRaw);
+          // 通常完走の再試行・セッション移行も、新しい注釈を無条件には消さない。
+          if (
+            !comparePrevious &&
+            previous?.annotation &&
+            JSON.stringify(previous) !== JSON.stringify(normalizeReplay(snapshot))
+          ) {
+            throw new TabConflictError();
+          }
+          if (comparePrevious && JSON.stringify(previous) !== expectedKey) {
+            throw new TabConflictError();
+          }
           if (
             previous &&
             options?.evictedRecords &&
@@ -254,6 +276,21 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const existing = this.items.get(blob.id);
+    if (
+      (!options || !('expectedPrevious' in options)) &&
+      existing?.annotation &&
+      JSON.stringify(normalizeReplay(existing)) !== JSON.stringify(normalizeReplay(blob))
+    ) {
+      throw new TabConflictError();
+    }
+    if (
+      options &&
+      'expectedPrevious' in options &&
+      JSON.stringify(existing ? normalizeReplay(existing) : null) !==
+        JSON.stringify(options.expectedPrevious ? normalizeReplay(options.expectedPrevious) : null)
+    ) {
+      throw new TabConflictError();
+    }
     if (
       existing &&
       options?.evictedRecords &&

@@ -17,6 +17,7 @@ import {
 } from '../render/attentionPause';
 import { Board } from '../render/Board';
 import { officeCultureView } from '../render/officeCultureView';
+import { officeReviewStationView } from '../render/officeReviewStationView';
 import { useReplayContent } from './replayContent';
 import { planActionPresentation } from '../render/actionBarView';
 import { REVIEW_COMMAND_PANEL_ID, type ReviewCommandAction } from '../render/reviewCommandView';
@@ -138,11 +139,9 @@ export function SprintScreen({
   onEventTickerExpandedChange,
 }: SprintScreenProps) {
   const { resolveRelic, isReplaySnapshot } = useReplayContent();
-  const culture = officeCultureView(
-    state.relics,
-    resolveRelic,
-    (game?.isReplayMode() ?? false) && !isReplaySnapshot,
-  );
+  const replay = game?.isReplayMode() ?? false;
+  const culture = officeCultureView(state.relics, resolveRelic, replay && !isReplaySnapshot);
+  const reviewStation = officeReviewStationView(state.evolution, replay);
   const responsiveMode = useResponsiveMode();
   const [layoutViewportWidth, setLayoutViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
@@ -699,6 +698,7 @@ export function SprintScreen({
           >
             <Board
               culture={culture}
+              reviewStation={reviewStation}
               tasks={sprint.tasks}
               metrics={sprint.metrics}
               reviewAccumulator={sprint.reviewAccumulator}

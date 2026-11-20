@@ -5933,22 +5933,28 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   font-size: 11.5px;
   color: var(--text-dim);
 }
-.office-culture-details {
+.office-detail {
   max-width: 100%;
   color: var(--text);
+}
+.office-culture-details {
   background: var(--visual-color-office-culture-surface);
   border-color: var(--visual-color-office-culture-accent);
 }
-.office-culture-details summary {
+.office-review-details {
+  background: var(--panel);
+  border-color: var(--sky);
+}
+.office-detail summary {
   min-height: 24px;
   cursor: pointer;
   overflow-wrap: anywhere;
 }
-.office-culture-details summary:focus-visible {
+.office-detail summary:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
-.office-culture-details p {
+.office-detail p {
   max-width: 36rem;
   margin: 6px 0;
   white-space: normal;

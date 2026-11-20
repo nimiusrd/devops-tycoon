@@ -132,7 +132,7 @@ export interface TitleScreenProps {
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */
   onToggleSoundMuted?: () => void;
-  onOpenHelp?: () => void;
+  onOpenHelp?: (opener: HTMLButtonElement) => void;
   /** 開始レシピ読み込み成功時に研修方針を復元する（RI-127）。 */
   onApplyPreferred?: (preferredCardIds: readonly string[]) => void;
   /** 現行の途中セーブを JSON にする（無い場合は null。RI-133）。 */
@@ -955,7 +955,11 @@ export function TitleScreen({
                 </button>
               )}
               {onOpenHelp && (
-                <button type="button" data-testid="open-help" onClick={onOpenHelp}>
+                <button
+                  type="button"
+                  data-testid="open-help"
+                  onClick={(event) => onOpenHelp(event.currentTarget)}
+                >
                   遊び方
                 </button>
               )}

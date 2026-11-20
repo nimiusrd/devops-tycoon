@@ -6,6 +6,7 @@ import { seedMeta } from './seedMeta';
 type TabGameWindow = Window & {
   game?: {
     purchaseMetaUnlock(unlockId: string): { ok: boolean };
+    getPersistenceStatus(): { state: string };
     setSoundMuted(muted: boolean): void;
     acknowledgeTabConflict(): void;
   };
@@ -26,11 +27,21 @@ async function seedBoth(page: Page, other: Page, initial: MetaState) {
   await seedMeta(other, initial);
 }
 
-async function triggerMetaConflict(other: Page, page: Page) {
+async function triggerMetaConflict(staleTab: Page, writer: Page) {
+  await writer.bringToFront();
   expect(
-    await page.evaluate(() => (window as TabGameWindow).game?.purchaseMetaUnlock('unlock-devin')),
+    await writer.evaluate(() => (window as TabGameWindow).game?.purchaseMetaUnlock('unlock-devin')),
   ).toEqual({ ok: true });
-  await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
+  await expect
+    .poll(
+      () => writer.evaluate(() => (window as TabGameWindow).game?.getPersistenceStatus().state),
+      {
+        timeout: 10_000,
+      },
+    )
+    .toBe('saved');
+  await staleTab.bringToFront();
+  await staleTab.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
 }
 
 async function assertFocusStaysInHowToPlay(page: Page, label: string) {
@@ -135,7 +146,9 @@ for (const width of [320, 1280] as const) {
     await expect(page.getByTestId('title')).toBeVisible();
     await expect(other.getByTestId('title')).toBeVisible();
 
-    await page.getByTestId('open-help').click();
+    await page.bringToFront();
+    const opener = page.getByTestId('open-help');
+    await opener.click();
     await expect(page.getByTestId('how-to-play')).toBeVisible();
 
     await triggerMetaConflict(page, other);
@@ -155,5 +168,9 @@ for (const width of [320, 1280] as const) {
       return { testId, inside };
     });
     expect(restored.inside, '競合モーダル後に遊び方へフォーカスが戻らない').toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('how-to-play')).toHaveCount(0);
+    await expect(opener).toBeFocused();
   });
 }

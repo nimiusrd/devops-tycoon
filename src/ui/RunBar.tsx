@@ -71,7 +71,7 @@ export interface RunBarProps {
   /** 既存メタのミュート。メニューを出すときだけ使う。 */
   soundMuted?: boolean;
   /** 既存の遊び方画面を開く。指定時のみラン中メニューを出す。 */
-  onOpenHelp?: () => void;
+  onOpenHelp?: (opener: HTMLButtonElement | null) => void;
   /** 既存のミュート設定を切り替える。 */
   onToggleSoundMuted?: () => void;
   /** startRun ごとの世代。組織レバー案内の一度きりをラン単位で区切る。 */

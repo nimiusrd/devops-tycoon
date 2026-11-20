@@ -1,43 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
 import {
-  publishSplitPrConfirmAnnouncement,
+  formatSplitPrConfirmAnnouncement,
+  splitPrConfirmAnnouncementKey,
   type SplitPrConfirmCue,
 } from '../render/splitPrConfirmView';
 
-/**
- * PR 分割成功時の polite 読み上げ。空でマウントし、次フレームで文を入れる（#1020）。
- */
+/** 常設のライブ領域に、最新の分割結果を1回だけ追加する（#1020）。 */
 export function SplitPrConfirmAnnouncer({ cue }: { cue: SplitPrConfirmCue | null }) {
-  const lastSpokenKeyRef = useRef<string | null>(null);
-  const [spoken, setSpoken] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    const publish = () => {
-      if (cancelled) return;
-      const next = publishSplitPrConfirmAnnouncement(lastSpokenKeyRef.current, cue);
-      if (!next) return;
-      lastSpokenKeyRef.current = next.lastSpokenKey;
-      setSpoken(next.text);
-    };
-    if (typeof requestAnimationFrame !== 'function') {
-      queueMicrotask(publish);
-      return () => {
-        cancelled = true;
-      };
-    }
-    const frame = requestAnimationFrame(publish);
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frame);
-    };
-  }, [cue]);
-
   return (
     <div
       className="visually-hidden"
       data-testid="split-pr-confirm-live"
-      data-empty={spoken ? undefined : 'true'}
+      data-empty={cue ? undefined : 'true'}
     >
       <div
         role="status"
@@ -45,7 +18,11 @@ export function SplitPrConfirmAnnouncer({ cue }: { cue: SplitPrConfirmCue | null
         aria-atomic="true"
         data-testid="split-pr-confirm-announce"
       >
-        {spoken}
+        {cue && (
+          <span key={splitPrConfirmAnnouncementKey(cue)}>
+            {formatSplitPrConfirmAnnouncement(cue.taskId)}
+          </span>
+        )}
       </div>
     </div>
   );

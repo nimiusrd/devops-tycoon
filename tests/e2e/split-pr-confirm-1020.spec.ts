@@ -1,6 +1,10 @@
 /** PR 分割後の粒強調と読み上げが同じ ID を指す（#1020）。 */
 import type { Page } from '@playwright/test';
-import { beginPublicSprint, expect, test } from './fixtures';
+import { advanceCurrentSprintToReviewQueue, beginPublicSprint, expect, test } from './fixtures';
+import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
+import { planBoardScene } from '../../src/render/boardScene';
+import { presentBoardDots } from '../../src/render/boardPixiView';
+import { splitPrCandidates } from '../../src/sim/assignTask';
 import {
   formatSplitPrConfirmAnnouncement,
   splitPrConfirmDurationMs,
@@ -8,6 +12,15 @@ import {
 
 type GameWindow = Window & {
   splitPrConfirmationObserved?: boolean;
+  splitPrTouchObservation?: {
+    announcements: string[];
+    duration: number | null;
+    timerDelays: number[];
+    feedbackHeld: boolean;
+    before: number[];
+    during: number[] | null;
+    after: number[] | null;
+  };
   game?: {
     getState(): {
       sprint?: {
@@ -115,3 +128,135 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.getByTestId('split-pr-confirm-announce')).toHaveText(announce);
   });
 }
+
+test.describe('盤面の粒をタッチしてPRを分割する', () => {
+  test.use({ hasTouch: true });
+
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    test(`390px・${reducedMotion}: 実タッチの分割結果を一度通知し、盤面を動かさない（#1020） @pixi`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.emulateMedia({ reducedMotion });
+      await beginPublicSprint(page, { seed: 'qa-seed-1030', renderer: 'pixi' });
+      await advanceCurrentSprintToReviewQueue(page, 3, 5);
+      const board = page.getByTestId('board');
+      const mount = page.getByTestId('board-pixi-mount');
+      await expect(mount).toHaveAttribute('data-board-assets', '5');
+      await page.getByTestId('action-splitPr').tap();
+      await expect(board).toHaveAttribute('data-armed', 'splitPr');
+      await board.scrollIntoViewIfNeeded();
+
+      const frame = await readBoardCanvasFrame(page);
+      const sprint = await page.evaluate(() => window.game!.getState().sprint!);
+      const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
+      const points = presentBoardDots(planBoardScene(sprint.tasks).dots, frame.fit.scale)
+        .filter((dot) => dot.lane === 'review' && !dot.motion && candidates.has(dot.id))
+        .map((dot) => ({ id: dot.id, ...designToClient(frame, dot) }));
+      const target = await page.evaluate((points) => {
+        return points.findLast(({ x, y }) => {
+          const hit = document.elementFromPoint(x, y);
+          return (
+            hit?.closest('[data-testid="board"]') &&
+            !hit.closest('.st-label, .bubble, .board-legend, .pile-overflow')
+          );
+        });
+      }, points);
+      expect(target, 'タッチ可能なレビュー中の粒がある').toBeDefined();
+
+      const cdp = await page.context().newCDPSession(page);
+      const point = { x: target!.x, y: target!.y, id: 1 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point] });
+      await expect(board).toHaveAttribute('data-preview-task-id', String(target!.id));
+
+      const announcement = formatSplitPrConfirmAnnouncement(target!.id);
+      await page.evaluate(
+        ({ id, expectedDelay }) => {
+          const board = document.querySelector<HTMLElement>('[data-testid="board"]')!;
+          const mount = document.querySelector('[data-testid="board-pixi-mount"]')!;
+          const layout = document.querySelector('[data-testid="sprint-layout"]')!;
+          const live = document.querySelector('[data-testid="split-pr-confirm-announce"]')!;
+          const ticker = document.querySelector('[data-testid="event-ticker"]')!;
+          const readFrame = () => {
+            const { x, y, width, height } = board.getBoundingClientRect();
+            return [x + window.scrollX, y + window.scrollY + layout.scrollTop, width, height];
+          };
+          const observation = {
+            announcements: [] as string[],
+            duration: null as number | null,
+            timerDelays: [] as number[],
+            feedbackHeld: false,
+            before: readFrame(),
+            during: null as number[] | null,
+            after: null as number[] | null,
+          };
+          (window as GameWindow).splitPrTouchObservation = observation;
+          // 実ブラウザの描画待ちと、アプリが要求する強調時間を分けて確かめる。
+          const setTimeout = window.setTimeout;
+          window.setTimeout = new Proxy(setTimeout, {
+            apply(target, receiver, args) {
+              if (args[1] === expectedDelay) observation.timerDelays.push(args[1]);
+              return Reflect.apply(target, receiver, args);
+            },
+          });
+          let start: number | null = null;
+          let previousText = live.textContent;
+          const observer = new MutationObserver(() => {
+            if (live.textContent !== previousText) {
+              observation.announcements.push(live.textContent ?? '');
+              previousText = live.textContent;
+            }
+            if (start === null && mount.getAttribute('data-split-confirm-task-id') === id) {
+              start = performance.now();
+              observation.during = readFrame();
+              observation.feedbackHeld = ticker.getAttribute('data-feedback-held') === 'true';
+            }
+            if (
+              start !== null &&
+              observation.duration === null &&
+              !board.hasAttribute('data-split-confirm-task-id') &&
+              !mount.hasAttribute('data-split-confirm-task-id')
+            ) {
+              observation.duration = performance.now() - start;
+              observation.after = readFrame();
+              window.setTimeout = setTimeout;
+            }
+          });
+          observer.observe(board, {
+            attributes: true,
+            attributeFilter: ['data-split-confirm-task-id'],
+          });
+          observer.observe(mount, {
+            attributes: true,
+            attributeFilter: ['data-split-confirm-task-id'],
+          });
+          observer.observe(live, { childList: true, characterData: true, subtree: true });
+        },
+        { id: String(target!.id), expectedDelay: splitPrConfirmDurationMs() },
+      );
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await cdp.detach();
+
+      const ticker = page.getByTestId('event-ticker');
+      const live = page.getByTestId('split-pr-confirm-announce');
+      await expect(live).toHaveText(announcement);
+      await expect(ticker).toHaveAttribute('data-feedback-held', 'false');
+      const { observation, affected } = await page.evaluate(() => ({
+        observation: (window as GameWindow).splitPrTouchObservation!,
+        affected: window.game!.getState().sprint?.events.findLast((e) => e.kind === 'intervention')
+          ?.effect?.affectedTaskIds,
+      }));
+      expect(affected).toEqual([target!.id]);
+      expect(observation.announcements).toEqual([announcement]);
+      expect(observation.feedbackHeld).toBe(true);
+      expect(observation.during).toEqual(observation.before);
+      expect(observation.after).toEqual(observation.before);
+      expect(observation.duration).not.toBeNull();
+      expect(observation.timerDelays).toEqual([splitPrConfirmDurationMs()]);
+      await expect(live).toHaveText(announcement);
+      await ticker.getByTestId('event-ticker-heading').click();
+      await expect(ticker.getByTestId('event-ticker-list')).toContainText('PR分割');
+    });
+  }
+});

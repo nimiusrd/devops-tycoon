@@ -19,6 +19,7 @@ import {
   hasRegisteredBoardDragHitTest,
 } from '../render/boardDragHit';
 import {
+  formatInterventionFeedback,
   formatSprintTickerRows,
   formatTickerSummary,
   INTERVENTION_RESULT_HOLD_MS,
@@ -122,6 +123,11 @@ export function EventTicker({
     (outcomeFeedback.expiresAt == null || outcomeFeedback.expiresAt > mountedAt);
   const rows = formatSprintTickerRows(events, feedbackHeld ? outcomeFeedback : null, TICKER_LIMIT);
   const summary = formatTickerSummary(rows);
+  const splitSummary =
+    feedbackHeld &&
+    outcomeFeedback.id === 'splitPr' &&
+    outcomeFeedback.outcome.ok &&
+    rows[0]?.key === formatInterventionFeedback(outcomeFeedback).key;
   const expanded =
     optimisticExpanded !== null && expandedProp !== optimisticExpanded
       ? optimisticExpanded
@@ -299,6 +305,7 @@ export function EventTicker({
       data-expanded={expanded ? 'true' : 'false'}
       data-dock={dock}
       data-feedback-held={feedbackHeld ? 'true' : 'false'}
+      data-split-summary={splitSummary ? 'true' : undefined}
       aria-label="スプリント出来事"
     >
       <button

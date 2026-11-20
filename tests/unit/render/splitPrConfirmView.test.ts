@@ -3,7 +3,6 @@ import {
   boardDotSplitConfirmRing,
   formatSplitPrConfirmAnnouncement,
   planSplitPrConfirmFromEffect,
-  publishSplitPrConfirmAnnouncement,
   splitPrConfirmAnnouncementKey,
   splitPrConfirmDurationMs,
 } from '../../../src/render/splitPrConfirmView';
@@ -28,14 +27,11 @@ describe('PR 分割確認（#1020）', () => {
     expect(planSplitPrConfirmFromEffect('assignTask', { actionId: 'assignTask' }, 1)).toBeNull();
   });
 
-  it('同一キーでは読み上げを繰り返さない', () => {
+  it('同じ分割結果には同じキーを使い、別の操作とは区別する', () => {
     const cue = { taskId: 3, nonce: 1 };
     const key = splitPrConfirmAnnouncementKey(cue);
-    expect(publishSplitPrConfirmAnnouncement(null, cue)).toEqual({
-      lastSpokenKey: key,
-      text: 'PR #3 を分割しました',
-    });
-    expect(publishSplitPrConfirmAnnouncement(key, cue)).toBeNull();
+    expect(splitPrConfirmAnnouncementKey({ ...cue })).toBe(key);
+    expect(splitPrConfirmAnnouncementKey({ ...cue, nonce: 2 })).not.toBe(key);
   });
 
   it('inset リングは粒半径を増やさない', () => {

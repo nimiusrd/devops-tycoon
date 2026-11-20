@@ -203,11 +203,11 @@ export function SprintScreen({
   };
   const triggerKey = useRef(0);
   const splitConfirmNonce = useRef(0);
-  const splitConfirmTimer = useRef<number | null>(null);
   const [splitConfirm, setSplitConfirm] = useState<{
     sprintId: string;
     taskId: number;
     nonce: number;
+    highlighting: boolean;
   } | null>(null);
   const slowMoTimer = useRef<number | null>(null);
   const attentionTimer = useRef<number | null>(null);
@@ -261,27 +261,21 @@ export function SprintScreen({
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
       if (attentionTimer.current != null) window.clearTimeout(attentionTimer.current);
-      if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
       clearPauseBriefly.current?.();
       clearPauseBriefly.current = null;
     },
     [],
   );
 
-  // 強調タイマーは描画後に始める。dispatch 直後だと 175ms が DOM 反映前に消費される（#1020 / E2E）。
+  // 描画後に強調の寿命を数える。ライブ領域には同じ分割結果を保持する（#1020）。
   useEffect(() => {
-    if (!splitConfirm) return;
-    if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
-    splitConfirmTimer.current = window.setTimeout(() => {
-      setSplitConfirm(null);
-      splitConfirmTimer.current = null;
+    if (!splitConfirm?.highlighting) return;
+    const timer = window.setTimeout(() => {
+      setSplitConfirm((current) =>
+        current === splitConfirm ? { ...current, highlighting: false } : current,
+      );
     }, splitPrConfirmDurationMs());
-    return () => {
-      if (splitConfirmTimer.current != null) {
-        window.clearTimeout(splitConfirmTimer.current);
-        splitConfirmTimer.current = null;
-      }
-    };
+    return () => window.clearTimeout(timer);
   }, [splitConfirm]);
 
   // RI-62③: 自動進行での点火・渋滞・ボスIncident をエッジ検出して短い自動ポーズ。
@@ -430,7 +424,7 @@ export function SprintScreen({
           splitConfirmNonce.current,
         );
         if (confirmCue && state.currentSprintId) {
-          setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId });
+          setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId, highlighting: true });
         }
         if (outcome.effect.containedTaskId != null) {
           setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));
@@ -555,10 +549,9 @@ export function SprintScreen({
   const inspectedId =
     openReviewCommand?.action ??
     (inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null);
-  const liveSplitConfirm =
-    splitConfirm?.sprintId === state.currentSprintId
-      ? { taskId: splitConfirm.taskId, nonce: splitConfirm.nonce }
-      : null;
+  const currentSplitConfirm =
+    splitConfirm?.sprintId === state.currentSprintId ? splitConfirm : null;
+  const splitHighlight = currentSplitConfirm?.highlighting ? currentSplitConfirm : null;
   const actionInspection = inspectedId
     ? {
         label: getAction(inspectedId)!.label,
@@ -600,7 +593,7 @@ export function SprintScreen({
             >
               {reviewHellAnnouncement}
             </p>
-            <SplitPrConfirmAnnouncer cue={liveSplitConfirm} />
+            <SplitPrConfirmAnnouncer cue={currentSplitConfirm} />
             <span className={`pill node-tag node-${kind}`} data-testid="sprint-kind">
               {isBoss ? (
                 `★ ボス: ${boss?.name ?? ''}`
@@ -732,7 +725,7 @@ export function SprintScreen({
                     }
                   : undefined
               }
-              splitConfirm={liveSplitConfirm}
+              splitConfirm={splitHighlight}
               deliveryScore={state.org.deliveryScore}
               activeTeamId={state.activeTeamId}
             />

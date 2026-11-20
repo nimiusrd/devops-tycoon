@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 const hookState = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }));
 
+vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
+
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
+  useRef: () => ({ current: null }),
   useState(initial: unknown) {
     const index = hookState.cursor++;
     if (hookState.values.length <= index) hookState.values[index] = initial;
@@ -30,6 +33,7 @@ import { ROSTER_CAP } from '../../../src/sim/member';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState, ShopOffer } from '../../../src/sim/run/types';
 import { ShopScreen } from '../../../src/ui/ShopScreen';
+import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
@@ -80,11 +84,15 @@ function mountShop(overrides: Partial<RunState> = {}) {
   const onBuyRelic = vi.fn();
   const onBuyRecruit = vi.fn();
   const onLeave = vi.fn();
-  let tree = expand(ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave }));
+  let spendConfirmEnabled = true;
+  let tree: ReactNode;
   const render = () => {
     hookState.cursor = 0;
-    tree = expand(ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave }));
+    tree = expand(
+      ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave, spendConfirmEnabled }),
+    );
   };
+  render();
   const nodes = () => elements(tree);
   const find = (id: string) => {
     const node = nodes().find((item) => item.props['data-testid'] === id);
@@ -102,6 +110,10 @@ function mountShop(overrides: Partial<RunState> = {}) {
     onLeave,
     find,
     has: (id: string) => nodes().some((item) => item.props['data-testid'] === id),
+    setSpendConfirmEnabled(value: boolean) {
+      spendConfirmEnabled = value;
+      render();
+    },
     click(id: string) {
       const node = find(id);
       if (!node.props.disabled) (node.props.onClick as () => void)();
@@ -164,7 +176,14 @@ describe('ショップの購入条件', () => {
         recruit: undefined,
       }),
     });
+    vi.mocked(useDialogOverlayLock).mockClear();
     screen.click('shop-card-docs');
+    const modal = screen.find('shop-spend-confirm-dialog');
+    expect(modal.props.role).toBe('dialog');
+    expect(modal.props['aria-modal']).toBe('true');
+    expect(modal.props['aria-label']).toBe('予算枯渇の確認');
+    expect(screen.find('spend-confirm').props['aria-label']).toBeUndefined();
+    expect(useDialogOverlayLock).toHaveBeenCalledTimes(1);
     expect(screen.find('shop-card-pair-programming').props.disabled).toBe(true);
     expect(screen.find('shop-leave').props.disabled).toBe(true);
     screen.click('shop-leave');
@@ -176,6 +195,20 @@ describe('ショップの購入条件', () => {
     expect(screen.find('shop-card-pair-programming').props.disabled).toBe(false);
     screen.click('shop-card-pair-programming');
     expect(screen.onBuyCard).toHaveBeenCalledExactlyOnceWith('pair-programming');
+  });
+
+  it('競合モーダルが開くと保留中の購入を取り消し、復帰後に改めて購入を選べる', () => {
+    const screen = mountShop();
+    screen.click('shop-card-docs');
+    expect(screen.has('shop-spend-confirm-dialog')).toBe(true);
+    screen.setSpendConfirmEnabled(false);
+    expect(screen.has('shop-spend-confirm-dialog')).toBe(false);
+    screen.click('shop-card-docs');
+    screen.setSpendConfirmEnabled(true);
+    expect(screen.has('shop-spend-confirm-dialog')).toBe(false);
+    expect(screen.onBuyCard).not.toHaveBeenCalled();
+    screen.click('shop-card-docs');
+    expect(screen.has('shop-spend-confirm-dialog')).toBe(true);
   });
 
   it('予算が価格より多い購入は確認なしで通知し、支払後残高だけを示す', () => {

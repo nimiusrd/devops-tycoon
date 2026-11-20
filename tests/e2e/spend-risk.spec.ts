@@ -145,6 +145,8 @@ test.describe('予算枯渇になる購入と採用', () => {
       const control = page.getByTestId(target.controlTestId);
       await expect(control).toContainText('支払後の残高');
       await expect(control).toContainText('予算枯渇でランが終了する');
+      const shopState =
+        screen === 'shop' ? await page.evaluate(() => window.game!.getState()) : null;
 
       await control.click();
       const confirm = page.getByTestId('spend-confirm');
@@ -166,6 +168,34 @@ test.describe('予算枯渇になる購入と採用', () => {
         expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height + 1);
       }
 
+      if (shopState) {
+        const modal = page.getByRole('dialog', { name: '予算枯渇の確認', exact: true });
+        await expect(page.locator('.app')).toHaveJSProperty('inert', true);
+        await expect(modal).toHaveAttribute('aria-modal', 'true');
+        await expect(page.locator('[aria-label="予算枯渇の確認"]')).toHaveCount(1);
+        await expect(page.getByTestId('shop-leave')).toBeDisabled();
+        await page.keyboard.press('Shift+Tab');
+        await expect(confirm.getByTestId('spend-confirm-accept')).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(confirm.getByTestId('spend-confirm-cancel')).toBeFocused();
+
+        // 商品一覧の余白を押してから Shift+Tab すると、修正前は背面のメニューへ移れた。
+        const outside = await modal.evaluate((overlay) => {
+          const rect = overlay.getBoundingClientRect();
+          const point = { x: rect.left + 6, y: rect.top + 6 };
+          return document.elementFromPoint(point.x, point.y) === overlay ? point : null;
+        });
+        expect(outside).not.toBeNull();
+        await page.mouse.click(outside!.x, outside!.y);
+        await expect(confirm).toHaveCount(0);
+        await expect(page.locator('.app')).toHaveJSProperty('inert', false);
+        await expect(control).toBeFocused();
+        expect(await page.evaluate(() => window.game!.getState())).toEqual(shopState);
+
+        await control.click();
+        await expect(confirm.getByTestId('spend-confirm-cancel')).toBeFocused();
+      }
+
       await page.keyboard.press('Escape');
       await expect(confirm).toHaveCount(0);
       await expect(control).toBeFocused();
@@ -178,6 +208,10 @@ test.describe('予算枯渇になる購入と採用', () => {
         budget: target.budget,
         status: 'playing',
       });
+      if (shopState) {
+        await expect(page.locator('.app')).toHaveJSProperty('inert', false);
+        expect(await page.evaluate(() => window.game!.getState())).toEqual(shopState);
+      }
 
       await control.click();
       await page.getByTestId('spend-confirm-accept').click();

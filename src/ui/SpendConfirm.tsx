@@ -4,9 +4,11 @@
  * 通常購入の1クリックとは分け、取消では支払いを実行しない。
  * 初期フォーカスは取消に置き、Escape でも同じ取消に戻す。
  */
-import type { KeyboardEvent } from 'react';
+import { useRef, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
 import { focusByTestId, focusGameOverPrimaryAction } from './focusByTestId';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface SpendConfirmProps {
   subject: string;
@@ -89,4 +91,35 @@ export function SpendConfirm({
       </div>
     </div>
   );
+}
+
+/** 組織レバーとショップで、枯渇確認を背面から独立したモーダルとして開く。 */
+export function SpendConfirmDialog({
+  testId,
+  onCancel,
+  ...confirmation
+}: Omit<SpendConfirmProps, 'groupLabel'> & { testId: string }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dismiss = () => {
+    onCancel();
+    setTimeout(() => focusByTestId(confirmation.returnTestId), 0);
+  };
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: dismiss });
+  const layer = (
+    <div
+      ref={dialogRef}
+      className="result-overlay overlay-contained spend-confirm-overlay"
+      data-testid={testId}
+      role="dialog"
+      aria-modal="true"
+      aria-label="予算枯渇の確認"
+      tabIndex={-1}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dismiss();
+      }}
+    >
+      <SpendConfirm {...confirmation} onCancel={onCancel} groupLabel={null} />
+    </div>
+  );
+  return typeof document === 'undefined' ? layer : createPortal(layer, document.body);
 }

@@ -68,6 +68,11 @@ export function createReleasePrototype(
   };
 }
 
+/** 手動で凍結しなかった場合に、自動凍結を適用するtickの開始点。 */
+export function releaseAutomaticFreezeTick({ deadline }: ReleaseConfig): number {
+  return deadline - 2;
+}
+
 /** 入力はtick開始時に適用。工程間の移動は次tickから（2段階を飛ばせない）。 */
 export function tickReleasePrototype(state: ReleaseState, freeze = false): ReleaseState {
   if (state.tick >= state.config.deadline) return state;
@@ -77,7 +82,10 @@ export function tickReleasePrototype(state: ReleaseState, freeze = false): Relea
     features: state.features.map((feature) => ({ ...feature })),
   };
   // 凍結忘れで即敗北させない。期限の2tick前に自動凍結し検証窓を残す。
-  if (state.frozenAt === null && (freeze || state.tick >= state.config.deadline - 2)) {
+  if (
+    state.frozenAt === null &&
+    (freeze || state.tick >= releaseAutomaticFreezeTick(state.config))
+  ) {
     next.frozenAt = state.tick;
     next.automaticFreeze = !freeze;
   }

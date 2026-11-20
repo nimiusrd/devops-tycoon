@@ -14,11 +14,19 @@ applyVisualTokenCssVariables(document.documentElement);
 
 // 専用のR&D実験では通常ランの生成・永続化を起動しない。
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-if (new URLSearchParams(window.location.search).get('rd') === 'agent-dat') {
+const experiment = new URLSearchParams(window.location.search).get('rd');
+if (experiment === 'agent-dat') {
   const { AgentWorkflowDatLab } = await import('./ui/AgentWorkflowDatLab');
   root.render(
     <React.StrictMode>
       <AgentWorkflowDatLab />
+    </React.StrictMode>,
+  );
+} else if (import.meta.env.DEV && experiment === 'release-forecast') {
+  const { ReleaseForecastLab } = await import('./ui/ReleaseForecastLab');
+  root.render(
+    <React.StrictMode>
+      <ReleaseForecastLab />
     </React.StrictMode>,
   );
 } else {

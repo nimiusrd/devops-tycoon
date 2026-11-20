@@ -1,0 +1,133 @@
+.lab {
+  width: min(100%, 960px);
+  margin-inline: auto;
+  line-height: 1.5;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+}
+
+.context {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.825rem;
+}
+
+.header a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.panel {
+  min-width: 0;
+  padding: clamp(12px, 2vw, 18px);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.panel p {
+  margin: 6px 0 10px;
+}
+
+.bands,
+.controls,
+.speed {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline,
+.gates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.gates {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+}
+
+.timeline {
+  list-style: none;
+}
+
+.timeline li,
+.gates div {
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.timeline li[data-conditional='true'] {
+  border-style: dashed;
+  border-color: var(--text-dim);
+}
+
+.timeline li[aria-current='step'] {
+  border-color: var(--mint);
+}
+
+.timeline strong,
+.timeline span {
+  display: block;
+}
+
+.timeline span,
+.gates dt,
+.risk {
+  color: var(--text-dim);
+}
+
+.risk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.gates dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.header a,
+.controls button {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+.controls button[aria-pressed='true']:not(:disabled) {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: var(--visual-color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header a:active:not(:disabled),
+  .controls button:active:not(:disabled) {
+    transform: none;
+  }
+}

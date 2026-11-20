@@ -7,6 +7,7 @@
  */
 import { useId, useRef } from 'react';
 import { getTrait } from '../data/traits';
+import { formationHistoryView, type FormationHistoryEntry } from '../render/formationHistoryView';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
@@ -45,6 +46,7 @@ export function FormationGrid({
   landmark?: boolean;
 }) {
   const descriptionId = useId();
+  const history = formationHistoryView(state.memberHistory, state.activeTeamId);
   const locked = readOnly || state.phase === 'sprint';
   const lockedNoteId = locked ? `${descriptionId}-locked` : undefined;
   const showForecast = state.whatIf?.current || state.whatIfStatus === 'computing';
@@ -84,8 +86,9 @@ export function FormationGrid({
       >
         {state.roster.members.map((m) => (
           <MemberCard
-            key={m.id}
+            key={JSON.stringify([state.activeTeamId, m.id])}
             m={m}
+            history={history.byMemberId.get(m.id)}
             locked={locked}
             lockedNoteId={lockedNoteId}
             aiReasonId={`${descriptionId}-${m.id}-ai-reason`}
@@ -94,6 +97,11 @@ export function FormationGrid({
           />
         ))}
       </div>
+      {history.startedAfterSprint > 0 && (
+        <p className="fm-history-start" data-testid="formation-history-start">
+          経歴は通算スプリント{history.startedAfterSprint}の完了時点から記録しています。
+        </p>
+      )}
       <CompanyProfile state={state} />
     </>
   );
@@ -124,6 +132,7 @@ const AI_ASSIGNMENT_REASON = 'コーディング担当にのみ配れます';
 
 function MemberCard({
   m,
+  history,
   locked,
   lockedNoteId,
   aiReasonId,
@@ -131,6 +140,7 @@ function MemberCard({
   onToggleAi,
 }: {
   m: Member;
+  history?: FormationHistoryEntry[];
   locked: boolean;
   lockedNoteId?: string;
   aiReasonId: string;
@@ -227,6 +237,23 @@ function MemberCard({
             {AI_ASSIGNMENT_REASON}
           </p>
         </>
+      )}
+      {history && (
+        <details className="result-details fm-history" data-testid={`formation-history-${m.id}`}>
+          <summary aria-label={`${m.name}の経歴（${history.length}件）`}>
+            経歴（{history.length}件）
+          </summary>
+          <ol>
+            {history.map((entry) => (
+              <li key={entry.key}>
+                {entry.sprintNumber === 0
+                  ? '最初のスプリント前'
+                  : `通算スプリント${entry.sprintNumber}`}{' '}
+                · {entry.name} · {entry.description}
+              </li>
+            ))}
+          </ol>
+        </details>
       )}
     </div>
   );

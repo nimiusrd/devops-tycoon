@@ -27,7 +27,7 @@
 | [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン) | 状態依存イベント | [probability-model.md](../docs/probability-model.md), `src/data/events.ts`, `src/data/balance/run.ts`, `src/sim/run/events.ts` | ✅ イベント率とsoft結果の生存境界をランレジストリへ移行済み（RI-111） |
 | [10](../SPEC.md#10-ランとボススプリント) | 四半期末ボス | `src/data/bosses.ts`, `src/data/balance/run.ts`, `src/sim/run/engine.ts` | ✅ 四半期スプリント数とショップ・課金のラン値をレジストリへ移行済み（RI-111） |
 | [11](../SPEC.md#11-組織進化ツリー) | ラン内ビルド | `src/data/evolution.ts`, `src/data/balance/run.ts`, `src/sim/run/evolution.ts` | ✅ 進化ポイント報酬の基本値をランレジストリへ移行済み（RI-111） |
-| [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/sim/member.test.ts` | ✅ |
+| [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ、現在ランの経歴 | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/sim/member.test.ts`, `tests/unit/sim/memberHistory.test.ts` | ✅ |
 | [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/data/balance/outcome.ts`, `src/render/diagnosisTheme.ts`, `src/render/trendHistoryView.ts` | ✅ 診断境界は `OUTCOME_BALANCE` へ移行済み。第23章の時系列トレンドは RI-128、健全度履歴の切替表示は RI-135 |
 | [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/balance/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ KPI・勝敗・継続不能・勝利種別の境界を `OUTCOME_BALANCE` へ移行済み（RI-112）。Easy 序盤の燃え尽き導線は RI-67 でチュートリアル／HUD を補強 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `src/data/balance/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ 優先カード上限・ラン報酬係数・デイリー条件は `META_BALANCE` へ移行済み（RI-124） |

@@ -99,3 +99,21 @@ export interface LeaveReturnNotice {
   id: string;
   name: string;
 }
+
+/** 個人の経歴へ記録する、発生時点の事実。 */
+export type MemberHistoryEvent = { id: string; name: string } & (
+  | { kind: 'promotion'; to: MemberRank }
+  | { kind: 'leave'; reason: 'exhaustion' | 'reorganization' }
+  | { kind: 'return' }
+);
+
+export interface MemberHistory {
+  /** 記録開始時の完了スプリント数。直後の休息等もこの番号で記録する。 */
+  startedAfterSprint: number;
+  events: (MemberHistoryEvent & {
+    /** ロスターのメンバー ID はチーム内で一意。 */
+    teamId: string;
+    /** ラン通算の完了スプリント数。スプリント間の出来事は直前の番号。 */
+    sprintNumber: number;
+  })[];
+}

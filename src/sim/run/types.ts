@@ -13,7 +13,7 @@ import type {
   SprintResult,
   SprintState,
 } from '../types';
-import type { GrowthOutcome, LeaveReturnNotice, RosterState } from '../member/types';
+import type { GrowthOutcome, LeaveReturnNotice, MemberHistory, RosterState } from '../member/types';
 import type {
   IndustryState,
   OrgScaleState,
@@ -330,6 +330,8 @@ export interface RunState {
   roster: RosterState;
   /** 直近スプリントの成長結果（昇格・休職・育成。result/draft で表示）。 */
   lastGrowth: GrowthOutcome | null;
+  /** 現在ランの個人の経歴。記録機能導入前のリプレイでは欠ける。 */
+  memberHistory?: MemberHistory;
   /**
    * いまのチームの編成画面に出す休職復帰。
    * スプリントを始めると消え、同じメンバーは同じランでは再通知しない。旧状態では欠ける。

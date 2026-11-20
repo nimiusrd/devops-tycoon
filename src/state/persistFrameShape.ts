@@ -28,6 +28,7 @@ export function isPersistFrameShape(value: unknown): boolean {
   if (!isObject(value.evolution) || typeof value.evolution.points !== 'number') return false;
   if (!isObject(value.evolution.unlocked)) return false;
   if (!isRosterShape(value.roster)) return false;
+  if (!isOptionalMemberHistoryShape(value.memberHistory, value.sprintsPlayed)) return false;
   if (!isObject(value.pendingSprintModifiers)) return false;
   if (!isRunTotalsShape(value.totals)) return false;
   if (!isRunTotalsShape(value.quarterTotals)) return false;
@@ -391,6 +392,61 @@ function isMemberShape(value: unknown): boolean {
   }
   if (!isMemberStatsShape(value.stats)) return false;
   return Array.isArray(value.traits) && value.traits.every((trait) => typeof trait === 'string');
+}
+
+/** 旧データの欠落を許容し、経歴があれば記録区間・人物・発生時の値を検査する。 */
+export function isOptionalMemberHistoryShape(value: unknown, sprintsPlayed: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isObject(value) || !Array.isArray(value.events)) return false;
+  const start = value.startedAfterSprint;
+  if (
+    typeof sprintsPlayed !== 'number' ||
+    !Number.isSafeInteger(sprintsPlayed) ||
+    typeof start !== 'number' ||
+    !Number.isSafeInteger(start) ||
+    start < 0 ||
+    start > sprintsPlayed
+  ) {
+    return false;
+  }
+  let previousSprint = start;
+  const seen = new Set<string>();
+  for (const event of value.events) {
+    if (!isObject(event) || !isGrowthLeaveShape(event) || typeof event.teamId !== 'string') {
+      return false;
+    }
+    const sprint = event.sprintNumber;
+    if (
+      typeof sprint !== 'number' ||
+      !Number.isSafeInteger(sprint) ||
+      sprint < previousSprint ||
+      sprint > sprintsPlayed
+    ) {
+      return false;
+    }
+    switch (event.kind) {
+      case 'promotion':
+        if (event.to !== 'middle' && event.to !== 'senior') return false;
+        break;
+      case 'leave':
+        if (event.reason !== 'exhaustion' && event.reason !== 'reorganization') return false;
+        break;
+      case 'return':
+        break;
+      default:
+        return false;
+    }
+    const key = JSON.stringify([
+      event.teamId,
+      event.id,
+      event.kind,
+      event.kind === 'promotion' ? null : sprint,
+    ]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    previousSprint = sprint;
+  }
+  return true;
 }
 
 /** SprintResultScreen が promotions / wentOnLeave / leveledUp を参照する前に拒否する。 */

@@ -29,6 +29,8 @@ import type {
   WinType,
 } from '../sim/run/types';
 
+import { isOptionalMemberHistoryShape } from './persistFrameShape';
+
 /** リプレイスキーマ版。v1 は読み込み時に v2 の形へ正規化する。 */
 export const REPLAY_SCHEMA_VERSION = 2;
 const LEGACY_REPLAY_SCHEMA_VERSION = 1;
@@ -285,6 +287,7 @@ function isReplayFrame(value: unknown): value is RunReplayFrameInput {
   if (!Array.isArray(value.extras.allowedCards) || !Array.isArray(value.extras.allowedRelics)) {
     return false;
   }
+  if (!isOptionalMemberHistoryShape(value.memberHistory, value.sprintsPlayed)) return false;
   // draft 画面は候補配列が無いと空になる。phase だけ合っていても受理しない。
   if (value.phase === 'draft') {
     if (!Array.isArray(value.draft) || !value.draft.every((id) => typeof id === 'string')) {

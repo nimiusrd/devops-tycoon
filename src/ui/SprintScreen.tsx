@@ -190,7 +190,7 @@ export function SprintScreen({
   const [reviewCommandEnabled] = useState(
     () =>
       typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('rd') === 'review-command',
+      new URLSearchParams(window.location?.search).get('rd') === 'review-command',
   );
   const [reviewCommand, setReviewCommand] = useState<{
     sprintId: string;

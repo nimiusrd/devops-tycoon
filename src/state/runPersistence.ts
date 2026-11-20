@@ -22,6 +22,7 @@ import {
 } from './gameDb';
 import { TabConflictError, generationValue, type DurableWriteResult } from './tabConflict';
 import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
+import { isOptionalMemberHistoryShape } from './persistFrameShape';
 import { cloneTrendHistory } from '../sim/run/trendHistory';
 
 export type { RunPersistState, RunPersistExtras, RunSavePhase } from '../sim/run/persist';
@@ -215,6 +216,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRunStatus(state.status) || state.status !== 'playing') return null;
   if (typeof state.seed !== 'string' || state.seed !== summary.seed) return null;
   if (!isDifficulty(state.difficulty) || state.difficulty !== summary.difficulty) return null;
+  if (!isOptionalMemberHistoryShape(state.memberHistory, state.sprintsPlayed)) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;
   if (!Array.isArray(state.extras.allowedRelics)) return null;

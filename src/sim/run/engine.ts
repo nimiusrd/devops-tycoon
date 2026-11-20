@@ -61,6 +61,8 @@ import type {
   GrowthOutcome,
   LaneAssignment,
   LeaveReturnNotice,
+  MemberHistory,
+  MemberHistoryEvent,
   RosterState,
 } from '../member/types';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
@@ -363,6 +365,7 @@ export class RunEngine {
   private evolution!: EvolutionState;
   private roster!: RosterState;
   private lastGrowth: GrowthOutcome | null = null;
+  private memberHistory?: MemberHistory;
   /** チームごとの、編成画面でまだ出している休職復帰（#937）。 */
   private pendingLeaveReturns = new Map<string, LeaveReturnNotice[]>();
   /** このランで通知済みの `teamId:memberId`。同じ人は再通知しない。 */
@@ -537,6 +540,7 @@ export class RunEngine {
     this.evolution = { points: 0, unlocked: {} };
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
+    this.memberHistory = { startedAfterSprint: 0, events: [] };
     this.pendingLeaveReturns = new Map();
     this.announcedLeaveReturnKeys = new Set();
     this.budget = Math.round(diff.startBudget * this.trialBudgetMul());
@@ -970,8 +974,12 @@ export class RunEngine {
     skipIds?: ReadonlySet<string>,
   ): RosterState {
     const next = recoverStamina(roster, amount, skipIds);
+    const returned = membersReturnedFromLeave(roster.members, next.members);
+    for (const person of returned) {
+      this.recordMemberEvent(teamId, { kind: 'return', ...person });
+    }
     const pending = this.pendingLeaveReturns.get(teamId) ?? [];
-    const fresh = planLeaveReturnNotices(membersReturnedFromLeave(roster.members, next.members), [
+    const fresh = planLeaveReturnNotices(returned, [
       ...this.announcedIdsFor(teamId),
       ...pending.map((person) => person.id),
     ]);
@@ -1008,9 +1016,29 @@ export class RunEngine {
     );
     this.roster = roster;
     this.lastGrowth = outcome;
+    for (const promotion of outcome.promotions) {
+      this.recordMemberEvent(this.activeTeamId, { kind: 'promotion', ...promotion });
+    }
+    for (const person of outcome.wentOnLeave) {
+      this.recordMemberEvent(this.activeTeamId, { kind: 'leave', reason: 'exhaustion', ...person });
+    }
     if (outcome.docGain > 0) {
       this.org.documentation = clamp(this.org.documentation + outcome.docGain, 0, 100);
     }
+  }
+
+  private recordMemberEvent(teamId: string, event: MemberHistoryEvent): void {
+    const history = this.memberHistory;
+    if (!history) return;
+    const sprintNumber = this.sprintsPlayed;
+    const alreadyRecorded = history.events.some(
+      (recorded) =>
+        recorded.teamId === teamId &&
+        recorded.id === event.id &&
+        recorded.kind === event.kind &&
+        (event.kind === 'promotion' || recorded.sprintNumber === sprintNumber),
+    );
+    if (!alreadyRecorded) history.events.push({ ...event, teamId, sprintNumber });
   }
 
   private evoPointsFor(result: SprintResult): number {
@@ -1135,6 +1163,12 @@ export class RunEngine {
           : m,
       ),
     };
+    this.recordMemberEvent(this.activeTeamId, {
+      kind: 'leave',
+      reason: 'reorganization',
+      id: victim.id,
+      name: victim.name,
+    });
   }
 
   /** 次四半期を開始する（トラックを初期化・組織状態は引き継ぎ。phase=setup）。 */
@@ -2367,6 +2401,7 @@ export class RunEngine {
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      ...(this.memberHistory ? { memberHistory: structuredClone(this.memberHistory) } : {}),
       leaveReturns: this.leaveReturnsFor(this.activeTeamId),
       budget: this.budget,
       currentSprintId: this.currentSprintId,
@@ -2464,6 +2499,7 @@ export class RunEngine {
       recomputeTeamCapacities: true,
       reconcileCoarseSecurityTrust: true,
     });
+    this.memberHistory ??= { startedAfterSprint: this.sprintsPlayed, events: [] };
     // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);
   }
@@ -2528,6 +2564,7 @@ export class RunEngine {
     };
     this.roster = cloned.roster;
     this.lastGrowth = cloned.lastGrowth;
+    this.memberHistory = cloned.memberHistory;
     this.pendingLeaveReturns = new Map(
       Object.entries(cloned.extras.pendingLeaveReturns ?? {}).map(([teamId, people]) => [
         teamId,
@@ -2825,6 +2862,7 @@ export class RunEngine {
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      ...(this.memberHistory ? { memberHistory: structuredClone(this.memberHistory) } : {}),
       leaveReturns: this.leaveReturnsFor(this.activeTeamId),
       budget: this.budget,
       currentSprintId: this.currentSprintId,

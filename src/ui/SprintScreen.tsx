@@ -19,6 +19,7 @@ import { Board } from '../render/Board';
 import { officeCultureView } from '../render/officeCultureView';
 import { useReplayContent } from './replayContent';
 import { planActionPresentation } from '../render/actionBarView';
+import { REVIEW_COMMAND_PANEL_ID, type ReviewCommandAction } from '../render/reviewCommandView';
 import { getAction } from '../data/actions';
 import {
   INTERVENTION_RESULT_HOLD_MS,
@@ -53,6 +54,7 @@ import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
+import { ReviewCommandPanel } from './ReviewCommandPanel';
 import { AspectStage } from './AspectStage';
 import { SprintLayout } from './SprintLayout';
 import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
@@ -185,6 +187,21 @@ export function SprintScreen({
     (id: ActionId | null) => setInspectedAction({ sprintId: state.currentSprintId, id }),
     [state.currentSprintId],
   );
+  const [reviewCommandEnabled] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location?.search).get('rd') === 'review-command',
+  );
+  const [reviewCommand, setReviewCommand] = useState<{
+    sprintId: string;
+    teamId: string;
+    action: ReviewCommandAction | null;
+  } | null>(null);
+  const reviewCommandTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeReviewCommand = () => {
+    setReviewCommand(null);
+    reviewCommandTriggerRef.current?.focus();
+  };
   const triggerKey = useRef(0);
   const splitConfirmNonce = useRef(0);
   const splitConfirmTimer = useRef<number | null>(null);
@@ -214,6 +231,7 @@ export function SprintScreen({
   const setArmedId = useCallback(
     (id: DraggableActionId | null) => {
       setArmed({ sprintId: state.currentSprintId, id });
+      if (id) setReviewCommand(null);
       if (id !== 'assignTask') setAssignAssignee(undefined);
     },
     [state.currentSprintId],
@@ -518,8 +536,26 @@ export function SprintScreen({
     incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
   const burnPct = incidents > 0 ? Math.max(0, (urgentTicks / BURN_TICKS) * 100) : 0;
   const dockTickerOffBoard = responsiveMode.width === 'narrow';
+  const canOpenReviewCommand =
+    reviewCommandEnabled &&
+    state.phase === 'sprint' &&
+    state.zoom.level === 'team' &&
+    state.currentSprintId !== null &&
+    !sprint.complete &&
+    !showTutorial &&
+    !armedId &&
+    game &&
+    !game.isReplayMode();
+  const openReviewCommand =
+    canOpenReviewCommand &&
+    reviewCommand?.sprintId === state.currentSprintId &&
+    reviewCommand.teamId === state.activeTeamId
+      ? reviewCommand
+      : null;
+  if (reviewCommand && !openReviewCommand) setReviewCommand(null);
   const inspectedId =
-    inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null;
+    openReviewCommand?.action ??
+    (inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null);
   const liveSplitConfirm =
     splitConfirm?.sprintId === state.currentSprintId
       ? { taskId: splitConfirm.taskId, nonce: splitConfirm.nonce }
@@ -677,6 +713,25 @@ export function SprintScreen({
               onDragComplete={handleDragComplete}
               animationsPaused={overlayFrozen}
               actionInspection={actionInspection}
+              reviewCommand={
+                canOpenReviewCommand
+                  ? {
+                      expanded: openReviewCommand !== null,
+                      panelId: REVIEW_COMMAND_PANEL_ID,
+                      buttonRef: reviewCommandTriggerRef,
+                      onToggle: () => {
+                        if (openReviewCommand) closeReviewCommand();
+                        else if (state.currentSprintId) {
+                          setReviewCommand({
+                            sprintId: state.currentSprintId,
+                            teamId: state.activeTeamId,
+                            action: null,
+                          });
+                        }
+                      },
+                    }
+                  : undefined
+              }
               splitConfirm={liveSplitConfirm}
               deliveryScore={state.org.deliveryScore}
               activeTeamId={state.activeTeamId}
@@ -690,6 +745,26 @@ export function SprintScreen({
             {dockTickerOffBoard ? null : eventTicker}
           </AspectStage>
         </main>
+      }
+      stageActions={
+        openReviewCommand &&
+        game && (
+          <ReviewCommandPanel
+            key={`${openReviewCommand.sprintId}:${openReviewCommand.teamId}`}
+            state={state}
+            sprint={sprint}
+            paused={paused}
+            game={game}
+            onInspect={(action) => setReviewCommand({ ...openReviewCommand, action })}
+            onDispatch={(id) => {
+              const outcome = handleDispatch(id);
+              // 320×568 の手札優先表示では出来事欄を出して介入結果へつなぐ。
+              if (outcome.ok && narrowShort) setBottomRailPreference('controls');
+              return outcome;
+            }}
+            onClose={closeReviewCommand}
+          />
+        )
       }
       deck={
         <DeckBar

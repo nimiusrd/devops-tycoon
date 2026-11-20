@@ -716,3 +716,9 @@
     content: '倍';
   }
 }
+
+/* 確認欄を開いた広幅では、工程要約と出来事が同じ盤面内で読める高さを確保する。 */
+.root[data-responsive-width='wide'][data-responsive-height]
+  .stageSlot:has(+ :global(.review-command-panel)) {
+  min-height: max(300px, 42dvh);
+}

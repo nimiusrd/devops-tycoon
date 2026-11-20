@@ -1,0 +1,1509 @@
+{
+  "roster": {
+    "members": [
+      {
+        "id": "maker",
+        "name": "作り手",
+        "rank": "middle",
+        "level": 1,
+        "xp": 0,
+        "stats": { "implementation": 52, "review": 47, "aiMastery": 44 },
+        "stamina": 85,
+        "staminaMax": 85,
+        "traits": ["megaPrMaker"],
+        "assignment": "coding",
+        "aiAssigned": false,
+        "onLeave": false
+      },
+      {
+        "id": "reviewer",
+        "name": "見直し役",
+        "rank": "middle",
+        "level": 1,
+        "xp": 0,
+        "stats": { "implementation": 76, "review": 52, "aiMastery": 44 },
+        "stamina": 85,
+        "staminaMax": 85,
+        "traits": ["reviewDemon"],
+        "assignment": "review",
+        "aiAssigned": false,
+        "onLeave": false
+      }
+    ],
+    "nextId": 2
+  },
+  "swappedAssignments": [
+    { "id": "maker", "assignment": "review" },
+    { "id": "reviewer", "assignment": "coding" }
+  ],
+  "org": {
+    "aiEnabled": false,
+    "aiDependency": 3,
+    "aiLiteracy": 45,
+    "testCoverage": 55,
+    "documentation": 50,
+    "quality": 60,
+    "securityLevel": 60,
+    "morale": 70,
+    "seniorHp": 100,
+    "techDebt": 0,
+    "deliveryScore": 0
+  },
+  "config": { "taskCount": 16, "codingSlots": 3, "maxTicks": 55, "focusMax": 12 },
+  "taskMix": "task.id % 4 < complexPerFour のとき complex。その他は normal。",
+  "input": "開始前に配置と補正有無を決め、終了まで介入なし。",
+  "staminaOrder": ["maker", "reviewer"],
+  "meanByMix": [
+    {
+      "complexPerFour": 0,
+      "paired": {
+        "delivered": 148.75,
+        "done": 14.92,
+        "rework": 0.83,
+        "incidents": 1.25,
+        "ticks": 54.17,
+        "reviewQueueMax": 3.17
+      },
+      "pairedWithoutBonus": {
+        "delivered": 148.75,
+        "done": 14.92,
+        "rework": 0.83,
+        "incidents": 1.25,
+        "ticks": 54.17,
+        "reviewQueueMax": 3.17
+      },
+      "swapped": {
+        "delivered": 149.33,
+        "done": 14.92,
+        "rework": 0.83,
+        "incidents": 1.25,
+        "ticks": 52.83,
+        "reviewQueueMax": 3.25
+      }
+    },
+    {
+      "complexPerFour": 2,
+      "paired": {
+        "delivered": 183.42,
+        "done": 13.83,
+        "rework": 0.42,
+        "incidents": 1.08,
+        "ticks": 56,
+        "reviewQueueMax": 2.75
+      },
+      "pairedWithoutBonus": {
+        "delivered": 179.83,
+        "done": 13.5,
+        "rework": 0.83,
+        "incidents": 1.17,
+        "ticks": 56,
+        "reviewQueueMax": 2.75
+      },
+      "swapped": {
+        "delivered": 192.33,
+        "done": 14.75,
+        "rework": 0.75,
+        "incidents": 1.25,
+        "ticks": 55.92,
+        "reviewQueueMax": 2.83
+      }
+    },
+    {
+      "complexPerFour": 4,
+      "paired": {
+        "delivered": 174.5,
+        "done": 11.33,
+        "rework": 0.17,
+        "incidents": 0.58,
+        "ticks": 56,
+        "reviewQueueMax": 3.17
+      },
+      "pairedWithoutBonus": {
+        "delivered": 169.17,
+        "done": 11.17,
+        "rework": 0.58,
+        "incidents": 0.58,
+        "ticks": 56,
+        "reviewQueueMax": 3.17
+      },
+      "swapped": {
+        "delivered": 171.5,
+        "done": 11.42,
+        "rework": 0.58,
+        "incidents": 0.75,
+        "ticks": 56,
+        "reviewQueueMax": 3
+      }
+    }
+  ],
+  "cases": [
+    {
+      "seed": "RI-204:1",
+      "highValueTaskIds": [9],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 140,
+            "done": 15,
+            "rework": 2,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 140,
+            "done": 15,
+            "rework": 2,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 140,
+            "done": 15,
+            "rework": 2,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 169,
+            "done": 14,
+            "rework": 0,
+            "incidents": 2,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 146,
+            "done": 12,
+            "rework": 2,
+            "incidents": 2,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 170,
+            "done": 14,
+            "rework": 2,
+            "incidents": 2,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 141,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 141,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 150,
+            "done": 12,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:2",
+      "highValueTaskIds": [13],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 163,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 163,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 163,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 206,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 206,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 219,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:3",
+      "highValueTaskIds": [3, 5, 7],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 187,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 187,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 187,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 220,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 220,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 233,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 218,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 218,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 218,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:4",
+      "highValueTaskIds": [0, 6],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 133,
+            "done": 15,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 133,
+            "done": 15,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 133,
+            "done": 15,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 165,
+            "done": 14,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 155,
+            "done": 13,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 170,
+            "done": 15,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 203,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 161,
+            "done": 11,
+            "rework": 2,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 161,
+            "done": 11,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:5",
+      "highValueTaskIds": [1, 3],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 48,
+            "delivered": 164,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 48,
+            "delivered": 164,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 44,
+            "delivered": 164,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 202,
+            "done": 14,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 202,
+            "done": 14,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 214,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 201,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 201,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 201,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:6",
+      "highValueTaskIds": [0, 2, 9],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 145,
+            "done": 15,
+            "rework": 3,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 145,
+            "done": 15,
+            "rework": 3,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 144,
+            "done": 15,
+            "rework": 3,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 190,
+            "done": 15,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 180,
+            "done": 14,
+            "rework": 3,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 191,
+            "done": 15,
+            "rework": 2,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 190,
+            "done": 12,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 185,
+            "done": 12,
+            "rework": 3,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 185,
+            "done": 12,
+            "rework": 3,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:7",
+      "highValueTaskIds": [8, 15],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 145,
+            "done": 14,
+            "rework": 0,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 145,
+            "done": 14,
+            "rework": 0,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 145,
+            "done": 14,
+            "rework": 0,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 198,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 198,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 198,
+            "done": 14,
+            "rework": 0,
+            "incidents": 2,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 172,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 172,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 172,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:8",
+      "highValueTaskIds": [0, 5, 7],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 141,
+            "done": 15,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 141,
+            "done": 15,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 141,
+            "done": 15,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 179,
+            "done": 13,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 179,
+            "done": 13,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 194,
+            "done": 15,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 183,
+            "done": 11,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 166,
+            "done": 10,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 175,
+            "done": 11,
+            "rework": 1,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:9",
+      "highValueTaskIds": [],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 139,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 139,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 139,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 160,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 160,
+            "done": 14,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 173,
+            "done": 15,
+            "rework": 0,
+            "incidents": 1,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 159,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:10",
+      "highValueTaskIds": [5, 12],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 104,
+            "done": 12,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 104,
+            "done": 12,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 112,
+            "done": 12,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 124,
+            "done": 10,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 124,
+            "done": 10,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 133,
+            "done": 11,
+            "rework": 0,
+            "incidents": 5,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 112,
+            "done": 8,
+            "rework": 0,
+            "incidents": 3,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 112,
+            "done": 8,
+            "rework": 0,
+            "incidents": 3,
+            "reviewQueueMax": 4,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 122,
+            "done": 9,
+            "rework": 0,
+            "incidents": 4,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:11",
+      "highValueTaskIds": [1, 11],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 49,
+            "delivered": 186,
+            "done": 16,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 49,
+            "delivered": 186,
+            "done": 16,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 43,
+            "delivered": 186,
+            "done": 16,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 223,
+            "done": 15,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 223,
+            "done": 15,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 55,
+            "delivered": 236,
+            "done": 16,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 213,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 213,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 213,
+            "done": 12,
+            "rework": 0,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    },
+    {
+      "seed": "RI-204:12",
+      "highValueTaskIds": [],
+      "runs": [
+        {
+          "complexPerFour": 0,
+          "paired": {
+            "affectedTaskIds": [],
+            "ticks": 49,
+            "delivered": 138,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 49,
+            "delivered": 138,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 43,
+            "delivered": 138,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 4,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 2,
+          "paired": {
+            "affectedTaskIds": [0, 1, 4, 5, 8, 9, 12, 13],
+            "ticks": 56,
+            "delivered": 165,
+            "done": 15,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 165,
+            "done": 15,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 2,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 177,
+            "done": 16,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": false,
+            "staminaRemaining": [57, 55]
+          }
+        },
+        {
+          "complexPerFour": 4,
+          "paired": {
+            "affectedTaskIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            "ticks": 56,
+            "delivered": 143,
+            "done": 12,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "pairedWithoutBonus": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 143,
+            "done": 12,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [63, 48]
+          },
+          "swapped": {
+            "affectedTaskIds": [],
+            "ticks": 56,
+            "delivered": 143,
+            "done": 12,
+            "rework": 1,
+            "incidents": 0,
+            "reviewQueueMax": 3,
+            "timedOut": true,
+            "staminaRemaining": [57, 55]
+          }
+        }
+      ]
+    }
+  ]
+}

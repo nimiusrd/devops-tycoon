@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import styles from './SprintLayout.module.css';
 import { useResponsiveMode } from './responsiveMode';
 
@@ -20,6 +20,7 @@ export interface SprintLayoutProps {
   header: ReactNode;
   status: ReactNode;
   stage: ReactNode;
+  stageActions?: ReactNode;
   deck: ReactNode;
   controls: ReactNode;
   overlays?: ReactNode;
@@ -43,6 +44,7 @@ export function SprintLayout({
   header,
   status,
   stage,
+  stageActions,
   deck,
   controls,
   overlays,
@@ -63,9 +65,10 @@ export function SprintLayout({
       data-sprint-bottom-rail={bottomRail}
     >
       {SPRINT_LAYOUT_SLOTS.map((name) => (
-        <SprintLayoutSlotView key={name} name={name}>
-          {slots[name]}
-        </SprintLayoutSlotView>
+        <Fragment key={name}>
+          <SprintLayoutSlotView name={name}>{slots[name]}</SprintLayoutSlotView>
+          {name === 'stage' && stageActions}
+        </Fragment>
       ))}
       {overlays}
     </div>

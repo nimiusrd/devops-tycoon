@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type Ref,
 } from 'react';
 import type {
   ActionTarget,
@@ -121,6 +122,13 @@ function Station({
   );
 }
 
+interface ReviewCommandTrigger {
+  expanded: boolean;
+  panelId: string;
+  buttonRef: Ref<HTMLButtonElement>;
+  onToggle: () => void;
+}
+
 /**
  * 工程名と件数を盤面上部へ集約する。人物・粒の上へ個別ラベルを重ねず、
  * 「どこに何件あるか」を視線移動の少ない一列で読めるようにする。
@@ -128,9 +136,11 @@ function Station({
 function BoardFlowSummary({
   stations,
   actionInspection,
+  reviewCommand,
 }: {
   stations: readonly BoardStationPlan[];
   actionInspection?: { label: string; targetLanes: readonly Lane[] };
+  reviewCommand?: ReviewCommandTrigger;
 }) {
   return (
     <section
@@ -139,7 +149,11 @@ function BoardFlowSummary({
       aria-label="開発フローの工程別件数"
     >
       <span className="board-flow-heading">
-        {actionInspection ? `${actionInspection.label}の作用先` : '開発フロー'}
+        {actionInspection
+          ? `${actionInspection.label}の作用先`
+          : reviewCommand
+            ? 'レビュー工程を選んで介入'
+            : '開発フロー'}
       </span>
       <ol className="board-flow-list">
         {stations.map((station) => {
@@ -162,6 +176,19 @@ function BoardFlowSummary({
               <strong data-testid={`count-${station.lane}`}>{station.count}</strong>
               {needsAttention && <span className="board-flow-alert">要対応</span>}
               {actionTarget && <span className="board-flow-target">作用先</span>}
+              {station.lane === 'review' && reviewCommand && (
+                <button
+                  ref={reviewCommand.buttonRef}
+                  type="button"
+                  className="board-flow-review-command"
+                  data-testid="review-command-trigger"
+                  aria-label={`レビュー工程の介入（${station.count}件待ち）`}
+                  title="レビュー工程の介入"
+                  aria-expanded={reviewCommand.expanded}
+                  aria-controls={reviewCommand.expanded ? reviewCommand.panelId : undefined}
+                  onClick={reviewCommand.onToggle}
+                />
+              )}
             </li>
           );
         })}
@@ -213,6 +240,8 @@ export interface BoardProps {
   animationsPaused?: boolean;
   /** 情報確認中の介入と作用先。HTML工程要約だけを強調し、発動や盤面操作は変えない。 */
   actionInspection?: { label: string; targetLanes: readonly Lane[] };
+  /** レビュー工程要約から開く、試作の操作欄。 */
+  reviewCommand?: ReviewCommandTrigger;
   /** PR 分割直後の短い粒強調（#1020）。 */
   splitConfirm?: { taskId: number; nonce: number } | null;
   /** 出荷スコア（得点ポップ用）。 */
@@ -342,6 +371,7 @@ export function Board({
   onDragComplete,
   animationsPaused = false,
   actionInspection,
+  reviewCommand,
   splitConfirm = null,
   deliveryScore = 0,
   activeTeamId,
@@ -865,7 +895,11 @@ export function Board({
         />
       ))}
       <PointPops deliveryScore={deliveryScore} teamId={activeTeamId} />
-      <BoardFlowSummary stations={scene.stations} actionInspection={actionInspection} />
+      <BoardFlowSummary
+        stations={scene.stations}
+        actionInspection={actionInspection}
+        reviewCommand={gpuEffectsActive ? reviewCommand : undefined}
+      />
       {scene.stations.map((s) => (
         <Bubble key={`b-${s.lane}`} s={s} />
       ))}

@@ -180,6 +180,27 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it('狭幅の1行枠はPR分割の成功要約に限り、優先する警告を除外する（#1020）', () => {
+  const split: SprintInterventionFeedback = {
+    id: 'splitPr',
+    outcome: { ok: true, effect: { actionId: 'splitPr', affectedTaskIds: [7] } },
+    nonce: 1,
+    previousEvents: [],
+  };
+  const success = mountTicker({ events: [], outcomeFeedback: split, dock: 'status' });
+  expect(success.find('event-ticker').props['data-split-summary']).toBe('true');
+  expect(content(success.find('event-ticker-summary'))).toContain('PR1件分割');
+  success.unmount();
+
+  const warning = mountTicker({
+    events: [{ kind: 'ignite', tick: 1, taskId: 5, source: 'review' }],
+    outcomeFeedback: split,
+    dock: 'status',
+  });
+  expect(warning.find('event-ticker').props['data-split-summary']).toBeUndefined();
+  expect(content(warning.find('event-ticker-summary'))).toContain('点火!');
+});
+
 describe('EventTicker の介入結果の期限（#536）', () => {
   const outcomeFeedback: SprintInterventionFeedback = {
     id: 'assignTask',

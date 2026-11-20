@@ -2667,9 +2667,9 @@ body:has(.overlay-contained) {
   align-items: center;
   gap: 4px 10px;
 }
-/* 1件目の要約を見出しと同じ高さに収め、状態枠を伸ばさない（#975）。 */
+/* PR分割直後も状態枠を伸ばさない。結果の詳細は出来事を展開して確認できる（#975 / #1020）。 */
 [data-sprint-slot='status']
-  .event-ticker[data-expanded='false']:not([data-feedback-held='true'])
+  .event-ticker[data-expanded='false']:is([data-feedback-held='false'], [data-split-summary='true'])
   .event-ticker-summary {
   box-sizing: border-box;
   height: 24px;

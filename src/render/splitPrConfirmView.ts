@@ -34,23 +34,6 @@ export function planSplitPrConfirmFromEffect(
   return { taskId, nonce };
 }
 
-export function shouldAnnounceSplitPrConfirm(
-  lastSpokenKey: string | null,
-  nextKey: string,
-): boolean {
-  return lastSpokenKey !== nextKey;
-}
-
-export function publishSplitPrConfirmAnnouncement(
-  lastSpokenKey: string | null,
-  cue: SplitPrConfirmCue | null,
-): { lastSpokenKey: string; text: string } | null {
-  if (!cue) return null;
-  const nextKey = splitPrConfirmAnnouncementKey(cue);
-  if (!shouldAnnounceSplitPrConfirm(lastSpokenKey, nextKey)) return null;
-  return { lastSpokenKey: nextKey, text: formatSplitPrConfirmAnnouncement(cue.taskId) };
-}
-
 /** 分割直後の粒リング。レイアウトは変えず inset の輪郭だけ足す。 */
 export function boardDotSplitConfirmRing(size: TaskSize, scale: number) {
   const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;

@@ -10,6 +10,7 @@ import { getTrait } from '../data/traits';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { CompanyProfile } from './CompanyProfile';
 import { OrgLeverHintRow } from './OrgLeverHintRow';
 import { resolveOrgLeverHint } from './orgLeverHintSession';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
@@ -93,6 +94,7 @@ export function FormationGrid({
           />
         ))}
       </div>
+      <CompanyProfile state={state} />
     </>
   );
 }

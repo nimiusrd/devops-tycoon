@@ -14,6 +14,10 @@ vi.mock('react', async (importOriginal) => {
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({
   useDialogOverlayLock: vi.fn(),
 }));
+vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
+  return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
+});
 
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';

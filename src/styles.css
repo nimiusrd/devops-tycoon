@@ -1924,6 +1924,70 @@ body:has(.overlay-contained) {
 .result-details[open] > summary {
   margin-bottom: 8px;
 }
+.company-profile {
+  flex: 0 0 auto;
+  margin-block: 0.5rem;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  overflow-wrap: anywhere;
+}
+.company-profile-overview,
+.company-profile-caption {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.65em;
+}
+.company-profile-caption,
+.company-profile-next {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.company-profile-body {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+/* 閉じた詳細の内部を、編成ダイアログのフォーカス候補からも外す。 */
+.company-profile:not([open]) > .company-profile-body,
+.company-profile-body details:not([open]) > :not(summary) {
+  display: none;
+}
+.company-profile-body :is(h3, p, ul) {
+  margin-block: 0;
+}
+.company-profile-body h3 {
+  font-size: 1rem;
+}
+.company-profile-body ul {
+  padding-inline-start: 1.25em;
+}
+.company-profile-branches,
+.company-profile-branch > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  align-items: start;
+  gap: 0.5rem;
+}
+.company-profile-branches {
+  margin-top: 0.5rem;
+}
+.company-profile-branch {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+.company-profile-branch[open] {
+  grid-column: 1 / -1;
+}
+.company-profile-next {
+  display: block;
+}
+.company-profile-body details:not(.company-profile-branch) li + li {
+  margin-top: 0.4em;
+}
 .result-eyebrow {
   margin: 0;
   font-size: 0.75rem;

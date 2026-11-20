@@ -1176,6 +1176,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                 {zoom.level === 'company' && state.orgScale && (
                   <OrgScreen
                     org={state.orgScale}
+                    profileState={state}
                     budget={state.budget}
                     zoom={zoom}
                     trendHistory={state.trendHistory}

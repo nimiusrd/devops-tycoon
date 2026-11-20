@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { BOSS_DEFS } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
+import { getEvent } from '../../../src/data/events';
+import { shopOfferBeatPrompt } from '../../../src/render/shopOfferView';
 import { createInitialRoster } from '../../../src/sim/member';
 import { ENTER_TEAM_FOCUS_PENALTY } from '../../../src/sim/orgscale/teamState';
 import type { TeamRunState } from '../../../src/sim/orgscale/types';
@@ -168,6 +170,58 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     internals.shop.recruit!.bought = true;
     expect(shopSave?.shop?.relic).toEqual({ id: 'postmortem', cost: 12, bought: false });
     expect(shopSave?.shop?.recruit).toEqual({ cost: 8, bought: false });
+  });
+
+  it.each([
+    ['pr-size-limit', 8, '今の予算では買える品がない'],
+    ['feature-flags', 1, '四半期予算に余裕がある'],
+  ] as const)(
+    '旧形式のショップ案内は予算3で %s を陳列し、購入可否を文言に反映する（#1018）',
+    (defId, cost, prompt) => {
+      const legacy = asPersistState(setupSave('ri1018-legacy-shop'), {
+        phase: 'beat',
+        beat: { eventId: 'shop-offer', kind: 'decision' },
+        budget: 3,
+        shop: null,
+      });
+      legacy.extras.allowedCards = [defId];
+      legacy.extras.allowedRelics = ['postmortem'];
+
+      const restored = started('ri1018-legacy-target');
+      restored.hydratePersistState(legacy);
+
+      const resumed = restored.snapshot();
+      expect(resumed).toMatchObject({
+        phase: 'beat',
+        budget: 3,
+        shop: {
+          cards: [{ defId, cost, bought: false }],
+          relic: { id: 'postmortem', bought: false },
+        },
+      });
+      expect(shopOfferBeatPrompt(getEvent('shop-offer')!, resumed)).toContain(prompt);
+      expect(legacy.shop).toBeNull();
+      expect(restored.exportPersistState()?.shop).toEqual(resumed.shop);
+
+      restored.resolveBeat(0);
+
+      expect(restored.snapshot()).toMatchObject({ phase: 'shop', budget: 3, shop: resumed.shop });
+    },
+  );
+
+  it('商品の陳列が保存済みのショップ案内は保存された価格で再開する（#1018）', () => {
+    const shop = { cards: [{ defId: 'docs', cost: 4, bought: false }] };
+    const saved = asPersistState(setupSave('ri1018-saved-shop'), {
+      phase: 'beat',
+      beat: { eventId: 'shop-offer', kind: 'decision' },
+      shop,
+    });
+
+    const restored = started('ri1018-saved-shop-target');
+    restored.hydratePersistState(saved);
+    expect(restored.snapshot().shop).toEqual(shop);
+    restored.resolveBeat(0);
+    expect(restored.snapshot().shop).toEqual(shop);
   });
 
   it('hydratePersistState は save 不可 phase と playing 以外の save を拒否する', () => {

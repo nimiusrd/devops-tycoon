@@ -2499,6 +2499,10 @@ export class RunEngine {
       recomputeTeamCapacities: true,
       reconcileCoarseSecurityTrust: true,
     });
+    // 旧セーブではショップを開くまで陳列を持たない。案内の購入可否も同じ陳列で判定する。
+    if (this.phase === 'beat' && this.beat?.eventId === 'shop-offer') {
+      this.shop ??= this.buildShop();
+    }
     this.memberHistory ??= { startedAfterSprint: this.sprintsPlayed, events: [] };
     // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);

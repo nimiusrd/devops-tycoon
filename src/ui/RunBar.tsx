@@ -11,6 +11,7 @@ import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
 import { officeCultureView } from '../render/officeCultureView';
+import { officeReviewStationView } from '../render/officeReviewStationView';
 import { runBarSprintView } from '../render/runBarView';
 import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import {
@@ -39,6 +40,7 @@ import { RunSessionMenu } from './RunSessionMenu';
 import { sprintPaddingGateMessage } from '../render/sprintPaddingGateView';
 import { PhraseText } from './PhraseText';
 import { VisualIcon } from './VisualIcon';
+import { EffectTagList } from './EffectTagList';
 import {
   dismissOrgLeverHint,
   noteOrgLeverBudgetDepleted,
@@ -128,6 +130,7 @@ export function RunBar({
   const diff = getDifficulty(state.difficulty);
   const { resolveRelic, resolveTrial, isReplaySnapshot } = useReplayContent();
   const culture = officeCultureView(state.relics, resolveRelic, readOnly && !isReplaySnapshot);
+  const reviewStation = officeReviewStationView(state.evolution, readOnly);
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -235,6 +238,16 @@ export function RunBar({
       <span className="pill" data-testid="evo-points-bar">
         ⭐<b>{state.evolution.points}</b>
       </span>
+      {reviewStation && (
+        <details
+          className="relic-chip office-detail office-review-details"
+          data-testid="office-review-details"
+        >
+          <summary>{reviewStation.name} · 右壁の設備</summary>
+          <p data-testid="office-review-description">{reviewStation.description}</p>
+          <EffectTagList tags={reviewStation.tags} testId="office-review-effects" />
+        </details>
+      )}
       <div className="relic-bar" data-testid="relics">
         {state.relics.length === 0 ? (
           <span className="relic-empty">レリックなし</span>
@@ -244,7 +257,7 @@ export function RunBar({
               return (
                 <details
                   key={id}
-                  className="relic-chip office-culture-details"
+                  className="relic-chip office-detail office-culture-details"
                   data-testid="office-culture-details"
                 >
                   <summary>🏛 {culture.name} · 壁の掲示</summary>

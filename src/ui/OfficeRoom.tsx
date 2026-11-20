@@ -1,15 +1,23 @@
 /**
  * 俯瞰オフィスの静的背景（床・壁・島スラブ・装飾）。SPEC 第4.1 準拠。
  *
- * アイソメの部屋と所持文化の掲示は静的な SVG。動的盤面は Pixi に任せる。
+ * アイソメの部屋と壁の掲示・設備は静的な SVG。動的盤面は Pixi に任せる。
  * viewBox は boardScene の設計空間（1404×573）と一致させ、`preserveAspectRatio="none"`
  * で盤面いっぱいに伸ばす。ステーション/粒は同じ設計座標の % で重ねる（Board.tsx）。
  */
 import { BOARD_VIEW } from '../render/boardScene';
 import { VISUAL_TOKENS } from '../render/visualTokens';
 import type { OfficeCultureView } from '../render/officeCultureView';
+import type { OfficeReviewStationView } from '../render/officeReviewStationView';
 
-export function OfficeRoom({ culture = null }: { culture?: OfficeCultureView | null }) {
+export function OfficeRoom({
+  culture = null,
+  reviewStation = null,
+}: {
+  culture?: OfficeCultureView | null;
+  reviewStation?: OfficeReviewStationView | null;
+}) {
+  const colors = VISUAL_TOKENS.colors;
   return (
     <svg
       className="office-room"
@@ -92,6 +100,35 @@ export function OfficeRoom({ culture = null }: { culture?: OfficeCultureView | n
               />
             </g>
           ))}
+        </g>
+      )}
+
+      {/* 窓の右の空いた壁。設計空間内の装飾で、タスクの当たり判定には関与しない。 */}
+      {reviewStation && (
+        <g
+          data-testid="office-review-station"
+          data-evolution-id={reviewStation.id}
+          transform="matrix(1 .5 0 1 1152 256)"
+          pointerEvents="none"
+        >
+          <title>{reviewStation.name}</title>
+          <rect
+            width="96"
+            height="65"
+            rx="5"
+            fill={colors.panel}
+            stroke={colors.sky}
+            strokeWidth="4"
+          />
+          <rect x="10" y="9" width="76" height="47" rx="3" fill={colors.cream} />
+          <path
+            d="M20 21 l5 5 9 -10 M20 42 l5 5 9 -10 M45 22 H73 M45 43 H73"
+            fill="none"
+            stroke={colors.ink}
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </g>
       )}
 

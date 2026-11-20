@@ -624,7 +624,7 @@ describe('App のタイトル操作', () => {
     });
     expect(useDialogOverlayLock).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ restoreFocus: true }),
+      expect.objectContaining({ restoreFocus: false }),
     );
     const dismiss = elements(fallback.tree).find(
       (node) => node.props['data-testid'] === 'title-modal-loading-dismiss',
@@ -634,12 +634,34 @@ describe('App のタイトル操作', () => {
     expect(screen.has('HowToPlayScreen')).toBe(false);
     screen.invoke('TitleScreen', 'onOpenAchievements');
     const loading = screen.mountLocal('TitleModalLoadingFallback');
+    expect(useDialogOverlayLock).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ restoreFocus: true }),
+    );
     const close = elements(loading.tree).find(
       (node) => node.props['data-testid'] === 'title-modal-loading-dismiss',
     )!;
     (close.props.onClick as () => void)();
     screen.flush();
     expect(screen.has('AchievementCollectionScreen')).toBe(false);
+  });
+
+  it('遊び方の起点を競合中も保持し、閉じるときに残っている起点へ戻す', () => {
+    const screen = mountApp();
+    const opener = { isConnected: true, focus: vi.fn() };
+    screen.invoke('TitleScreen', 'onOpenHelp', opener);
+    screen.update({ tabConflict: true, tabConflictModalOpen: true });
+    expect(screen.child('HowToPlayScreen').focusLockActive).toBe(false);
+    screen.update({ tabConflictModalOpen: false });
+    expect(screen.child('HowToPlayScreen').focusLockActive).toBe(true);
+    expect(opener.focus).not.toHaveBeenCalled();
+    screen.invoke('HowToPlayScreen', 'onClose');
+    expect(opener.focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
+
+    screen.invoke('TitleScreen', 'onOpenHelp', opener);
+    opener.isConnected = false;
+    screen.invoke('HowToPlayScreen', 'onClose');
+    expect(opener.focus).toHaveBeenCalledTimes(1);
   });
 
   it.each(['onStart', 'onStartDaily', 'onResume'])(

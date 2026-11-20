@@ -9,9 +9,9 @@ import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
 
 export interface RunSessionMenuProps {
   soundMuted: boolean;
-  onOpenHelp: () => void;
+  onOpenHelp: (opener: HTMLButtonElement | null) => void;
   onToggleSoundMuted: () => void;
-  /** 遊び方を開く直前にフォーカスを戻し、ヘルプ閉鎖後の起点にする。 */
+  /** 遊び方から戻るときの起点にもなるメニューボタン。 */
   menuButtonRef: RefObject<HTMLButtonElement | null>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -78,7 +78,7 @@ export function RunSessionMenu({
             onClick={() => {
               menuButtonRef.current?.focus();
               onOpenChange(false);
-              onOpenHelp();
+              onOpenHelp(menuButtonRef.current);
             }}
           >
             遊び方

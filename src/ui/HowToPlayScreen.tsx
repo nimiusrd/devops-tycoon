@@ -5,7 +5,7 @@
  * 到達できる最低限の操作を説明する。描画は読むだけ（第22.2）。
  * タイトルとラン中で同じ画面を使う（RI-148）。
  * Escape はオーバーレイロックが capture で閉じ、背面のズーム操作へ伝えない。
- * フォーカス閉じ込めと閉じたあとの起点復帰は `useDialogOverlayLock` に任せる。
+ * フォーカスの閉じ込めは `useDialogOverlayLock`、閉鎖後の起点復帰は App が担う。
  */
 import { ResultOverlay } from './ResultOverlay';
 import { useRef } from 'react';
@@ -21,7 +21,6 @@ export interface HowToPlayScreenProps {
 export function HowToPlayScreen({ onClose, focusLockActive = true }: HowToPlayScreenProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(dialogRef, {
-    restoreFocus: true,
     onDismiss: onClose,
     strictModal: true,
     enabled: focusLockActive,

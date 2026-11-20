@@ -198,13 +198,15 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 function TitleModalLoadingFallback({
   onDismiss,
   focusLockActive = true,
+  restoreFocus = true,
 }: {
   onDismiss: () => void;
   focusLockActive?: boolean;
+  restoreFocus?: boolean;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef, {
-    restoreFocus: true,
+    restoreFocus,
     onDismiss,
     enabled: focusLockActive,
   });
@@ -278,6 +280,14 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
+  const helpOpenerRef = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    // 読込中や別タブ競合へのロック譲渡をまたぎ、遊び方が閉じたときだけ起点へ戻す。
+    if (helpOpen) return;
+    const opener = helpOpenerRef.current;
+    helpOpenerRef.current = null;
+    if (opener?.isConnected) opener.focus({ preventScroll: true });
+  }, [helpOpen]);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const persistenceState = run.persistenceStatus.state;
   const previousPersistenceState = useRef(persistenceState);
@@ -558,6 +568,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const closeMetaShop = useCallback(() => setMetaShopOpen(false), []);
   const closeCardCollection = useCallback(() => setCardCollectionOpen(false), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const openHelp = (opener: HTMLButtonElement | null) => {
+    helpOpenerRef.current = opener;
+    setHelpOpen(true);
+  };
   const openOrg = useCallback(
     (trigger: HTMLButtonElement) => {
       zoomOpenerRef.current = trigger;
@@ -733,7 +747,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               audio.unlock();
               run.setSoundMuted(!meta.soundMuted);
             }}
-            onOpenHelp={() => openExclusiveTitleModal(() => setHelpOpen(true))}
+            onOpenHelp={(opener) => openExclusiveTitleModal(() => openHelp(opener))}
             onApplyPreferred={run.setPreferredCardIds}
             onExportRunSave={run.exportRunSaveText}
             newRunBlocked={run.finishSaveBlocksNewRun}
@@ -762,6 +776,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               <TitleModalLoadingFallback
                 onDismiss={closeHelp}
                 focusLockActive={!run.tabConflictModalOpen}
+                restoreFocus={false}
               />
             }
           >
@@ -959,7 +974,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         onSnapshotCaptured={rememberRunMetricSnapshot}
         compact={sprintLayout}
         soundMuted={meta.soundMuted}
-        onOpenHelp={() => setHelpOpen(true)}
+        onOpenHelp={openHelp}
         onToggleSoundMuted={() => {
           audio.unlock();
           run.setSoundMuted(!meta.soundMuted);
@@ -1228,6 +1243,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               <TitleModalLoadingFallback
                 onDismiss={closeHelp}
                 focusLockActive={!run.tabConflictModalOpen}
+                restoreFocus={false}
               />
             }
           >

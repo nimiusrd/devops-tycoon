@@ -410,7 +410,6 @@ describe('HowToPlayScreen', () => {
       tabIndex: -1,
     });
     expect(vi.mocked(useDialogOverlayLock)).toHaveBeenCalledWith(expect.any(Object), {
-      restoreFocus: true,
       onDismiss: onClose,
       strictModal: true,
       enabled: true,

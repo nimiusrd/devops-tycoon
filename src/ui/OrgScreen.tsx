@@ -10,11 +10,13 @@ import { loadWebglModule } from '../render/loadWebglModule';
 import { useCallback, useMemo, useRef, type ComponentProps } from 'react';
 import { PROCESS_BALANCE } from '../data/balance';
 import { diagnosisTheme } from '../render/diagnosisTheme';
+import type { CompanyProfileState } from '../render/companyProfileView';
 import { diagnosisView } from '../sim/diagnosis';
 import { ORG_VIEW, orgHubTone } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import type { QuarterTrendSnapshot } from '../sim/run/types';
 import { AspectStage } from './AspectStage';
+import { CompanyProfile } from './CompanyProfile';
 import { COMPANY_LEVERS } from '../data/levers';
 import { OrgLeverList } from './OrgLeverList';
 import { TeamNavigator } from './TeamNavigator';
@@ -33,6 +35,7 @@ const OrgPixiField = lazyWebgl<ComponentProps<(typeof import('./OrgPixiField'))[
 
 export interface OrgScreenProps {
   org: OrgScaleState;
+  profileState: CompanyProfileState;
   budget: number;
   zoom: ZoomState;
   trendHistory: readonly QuarterTrendSnapshot[];
@@ -45,6 +48,7 @@ export interface OrgScreenProps {
 
 export function OrgScreen({
   org,
+  profileState,
   budget,
   zoom,
   trendHistory,
@@ -181,6 +185,7 @@ export function OrgScreen({
         )}
       </AspectStage>
       <TeamNavigator teams={teams} onFocusTeam={onFocusTeam} />
+      <CompanyProfile state={profileState} />
 
       <OrgLeverList
         levers={COMPANY_LEVERS}

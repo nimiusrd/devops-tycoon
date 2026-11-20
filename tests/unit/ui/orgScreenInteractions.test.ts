@@ -34,6 +34,10 @@ vi.mock('react', async (importOriginal) => ({
 vi.mock('../../../src/ui/usePixiRenderer', () => ({
   usePixiRenderer: () => ({ usePixi: hooks.usePixi, onWebglError: vi.fn() }),
 }));
+vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
+  return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
+});
 
 import { COMPANY_LEVERS } from '../../../src/data/levers';
 import { PROCESS_BALANCE } from '../../../src/data/balance';
@@ -76,6 +80,14 @@ function mountOrg(overrides: Partial<OrgScreenProps> = {}) {
       diagnosis: 'healthyAcceleration',
       budget: 100,
     }),
+    profileState: {
+      evolution: { points: 0, unlocked: {} },
+      deck: [],
+      relics: [],
+      roster: { members: [], nextId: 0 },
+      activeTeamId: 't0',
+      teams: [],
+    },
     budget: 100,
     zoom: { level: 'company', deptId: null, teamId: null },
     trendHistory: [],

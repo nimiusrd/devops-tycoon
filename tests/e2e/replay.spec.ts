@@ -344,6 +344,8 @@ test('記録時のレリック定義とルールセットを優先して表示�
     if (!frame) return false;
     frame.deck = [{ defId: 'copilot', level: 1 }];
     frame.relics = ['psych-safety'];
+    frame.evolution = { points: 4, unlocked: { 'quality-1': true } };
+    frame.roster.members[0].name = '記録時の編成メンバー';
 
     const blob: ReplayBlob = {
       schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
@@ -402,6 +404,18 @@ test('記録時のレリック定義とルールセットを優先して表示�
   ).toEqual({ version: 99, fingerprint: 'recorded-before-current' });
   await expect(page.getByTestId('deck-card-copilot')).toContainText('記録時のCopilot');
   await expect(page.getByTestId('relics')).toContainText('記録時の安全性');
+  const profile = page.getByTestId('setup').getByTestId('company-profile');
+  const summary = profile.getByTestId('company-profile-summary');
+  await expect(summary).toContainText('進化 1/15');
+  await summary.click();
+  await expect(profile.getByTestId('company-profile-points')).toHaveText('4');
+  await expect(profile.getByTestId('company-profile-members')).toContainText(
+    '記録時の編成メンバー',
+  );
+  await profile.locator('summary').filter({ hasText: '導入済みカード' }).click();
+  await expect(profile.getByText('記録時のCopilot', { exact: true })).toBeVisible();
+  await profile.locator('summary').filter({ hasText: '所持レリック' }).click();
+  await expect(profile.getByText('記録時の安全性', { exact: true })).toBeVisible();
   expect(
     await page.evaluate(() => (window as ReplayGameWindow).game?.getState().whatIf),
   ).toBeNull();

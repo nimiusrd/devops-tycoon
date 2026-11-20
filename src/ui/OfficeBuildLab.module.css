@@ -1,0 +1,141 @@
+.lab {
+  width: min(100%, 1120px);
+  margin-inline: auto;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.header,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.header {
+  justify-content: space-between;
+}
+
+.header h1,
+.lab h2,
+.lab h3 {
+  margin: 0;
+}
+
+.header h1 {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+.lab h2 {
+  font-size: 1.2rem;
+}
+
+.lab h3 {
+  font-size: 1.05rem;
+}
+
+.context {
+  margin-block: 0 6px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.boardFrame {
+  margin-block: 5.25rem 8px;
+}
+
+/* 工程要約を盤面の外へ出し、狭い準備画面でも粒や件数ボタンを覆わない。 */
+.boardFrame :global(.aspect-stage),
+.boardFrame :global(.aspect-stage-content),
+.boardFrame :global(.board.iso-office) {
+  overflow: visible;
+}
+
+.boardFrame :global(.board.iso-office)::after {
+  border-radius: inherit;
+}
+
+.boardFrame :global(.board-flow-summary) {
+  inset: auto 0 calc(100% + 12px);
+  max-width: 100%;
+}
+
+.stations,
+.workspace {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 248px), 1fr));
+  gap: 8px;
+}
+
+.panel {
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.panel p {
+  margin-block: 4px 8px;
+}
+
+.lab :is(button, a):global(.btn) {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  align-items: center;
+  gap: 6px;
+  text-align: start;
+  text-decoration: none;
+}
+
+.lab button[aria-pressed='true']:not(:disabled) {
+  border-color: var(--mint);
+  background: var(--mint);
+  color: var(--visual-color-ink);
+}
+
+.members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.equipment {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.equipment strong,
+.equipmentStatus {
+  display: inline-block;
+  margin-inline-end: 8px;
+}
+
+.equipmentStatus {
+  color: var(--text-dim);
+  font-weight: 800;
+}
+
+.equipmentStatus[data-state='candidate'] {
+  color: var(--sun);
+}
+
+.equipmentStatus[data-state='applied'] {
+  color: var(--mint);
+}
+
+.panel .controls + button {
+  margin-block-start: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab :is(a, button):global(.btn):active:not(:disabled) {
+    transform: none;
+  }
+}

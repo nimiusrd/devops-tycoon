@@ -29,6 +29,13 @@ if (experiment === 'agent-dat') {
       <ReleaseForecastLab />
     </React.StrictMode>,
   );
+} else if (import.meta.env.DEV && experiment === 'office-build') {
+  const { OfficeBuildLab } = await import('./ui/OfficeBuildLab');
+  root.render(
+    <React.StrictMode>
+      <OfficeBuildLab />
+    </React.StrictMode>,
+  );
 } else {
   // E2E / デバッグ用の決定論フックは従来どおり同期的に公開する。
   const game = installGame({ metaReady: false });

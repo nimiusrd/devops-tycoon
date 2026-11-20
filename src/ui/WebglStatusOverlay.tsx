@@ -3,7 +3,7 @@ import { getWebglStatus, retryWebgl, subscribeWebglStatus } from '../render/webg
 import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
-function StatusDialog({ failed }: { failed: boolean }) {
+function StatusDialog({ failed, reloadMessage }: { failed: boolean; reloadMessage: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(ref, {
     restoreFocus: true,
@@ -30,11 +30,7 @@ function StatusDialog({ failed }: { failed: boolean }) {
             : '描画の準備ができるまでお待ちください。'}
         </p>
         <p>ゲームの自動進行は停止しています。</p>
-        {failed && (
-          <p>
-            再読み込み後は「続きから」で保存済みのランを再開できます。保存後の進行は失われます。
-          </p>
-        )}
+        {failed && <p>{reloadMessage}</p>}
         {failed && (
           <div className="result-actions">
             <button
@@ -64,7 +60,13 @@ function StatusDialog({ failed }: { failed: boolean }) {
   );
 }
 
-export function WebglStatusOverlay() {
+export function WebglStatusOverlay({
+  reloadMessage = '再読み込み後は「続きから」で保存済みのランを再開できます。保存後の進行は失われます。',
+}: {
+  reloadMessage?: string;
+}) {
   const status = useSyncExternalStore(subscribeWebglStatus, getWebglStatus, () => 'ready');
-  return status === 'ready' ? null : <StatusDialog failed={status === 'failed'} />;
+  return status === 'ready' ? null : (
+    <StatusDialog failed={status === 'failed'} reloadMessage={reloadMessage} />
+  );
 }

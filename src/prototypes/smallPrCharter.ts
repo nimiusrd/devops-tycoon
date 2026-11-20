@@ -434,7 +434,7 @@ export function compareCharterFactorReversals(seed = 'RI-219') {
       humanPlaytest: false,
       repeatedFirstComparison: false,
       productionIntegrated: false,
-      sharedProhibition: 'charterBlocksの第3引数を省略すると上限2。RI-220はこの形のまま',
+      sharedProhibition: 'charterBlocksの第3引数を省略すると上限2',
     },
     sweeps,
     reversals: [

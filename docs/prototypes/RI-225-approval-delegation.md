@@ -82,4 +82,4 @@
 
 #538 の委任は期間の能力進行であり、本件の承認経路へは接続しない。通常の編成、勝敗、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。本番採用時は方針の保存、重要変更のブロック、残存失敗と確認費用の分離を別Issueに分割する。version 1の信頼済み内部JSONのみ。外部入力検証と通常保存互換は対象外。
 
-`approval-delegation-comparison.json` に初期状態、入力列、価値、確認費用、残存失敗、監査、逸脱、差引を記録した。対象ユニットが初回の再生と、要因比較の再計算・保存再開・入力再生を照合する。検証は Node 24 の対象ユニット、lint、format:check。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番、UI、保存、rulesetへは接続していない。improvementLead と rescueTeam には触れていない。
+`approval-delegation-comparison.json` に初期状態、入力列、価値、確認費用、残存失敗、監査、逸脱、差引を記録した。対象ユニットが初回の再生と、要因比較の再計算・保存再開・入力再生を照合する。検証は Node 24 の対象ユニット、lint、format:check。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番、UI、保存、rulesetへは接続していない。rescueTeam には触れていない。

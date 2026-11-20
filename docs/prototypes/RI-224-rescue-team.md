@@ -89,4 +89,4 @@
 
 RI-221 の当番交代と #538 の火消し派遣へは接続しない。恒久異動は扱わない。通常の編成、勝敗、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。本番採用時は貸し出しの保存、返却の一度だけの反映、派遣元の出荷減を別Issueに分割する。version 1の信頼済み内部JSONのみ。外部入力検証と通常保存互換は対象外。
 
-`rescue-team-comparison.json` に初期状態、入力列、出荷、復旧、残障害、罰、返却、差引を記録した。要因比較は `rescue-team-factor-comparison.json` に残し、対象ユニットが初回の再生と、要因比較の再計算・保存再開・入力再生を照合する。検証は Node 24 の対象ユニット、lint、format:check。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番、UI、保存、rulesetへは接続していない。focusConsult と improvementLead には触れていない。
+`rescue-team-comparison.json` に初期状態、入力列、出荷、復旧、残障害、罰、返却、差引を記録した。要因比較は `rescue-team-factor-comparison.json` に残し、対象ユニットが初回の再生と、要因比較の再計算・保存再開・入力再生を照合する。検証は Node 24 の対象ユニット、lint、format:check。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番、UI、保存、rulesetへは接続していない。focusConsult には触れていない。

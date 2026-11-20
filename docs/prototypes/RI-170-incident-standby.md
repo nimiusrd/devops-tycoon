@@ -85,4 +85,4 @@ reviewerを待機に置くとreview容量が0になり出荷は0、応答1のた
 
 現行LaneAssignment・RosterState・個体成長・休職・FormationScreenを変更しない。#538の介入/育成/委任や案69の当番持ち回りとは分ける。通常ランの固定トラック・勝敗・WebGL停止契約へ接続しない。本番採用には待機配置、容量集約、疲労・交代・複数事故と編成UI、保存マイグレーションと入力リプレイを別Issueで設計しrulesetを更新する。試作version 1は信頼済み内部JSONのみ対応する。
 
-初回は Dev Container Node 24 で対象ユニット・型チェック・lint・format:checkを検証した。要因比較は Node 24 で対象ユニット・保存再開/再生一致・lint・format:checkを確認した。UI/Pixi変更なし。E2E・galleryは対象外。通常ランの本番・UI・保存・rulesetへは接続していない。domainIsolation と interventionSequence は変更していない。
+初回は Dev Container Node 24 で対象ユニット・型チェック・lint・format:checkを検証した。要因比較は Node 24 で対象ユニット・保存再開/再生一致・lint・format:checkを確認した。UI/Pixi変更なし。E2E・galleryは対象外。通常ランの本番・UI・保存・rulesetへは接続していない。domainIsolation は変更していない。

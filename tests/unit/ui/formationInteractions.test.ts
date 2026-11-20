@@ -275,3 +275,38 @@ describe('編成画面の配置と AI 配布', () => {
     expect(screen.has('formation-forecast')).toBe(false);
   });
 });
+
+describe('編成画面の個人経歴', () => {
+  it('記録のある人物カードだけで過去の内容を確認でき、編成ロック中も閲覧できる', () => {
+    const state = makeState({ phase: 'sprint' });
+    const teamId = state.activeTeamId;
+    state.roster.members[0].name = '同じ名前';
+    state.roster.members[1].name = '同じ名前';
+    state.memberHistory = {
+      startedAfterSprint: 4,
+      events: [
+        {
+          kind: 'promotion',
+          teamId,
+          id: 'm1',
+          name: '昇格当時の名前',
+          to: 'middle',
+          sprintNumber: 5,
+        },
+        { kind: 'return', teamId: 'other-team', id: 'm1', name: '別チーム', sprintNumber: 6 },
+      ],
+    };
+    const screen = mountFormation({ state, readOnly: true });
+    const first = screen.find('formation-member-m1');
+    const history = elements(first).find(
+      (node) => node.props['data-testid'] === 'formation-history-m1',
+    );
+    expect(history?.type).toBe('details');
+    expect(history?.props.open).toBeUndefined();
+    expect(content(history)).toContain('通算スプリント5 · 昇格当時の名前 · 初昇格（ミドル）');
+    expect(content(history)).not.toContain('別チーム');
+    expect(screen.has(`formation-history-${state.roster.members[1].id}`)).toBe(false);
+    expect(content(screen.find('formation-history-start'))).toContain('スプリント4の完了時点');
+    expect(screen.find('assign-m1-coding').props.disabled).toBe(true);
+  });
+});

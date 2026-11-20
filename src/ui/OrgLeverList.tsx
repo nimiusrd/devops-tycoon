@@ -3,15 +3,12 @@
  *
  * 支払後に予算が尽きる操作はショップと同じ SpendConfirm で一度だけ確定させる（RI-147 / #1016）。
  */
-import { useRef, useState, type RefObject } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import type { LeverDef } from '../sim/orgscale/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { spendRiskView, type SpendRiskView } from '../render/spendRiskView';
 import { EffectTagList } from './EffectTagList';
-import { focusByTestId } from './focusByTestId';
-import { SpendConfirm } from './SpendConfirm';
-import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { SpendConfirmDialog } from './SpendConfirm';
 
 interface PendingLeverSpend {
   lever: LeverDef;
@@ -31,69 +28,6 @@ export interface OrgLeverListProps {
   spendConfirmEnabled?: boolean;
   /** minCompleteTick 待ちなど、レバー操作全体を止める理由（#972）。 */
   sprintInteractionBlockedReason?: string;
-}
-
-function OrgLeverSpendGate({
-  pending,
-  onConfirm,
-  onCancel,
-}: {
-  pending: PendingLeverSpend;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const confirmRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(confirmRef, {
-    restoreFocus: true,
-    onDismiss: onCancel,
-  });
-  return (
-    <OrgLeverSpendOverlay
-      pending={pending}
-      confirmRef={confirmRef}
-      onConfirm={onConfirm}
-      onCancel={onCancel}
-    />
-  );
-}
-
-function OrgLeverSpendOverlay({
-  pending,
-  confirmRef,
-  onConfirm,
-  onCancel,
-}: {
-  pending: PendingLeverSpend;
-  confirmRef: RefObject<HTMLDivElement | null>;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const layer = (
-    <div
-      ref={confirmRef}
-      className="result-overlay overlay-contained org-lever-spend-overlay"
-      data-testid="org-lever-spend-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-label="予算枯渇の確認"
-      tabIndex={-1}
-      onClick={(event) => {
-        // 確認パネルの外（オーバーレイ自身）をタップしたときは取消と同じ。
-        if (event.target !== event.currentTarget) return;
-        onCancel();
-      }}
-    >
-      <SpendConfirm
-        subject={pending.lever.name}
-        balanceAfter={pending.risk.balanceAfter}
-        returnTestId={pending.returnTestId}
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-        groupLabel={null}
-      />
-    </div>
-  );
-  return typeof document === 'undefined' ? layer : createPortal(layer, document.body);
 }
 
 /** 可視の 💰支払→残高 と枯渇警告。aria-label が本文を上書きしても残す。 */
@@ -143,12 +77,6 @@ export function OrgLeverList({
   const setPending = (value: PendingLeverSpend | null) => {
     setConfirmState({ gateKey: confirmGateKey, pending: value });
   };
-  const dismissConfirm = () => {
-    if (!pending) return;
-    const returnTestId = pending.returnTestId;
-    setPending(null);
-    setTimeout(() => focusByTestId(returnTestId), 0);
-  };
   const [blockedToast, setBlockedToast] = useState<string | null>(null);
   const flashBlockedToast = (message: string) => {
     setBlockedToast(message);
@@ -176,14 +104,17 @@ export function OrgLeverList({
     <div className="org-levers" data-testid={regionTestId} role="region" aria-label={regionLabel}>
       <span className="org-levers-title">{title}</span>
       {pending ? (
-        <OrgLeverSpendGate
-          pending={pending}
+        <SpendConfirmDialog
+          testId="org-lever-spend-dialog"
+          subject={pending.lever.name}
+          balanceAfter={pending.risk.balanceAfter}
+          returnTestId={pending.returnTestId}
           onConfirm={() => {
             const current = pending;
             setPending(null);
             onApply(current.lever.id);
           }}
-          onCancel={dismissConfirm}
+          onCancel={() => setPending(null)}
         />
       ) : null}
       {blockedToast ? (

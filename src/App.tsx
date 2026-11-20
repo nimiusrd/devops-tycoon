@@ -1067,6 +1067,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   onBuyRelic={run.buyShopRelic}
                   onBuyRecruit={run.buyShopRecruit}
                   onLeave={run.leaveShop}
+                  spendConfirmEnabled={!run.tabConflictModalOpen}
                 />
               </SceneScrollReset>
             )}

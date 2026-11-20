@@ -16,7 +16,7 @@ import {
 import { spendRiskView, spendStatusText, type SpendRiskView } from '../render/spendRiskView';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
-import { SpendConfirm } from './SpendConfirm';
+import { SpendConfirmDialog } from './SpendConfirm';
 import { useReplayContent } from './replayContent';
 
 type PendingSpend = {
@@ -32,6 +32,8 @@ export interface ShopScreenProps {
   onBuyRelic: () => void;
   onBuyRecruit: () => void;
   onLeave: () => void;
+  /** 別タブの競合モーダルが背面ロックを担う間は購入を止める。 */
+  spendConfirmEnabled?: boolean;
 }
 
 export function ShopScreen({
@@ -40,9 +42,11 @@ export function ShopScreen({
   onBuyRelic,
   onBuyRecruit,
   onLeave,
+  spendConfirmEnabled = true,
 }: ShopScreenProps) {
   const { resolveCard, resolveRelic } = useReplayContent();
   const [pending, setPending] = useState<PendingSpend | null>(null);
+  if (!spendConfirmEnabled && pending) setPending(null);
   const shop = state.shop;
   if (!shop) return null;
   const relic = shop.relic ? resolveRelic(shop.relic.id) : undefined;
@@ -65,7 +69,7 @@ export function ShopScreen({
     : null;
   const canHire = recruitRisk?.blocked === null;
   const requestSpend = (next: PendingSpend, run: () => void) => {
-    if (next.risk.blocked) return;
+    if (!spendConfirmEnabled || next.risk.blocked) return;
     if (next.risk.requiresConfirm) {
       setPending(next);
       return;
@@ -92,8 +96,9 @@ export function ShopScreen({
           <h2 className="draft-title">
             予算 <b data-testid="shop-budget">💰{state.budget}</b> で施策を仕入れる
           </h2>
-          {pending ? (
-            <SpendConfirm
+          {spendConfirmEnabled && pending ? (
+            <SpendConfirmDialog
+              testId="shop-spend-confirm-dialog"
               subject={pending.subject}
               balanceAfter={pending.risk.balanceAfter}
               returnTestId={pending.returnTestId}

@@ -94,4 +94,4 @@
 
 既存点火源は原因細分類と区別する。仕様調査（元案004）や再発防止（元案012）とは別の操作。通常firefight/Task/勝敗/SPEC/保存/ruleset/固定トラック/WebGL停止契約へ接続しない。本番採用時は原因の情報開示、誤対応後の再選択、既存#536への対象判定、保存マイグレーションとruleset更新を別Issueに分割する。
 
-試作version 1は信頼済み内部JSONのみ対応。外部保存入力検証や通常保存互換は未提供。初回は Dev Container Node 24 で対象ユニット・型チェック・lint・format:checkを検証した。要因比較は Node 24 で対象ユニット、毎入力の保存再開と再生の一致、lint、format:checkを確認した。UI/Pixi変更なし、E2E/galleryは対象外。通常ランの本番・UI・保存・ruleset、および incidentStandby / interventionSequence / domainIsolation へは接続していない。
+試作version 1は信頼済み内部JSONのみ対応。外部保存入力検証や通常保存互換は未提供。初回は Dev Container Node 24 で対象ユニット・型チェック・lint・format:checkを検証した。要因比較は Node 24 で対象ユニット、毎入力の保存再開と再生の一致、lint、format:checkを確認した。UI/Pixi変更なし、E2E/galleryは対象外。通常ランの本番・UI・保存・ruleset、および incidentStandby / domainIsolation へは接続していない。

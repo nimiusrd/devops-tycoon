@@ -1,6 +1,6 @@
 # RI-220: 小PR憲章を1期間だけ破る
 
-対象 #616 / 親 #548。結論: **限定比較の仮説採用、本番統合保留**。人間のプレイ評価は未実施。
+対象 [#616](https://github.com/nimiusrd/devops-tycoon/issues/616) / 親 [#548](https://github.com/nimiusrd/devops-tycoon/issues/548)。**独立した例外機能は見送り、チーム憲章 [#615](https://github.com/nimiusrd/devops-tycoon/issues/615) に集約**。人間のプレイ評価は未実施。
 
 ## 固定盤面と例外契約
 
@@ -85,12 +85,8 @@
 
 納期は6まで守る側、7で同点、8から破る側。初回の12は破る側にある。先例は10まで守る側、11で同点、12から破る側。初回の6は守る側にある。入力列は緊急価値では変わらない。16まで動かしても、同点を挟むこの境界のあとで優劣は戻らない。
 
-条件、入力列、開いたtick、信頼費用、差引、反転は `charter-exception-factor-comparison.json` にあり、テストが同じ関数の再計算と照合する。
+## 集約後に参照する条件
 
-次に解く不確実性: 先例盤面で後日談を期内（tick 1〜4）に残したまま緊急価値を11より大きくし、持続2期間以上の開いたtickで2件目の大きい出荷を取るとき、守る判断の優位が残るかは未検証。
+一度限りの例外と後日の信頼費用は [#615](https://github.com/nimiusrd/devops-tycoon/issues/615) の小PR憲章の禁止判定を前提とする。先例盤面で後日談を期内（tick 1〜4）に残したまま緊急価値を11より大きくし、持続2期間以上の開いたtickで2件目の大きい出荷を取るとき、守る判断の優位が残るかは未検証。
 
-## 本番境界と検証
-
-RI-240 の後日談イベントとは未接続。人格的な罰は置かず、後の信頼費用だけを引く。通常の編成、勝敗、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。本番採用時は例外履歴の保存、憲章への復帰、後日談の一度だけの反映を別Issueに分割する。version 1の信頼済み内部JSONのみ。外部入力検証と通常保存互換は対象外。
-
-`charter-exception-comparison.json` に初回の初期状態、入力列、例外tick、後日談、信頼費用、差引を記録した。`charter-exception-factor-comparison.json` に要因比較の条件、入力列、結果を記録した。対象ユニット、毎入力のJSON保存再開と再生一致、型チェック、lint、format:checkを検証する。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番・UI・保存・rulesetへは接続していない。
+比較データは整理前の Git 履歴から参照できる。 [`charter-exception-comparison.json`](https://github.com/nimiusrd/devops-tycoon/blob/0a3d1a52e616b9d9464b2fc2ab58ec8a9d3123ae/docs/prototypes/charter-exception-comparison.json)、[`charter-exception-factor-comparison.json`](https://github.com/nimiusrd/devops-tycoon/blob/0a3d1a52e616b9d9464b2fc2ab58ec8a9d3123ae/docs/prototypes/charter-exception-factor-comparison.json)

@@ -1,6 +1,6 @@
 # RI-241: レビュー鬼の見せ場と平常時の消費を比べる
 
-対象 #637 / 親 #548。結論: **限定比較の仮説採用、本番統合保留**。人間のプレイ評価は未実施。
+対象 [#637](https://github.com/nimiusrd/devops-tycoon/issues/637) / 親 [#548](https://github.com/nimiusrd/devops-tycoon/issues/548)。**特性を見せる専用イベントは見送り**。人間のプレイ評価は未実施。
 
 ## 固定イベント
 
@@ -31,8 +31,8 @@
 
 固定6盤面の仮説比較であり、本番の人物評価の証明ではない。次は待ちの量と消費倍率の感度を見る。
 
-## 本番境界と検証
+## 見送り理由
 
-通常ランのトレイト効果、イベント、自動勝利、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。人物は仕事の型として扱い、実在の職種や属性には結び付けない。閲覧順で結果は変わらない。本番採用時は、在籍、稼働、見送り、待ち、処理、消費を保存する別Issueに分割する。version 1の信頼済み内部JSONに比較の初期状態、入力列、得点の推移を含める。外部入力検証と通常保存互換は対象外。
+レビュー鬼の処理量とスタミナ消費の差は[現行トレイト](../../src/data/traits.ts)にあり、レビュー役への配置で既に判断できる。同じ配分判断を専用イベントとして追加する価値は薄い。
 
-`trait-spotlight-comparison.json` に盤面、初期状態と入力列、得点の推移を記録した。対象ユニット、毎入力のJSON保存再開と再生一致、型チェック、lint、format:checkを検証する。UI/Pixiの変更はなく、E2Eとgalleryは対象外。
+比較データは整理前の Git 履歴から参照できる。 [`trait-spotlight-comparison.json`](https://github.com/nimiusrd/devops-tycoon/blob/0a3d1a52e616b9d9464b2fc2ab58ec8a9d3123ae/docs/prototypes/trait-spotlight-comparison.json)

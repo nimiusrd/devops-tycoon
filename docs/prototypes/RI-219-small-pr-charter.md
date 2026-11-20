@@ -85,4 +85,4 @@
 
 RI-166 のPR分割、既存のサイズ制限、文化レリックとは未接続。`effectiveSizeLimit` は併用時の規則を示すだけで、レリックやレバーは読まない。通常の編成、勝敗、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。本番採用時は憲章の保存、変更時期、既存上限との優先を別Issueに分割する。version 1の信頼済み内部JSONのみ。外部入力検証と通常保存互換は対象外。
 
-`small-pr-charter-comparison.json` に初期状態、入力列、憲章、未完了、差引を記録した。要因比較は `small-pr-charter-factor-comparison.json`。対象ユニット、毎入力のJSON保存再開と再生一致、型チェック、lint、format:checkを検証する。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番・UI・保存・ruleset、featureSets、taskDependencies へは接続していない。RI-220 の charterException は変更していない。
+`small-pr-charter-comparison.json` に初期状態、入力列、憲章、未完了、差引を記録した。要因比較は `small-pr-charter-factor-comparison.json`。対象ユニット、毎入力のJSON保存再開と再生一致、型チェック、lint、format:checkを検証する。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番・UI・保存・ruleset、featureSets、taskDependencies へは接続していない。例外許可と後日の信頼費用は [RI-220 の試作記録](RI-220-charter-exception.md)を参照。

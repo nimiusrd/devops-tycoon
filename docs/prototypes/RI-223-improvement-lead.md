@@ -1,6 +1,6 @@
 # RI-223: 改善1件の専任を継続・中断・現場固定で比べる
 
-対象 #619 / 親 #548。結論: **限定比較の仮説採用、本番統合保留**。人間のプレイ評価は未実施。
+対象 [#619](https://github.com/nimiusrd/devops-tycoon/issues/619) / 親 [#548](https://github.com/nimiusrd/devops-tycoon/issues/548)。**独立した専任機能は見送り、基盤投資 [#613](https://github.com/nimiusrd/devops-tycoon/issues/613) に集約**。人間のプレイ評価は未実施。
 
 ## 固定盤面と専任契約
 
@@ -103,14 +103,10 @@
 
 優劣は危機なしとtick 0のあいだで継続から中断へ、tick 0と1のあいだで中断から現場固定へ、tick 1と2のあいだで現場固定から継続へ反転する。中断は初期間に現場へ戻る固定戦略なので、危機tickが1以降へずれると再開か完成の専任で罰を受ける。
 
-`improvement-lead-factor-comparison.json` に資源、規則、入力列、出荷、改善価値、罰、差引、順位、反転を残す。対象テストが再計算し、基準行が初回JSONの該当戦略と一致すること、保存再開と入力再生を照合する。初回の3戦略表は再出力しない。
+## 集約後に参照する条件
 
-次に解く不確実性: 必要進捗は三盤面で、再開費用は完成間近と現場の危機で、危機tickの位置は現場の危機だけで優劣が反転するが、三要因を同時に動かした境界と、中断の現場復帰を初期間以外の危機tickへずらす判断は未検証。
+[#613](https://github.com/nimiusrd/devops-tycoon/issues/613) で基盤投資を実作業にする場合の配分案として参照する。必要進捗は三盤面で、再開費用は完成間近と現場の危機で、危機tickの位置は現場の危機だけで優劣が反転するが、三要因を同時に動かした境界と、中断の現場復帰を初期間以外の危機tickへずらす判断は未検証。
 
 この要因比較は本番採用の判断を変えない。仮説は限定比較の採用のまま、本番統合は保留。
 
-## 本番境界と検証
-
-RI-217 の基盤仕事と #538 の仕組みづくりへは接続しない。未介入のチームへの悪化は専任の罰にしない。通常の編成、勝敗、SPEC、保存、ruleset、固定トラック、WebGL停止契約へ接続しない。本番採用時は専任期間の保存、再開待ちの主体、改善価値の一度だけの反映を別Issueに分割する。version 1の信頼済み内部JSONのみ。外部入力検証と通常保存互換は対象外。
-
-`improvement-lead-comparison.json` に初期状態、入力列、出荷、改善価値、罰、専任期間、進捗、差引を記録した。初回は対象ユニット、毎入力のJSON保存再開と再生一致、型チェック、lint、format:check。要因比較は Node 24 で対象ユニット、基準行と初回JSONの一致、保存再開と入力再生、lint、format:check。UI/Pixiの変更はなく、E2Eとgalleryは対象外。通常ランの本番、UI、保存、rulesetへは接続していない。onCallRotation と focusConsult には触れていない。
+比較データは整理前の Git 履歴から参照できる。 [`improvement-lead-comparison.json`](https://github.com/nimiusrd/devops-tycoon/blob/0a3d1a52e616b9d9464b2fc2ab58ec8a9d3123ae/docs/prototypes/improvement-lead-comparison.json)、[`improvement-lead-factor-comparison.json`](https://github.com/nimiusrd/devops-tycoon/blob/0a3d1a52e616b9d9464b2fc2ab58ec8a9d3123ae/docs/prototypes/improvement-lead-factor-comparison.json)
